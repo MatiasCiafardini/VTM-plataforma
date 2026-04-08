@@ -1,0 +1,46 @@
+.local-runtime/
+
+# dependencies
+node_modules/
+**/node_modules/
+
+# build outputs
+.next/
+**/.next/
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+**/coverage/
+out/
+**/out/
+
+# environment files
+.env
+.env.*
+!.env.prod.example
+!**/.env.production.example
+!**/.env.local.example
+!**/.env*.example
+
+# logs and temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.tmp/
+temp/
+
+# local database/runtime
+.postgres/
+**/.postgres/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# framework-generated files that should stay versioned
+!**/next-env.d.ts

@@ -1,0 +1,499 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  MENTOR
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum DisplayCurrencyMode {
+  LOCAL
+  USD
+  BOTH
+}
+
+enum MonthlyMetricPeriodStatus {
+  DRAFT
+  SUBMITTED
+  CLOSED
+}
+
+enum MetricValueType {
+  INTEGER
+  DECIMAL
+  CURRENCY
+  TEXT
+  BOOLEAN
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  ACHIEVED
+  MISSED
+  CANCELLED
+}
+
+enum ChallengeStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum RewardStatus {
+  AVAILABLE
+  AWARDED
+  REDEEMED
+  EXPIRED
+}
+
+enum AttentionLevel {
+  GREEN
+  YELLOW
+  RED
+}
+
+enum AuditAction {
+  LOGIN
+  CREATE
+  UPDATE
+  DELETE
+  SUBMIT
+  CLOSE
+  REOPEN
+  ASSIGN
+  UNASSIGN
+}
+
+enum NotificationType {
+  METRIC_REMINDER
+  ACHIEVEMENT_COMPLETED
+  ATTENTION_RISK
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+  lastLoginAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  studentProfile StudentProfile?
+  mentorProfile  MentorProfile?
+  adminProfile   AdminProfile?
+  createdPeriods MonthlyMetricPeriod[] @relation("PeriodCreatedBy")
+  updatedPeriods MonthlyMetricPeriod[] @relation("PeriodUpdatedBy")
+  auditLogs      AuditLog[]
+  notifications  Notification[]       @relation("UserNotifications")
+}
+
+model AdminProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  nationality     String?
+  country         String?
+  localCurrencyId String?
+  birthDate       DateTime?
+  startDate       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user          User      @relation(fields: [userId], references: [id])
+  localCurrency Currency? @relation("AdminLocalCurrency", fields: [localCurrencyId], references: [id])
+
+  @@index([localCurrencyId])
+}
+
+model StudentProfile {
+  id                  String              @id @default(cuid())
+  userId              String              @unique
+  country             String?
+  localCurrencyId     String?
+  timezone            String?
+  displayCurrencyMode DisplayCurrencyMode @default(BOTH)
+  isBusinessActive    Boolean             @default(true)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  user              User                      @relation(fields: [userId], references: [id])
+  localCurrency     Currency?                 @relation("StudentLocalCurrency", fields: [localCurrencyId], references: [id])
+  quickLinks        StudentQuickLink[]
+  monthlyPeriods    MonthlyMetricPeriod[]
+  mentorAssignments MentorStudentAssignment[]
+  studentGoals      StudentGoal[]
+  studentChallenges StudentChallenge[]
+  studentRewards    StudentReward[]
+  attentionScores   AttentionScore[]
+  events            Event[]
+  notifications     Notification[]
+}
+
+model AdminSetting {
+  key       String   @id
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MentorProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user               User                      @relation(fields: [userId], references: [id])
+  studentAssignments MentorStudentAssignment[]
+}
+
+model MentorStudentAssignment {
+  id         String   @id @default(cuid())
+  mentorId   String
+  studentId  String
+  assignedAt DateTime @default(now())
+
+  mentor  MentorProfile  @relation(fields: [mentorId], references: [id])
+  student StudentProfile @relation(fields: [studentId], references: [id])
+
+  @@unique([mentorId, studentId])
+  @@index([studentId])
+}
+
+model StudentQuickLink {
+  id        String   @id @default(cuid())
+  studentId String
+  title     String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id])
+
+  @@index([studentId])
+}
+
+model StudentDashboardQuickLink {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MetricCategory {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  definitions MetricDefinition[]
+}
+
+model MetricDefinition {
+  id           String          @id @default(cuid())
+  categoryId   String
+  name         String
+  slug         String          @unique
+  description  String?
+  valueType    MetricValueType
+  isRequired   Boolean         @default(false)
+  isActive     Boolean         @default(true)
+  isSystemSeed Boolean         @default(false)
+  isMonetary   Boolean         @default(false)
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  category MetricCategory @relation(fields: [categoryId], references: [id])
+  values   MetricValue[]
+  challenges Challenge[]
+
+  @@index([categoryId])
+}
+
+model MonthlyMetricPeriod {
+  id              String                    @id @default(cuid())
+  studentId       String
+  month           Int
+  year            Int
+  status          MonthlyMetricPeriodStatus @default(DRAFT)
+  draftedAt       DateTime                  @default(now())
+  submittedAt     DateTime?
+  closedAt        DateTime?
+  createdByUserId String?
+  updatedByUserId String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  student         StudentProfile   @relation(fields: [studentId], references: [id])
+  createdBy       User?            @relation("PeriodCreatedBy", fields: [createdByUserId], references: [id])
+  updatedBy       User?            @relation("PeriodUpdatedBy", fields: [updatedByUserId], references: [id])
+  values          MetricValue[]
+  attentionScores AttentionScore[]
+
+  @@unique([studentId, month, year])
+  @@index([year, month])
+}
+
+model MetricValue {
+  id                   String   @id @default(cuid())
+  periodId             String
+  metricDefinitionId   String
+  numberValue          Decimal? @db.Decimal(18, 4)
+  textValue            String?
+  booleanValue         Boolean?
+  originalAmount       Decimal? @db.Decimal(18, 4)
+  originalCurrencyId   String?
+  usdAmount            Decimal? @db.Decimal(18, 4)
+  conversionSnapshotId String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  period             MonthlyMetricPeriod @relation(fields: [periodId], references: [id])
+  metricDefinition   MetricDefinition    @relation(fields: [metricDefinitionId], references: [id])
+  originalCurrency   Currency?           @relation("MetricValueOriginalCurrency", fields: [originalCurrencyId], references: [id])
+  conversionSnapshot ConversionSnapshot? @relation(fields: [conversionSnapshotId], references: [id])
+
+  @@unique([periodId, metricDefinitionId])
+  @@index([metricDefinitionId])
+  @@index([originalCurrencyId])
+}
+
+model Currency {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  symbol    String?
+  decimals  Int      @default(2)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProfiles      StudentProfile[]     @relation("StudentLocalCurrency")
+  adminProfiles        AdminProfile[]       @relation("AdminLocalCurrency")
+  exchangeRatesFrom    ExchangeRate[]       @relation("ExchangeRateFrom")
+  exchangeRatesTo      ExchangeRate[]       @relation("ExchangeRateTo")
+  metricOriginalValues MetricValue[]        @relation("MetricValueOriginalCurrency")
+  snapshotsFrom        ConversionSnapshot[] @relation("SnapshotFromCurrency")
+  snapshotsTo          ConversionSnapshot[] @relation("SnapshotToCurrency")
+}
+
+model ExchangeRate {
+  id             String   @id @default(cuid())
+  fromCurrencyId String
+  toCurrencyId   String
+  rate           Decimal  @db.Decimal(18, 8)
+  effectiveDate  DateTime
+  source         String?
+  createdAt      DateTime @default(now())
+
+  fromCurrency Currency             @relation("ExchangeRateFrom", fields: [fromCurrencyId], references: [id])
+  toCurrency   Currency             @relation("ExchangeRateTo", fields: [toCurrencyId], references: [id])
+  snapshots    ConversionSnapshot[]
+
+  @@unique([fromCurrencyId, toCurrencyId, effectiveDate])
+  @@index([effectiveDate])
+}
+
+model ConversionSnapshot {
+  id             String   @id @default(cuid())
+  exchangeRateId String?
+  fromCurrencyId String
+  toCurrencyId   String
+  rate           Decimal  @db.Decimal(18, 8)
+  snapshotDate   DateTime
+  source         String?
+  createdAt      DateTime @default(now())
+
+  exchangeRate ExchangeRate? @relation(fields: [exchangeRateId], references: [id])
+  fromCurrency Currency      @relation("SnapshotFromCurrency", fields: [fromCurrencyId], references: [id])
+  toCurrency   Currency      @relation("SnapshotToCurrency", fields: [toCurrencyId], references: [id])
+  metricValues MetricValue[]
+
+  @@index([snapshotDate])
+}
+
+model Goal {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  studentGoals StudentGoal[]
+}
+
+model StudentGoal {
+  id            String     @id @default(cuid())
+  studentId     String
+  goalId        String
+  titleOverride String?
+  targetValue   Decimal?   @db.Decimal(18, 4)
+  currentValue  Decimal?   @db.Decimal(18, 4)
+  dueDate       DateTime?
+  status        GoalStatus @default(NOT_STARTED)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id])
+  goal    Goal           @relation(fields: [goalId], references: [id])
+
+  @@index([studentId])
+}
+
+model Challenge {
+  id                 String   @id @default(cuid())
+  title              String
+  description        String?
+  metricDefinitionId String?
+  targetValue        Decimal? @db.Decimal(18, 4)
+  difficultyStars    Int      @default(1)
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  metricDefinition  MetricDefinition? @relation(fields: [metricDefinitionId], references: [id])
+  studentChallenges StudentChallenge[]
+
+  @@index([metricDefinitionId])
+}
+
+model StudentChallenge {
+  id          String          @id @default(cuid())
+  studentId   String
+  challengeId String
+  assignedAt  DateTime        @default(now())
+  dueDate     DateTime?
+  status      ChallengeStatus @default(ASSIGNED)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  student   StudentProfile @relation(fields: [studentId], references: [id])
+  challenge Challenge      @relation(fields: [challengeId], references: [id])
+
+  @@index([studentId])
+}
+
+model Reward {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  studentRewards StudentReward[]
+}
+
+model StudentReward {
+  id         String       @id @default(cuid())
+  studentId  String
+  rewardId   String
+  status     RewardStatus @default(AVAILABLE)
+  awardedAt  DateTime?
+  redeemedAt DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id])
+  reward  Reward         @relation(fields: [rewardId], references: [id])
+
+  @@index([studentId])
+}
+
+model AttentionScore {
+  id                    String         @id @default(cuid())
+  studentId             String
+  monthlyMetricPeriodId String?
+  score                 Int
+  level                 AttentionLevel
+  reasonNoMetrics       Boolean        @default(false)
+  reasonIncomeDrop      Boolean        @default(false)
+  reasonLeadsDrop       Boolean        @default(false)
+  reasonClosuresDrop    Boolean        @default(false)
+  reasonGoalsMissed     Boolean        @default(false)
+  reasonInactivity      Boolean        @default(false)
+  calculatedAt          DateTime       @default(now())
+
+  student             StudentProfile       @relation(fields: [studentId], references: [id])
+  monthlyMetricPeriod MonthlyMetricPeriod? @relation(fields: [monthlyMetricPeriodId], references: [id])
+
+  @@index([studentId, calculatedAt])
+}
+
+model Event {
+  id             String    @id @default(cuid())
+  studentId      String
+  title          String
+  description    String?
+  startsAt       DateTime
+  endsAt         DateTime?
+  externalSource String?
+  externalId     String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id])
+
+  @@index([studentId, startsAt])
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id              String           @id @default(cuid())
+  type            NotificationType
+  title           String
+  message         String
+  audienceRole    UserRole?
+  recipientUserId String?
+  studentId       String?
+  metadata        Json?
+  dedupeKey       String?          @unique
+  readAt          DateTime?
+  createdAt       DateTime         @default(now())
+
+  recipientUser User?           @relation("UserNotifications", fields: [recipientUserId], references: [id])
+  student       StudentProfile? @relation(fields: [studentId], references: [id])
+
+  @@index([audienceRole, createdAt])
+  @@index([recipientUserId, createdAt])
+  @@index([studentId, createdAt])
+}
