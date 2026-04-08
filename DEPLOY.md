@@ -10,15 +10,15 @@ Este proyecto ya queda preparado para levantar en un VPS Linux con Docker Compos
 ## 1. Datos de este entorno
 
 - SO del VPS: Ubuntu
-- Dominio: `plataformavtm.com`
+- Dominio: `plataformavmt.com`
 - IP publica: `187.77.250.61`
 
 ## 2. Preparar DNS
 
 Antes de pedir HTTPS, apunta estos registros al VPS:
 
-- Tipo `A` para `plataformavtm.com` -> `187.77.250.61`
-- Tipo `A` para `www.plataformavtm.com` -> `187.77.250.61`
+- Tipo `A` para `plataformavmt.com` -> `187.77.250.61`
+- Tipo `A` para `www.plataformavmt.com` -> `187.77.250.61`
 
 Si usas Cloudflare:
 
@@ -91,8 +91,8 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 La app queda disponible en:
 
 - `http://TU_IP/`
-- `http://plataformavtm.com/`
-- `http://plataformavtm.com/docs`
+- `http://plataformavmt.com/`
+- `http://plataformavmt.com/docs`
 
 ## 7. Seed inicial opcional
 
@@ -107,8 +107,8 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend node
 ```bash
 docker ps
 docker compose --env-file .env.prod -f docker-compose.prod.yml logs -f
-curl -I http://plataformavtm.com
-curl http://plataformavtm.com/docs
+curl -I http://plataformavmt.com
+curl http://plataformavmt.com/docs
 ```
 
 ## 9. HTTPS con Certbot en Ubuntu
@@ -118,7 +118,7 @@ Cuando el dominio ya resuelva a la IP correcta:
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
 sudo apt stop nginx 2>/dev/null || true
-sudo certbot certonly --standalone -d plataformavtm.com -d www.plataformavtm.com
+sudo certbot certonly --standalone -d plataformavmt.com -d www.plataformavmt.com
 ```
 
 Este proyecto hoy deja `nginx` adentro de Docker. Para poner HTTPS hay 2 caminos:
