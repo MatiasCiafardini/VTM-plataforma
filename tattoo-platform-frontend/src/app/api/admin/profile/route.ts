@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { backendFetch } from '@/lib/backend';
+import { shouldUseSecureCookies } from '@/lib/auth-cookies';
 import { nameCookieName, sessionCookieName } from '@/lib/config';
 
 export async function GET() {
@@ -40,14 +41,14 @@ export async function PATCH(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    const isProduction = process.env.NODE_ENV === 'production';
+    const secureCookies = shouldUseSecureCookies(request);
     cookieStore.set(
       nameCookieName,
       `${profile.firstName} ${profile.lastName}`.trim(),
       {
         httpOnly: true,
         sameSite: 'lax',
-        secure: isProduction,
+        secure: secureCookies,
         path: '/',
         maxAge: 60 * 60 * 8,
       },

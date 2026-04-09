@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { backendFetch } from '@/lib/backend';
+import { shouldUseSecureCookies } from '@/lib/auth-cookies';
 import {
   nameCookieName,
   roleCookieName,
@@ -29,12 +30,12 @@ export async function POST(request: NextRequest) {
     });
 
     const cookieStore = await cookies();
-    const isProduction = process.env.NODE_ENV === 'production';
+    const secureCookies = shouldUseSecureCookies(request);
 
     cookieStore.set(sessionCookieName, payload.accessToken, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: isProduction,
+      secure: secureCookies,
       path: '/',
       maxAge: 60 * 60 * 8,
     });
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     cookieStore.set(roleCookieName, payload.user.role, {
       httpOnly: true,
       sameSite: 'lax',
-      secure: isProduction,
+      secure: secureCookies,
       path: '/',
       maxAge: 60 * 60 * 8,
     });
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
       {
         httpOnly: true,
         sameSite: 'lax',
-        secure: isProduction,
+        secure: secureCookies,
         path: '/',
         maxAge: 60 * 60 * 8,
       },
