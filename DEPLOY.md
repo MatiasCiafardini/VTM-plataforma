@@ -111,24 +111,59 @@ curl -I http://plataformavmt.com
 curl http://plataformavmt.com/docs
 ```
 
-## 9. HTTPS con Certbot en Ubuntu
+## 9. HTTPS con Certbot y Nginx Docker
 
 Cuando el dominio ya resuelva a la IP correcta:
 
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
-sudo apt stop nginx 2>/dev/null || true
-sudo certbot certonly --standalone -d plataformavmt.com -d www.plataformavmt.com
+sudo apt update
+sudo apt install -y certbot
+
+cd /root/plataforma-vmt
+docker compose --env-file .env.prod -f docker-compose.prod.yml stop nginx
+certbot certonly --standalone -d plataformavmt.com -d www.plataformavmt.com
+
+docker compose --env-file .env.prod \
+  -f docker-compose.prod.yml \
+  -f docker-compose.prod.https.yml \
+  up -d nginx
 ```
 
-Este proyecto hoy deja `nginx` adentro de Docker. Para poner HTTPS hay 2 caminos:
+Despues de eso la app queda en:
 
-- rapido y prolijo: reemplazar `nginx` por `caddy` en Docker para certificados automaticos
-- tradicional: montar los certificados de Let's Encrypt dentro del contenedor `nginx` y agregar listener `443`
+- `https://plataformavmt.com`
+- `https://www.plataformavmt.com`
 
-Si queres ir por dominio desde el dia uno, te recomiendo que en el proximo paso te lo deje migrado a `caddy`, porque te simplifica bastante la renovacion SSL.
+Para renovar certificados:
 
-## 10. Comandos utiles
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml stop nginx
+certbot renew
+docker compose --env-file .env.prod \
+  -f docker-compose.prod.yml \
+  -f docker-compose.prod.https.yml \
+  up -d nginx
+```
+
+## 10. Corregir el email admin legado
+
+Si el seed dejo el admin con el dominio viejo, puedes corregirlo sin tocar SQL:
+
+```bash
+cd /root/plataforma-vmt
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec \
+  -e OLD_ADMIN_EMAIL=admin@plataformavtm.com \
+  -e NEW_ADMIN_EMAIL=admin@plataformavmt.com \
+  backend npm run admin:rename-email
+```
+
+Despues puedes volver a correr el seed:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend node prisma/seed.mjs
+```
+
+## 11. Comandos utiles
 
 Ver logs:
 
@@ -148,9 +183,8 @@ Bajar servicios:
 docker compose --env-file .env.prod -f docker-compose.prod.yml down
 ```
 
-## 11. Siguiente paso recomendado
+## 12. Siguiente paso recomendado
 
 Cuando ya responda por dominio, conviene agregar:
 
-- HTTPS con Caddy o Certbot
 - backups del volumen de Postgres

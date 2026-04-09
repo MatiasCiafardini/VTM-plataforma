@@ -13,6 +13,7 @@
     "db:createdb": "powershell -Command \"$env:PGPASSWORD='postgres'; & 'C:\\Program Files\\PostgreSQL\\18\\bin\\createdb.exe' -h 127.0.0.1 -p 5433 -U postgres tattoo_platform\"",
     "db:log": "powershell -Command \"Get-Content .postgres\\run\\postgres.log -Tail 100\"",
     "db:seed": "node prisma/seed.mjs",
+    "admin:rename-email": "node scripts/rename-admin-email.mjs",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
