@@ -80,8 +80,8 @@ export function LoginForm() {
       <p className="login-footer-copy">No tienes cuenta? Registrate</p>
 
       <div className="hint-box">
-        <p>Demo: admin@tattoo-platform.local / Admin12345!</p>
-        <p>Demo: student@tattoo-platform.local / Student12345!</p>
+        <p>Test admin: admin@plataformavtm.com / ChangeMe12345!</p>
+        <p>Test student: student@tattoo-platform.local / Student12345!</p>
       </div>
     </form>
   );
