@@ -6,6 +6,7 @@ import { AdminOperationsPanel } from '@/components/admin-operations-panel';
 import { AppShell } from '@/components/app-shell';
 import { formatCompactNumber } from '@/components/dashboard-utils';
 import { backendFetch } from '@/lib/backend';
+import { safeBackendFetch } from '@/lib/server-fetch';
 import { requireRole } from '@/lib/session';
 
 type TabKey = 'dashboard' | 'results' | 'challenges' | 'profile' | 'settings';
@@ -252,13 +253,23 @@ export default async function AdminPage({
         })
       : Promise.resolve([]),
     activeTab === 'settings'
-      ? backendFetch<AdminSettings>('/admin-settings', {
-          token: session.token,
-        })
+      ? safeBackendFetch<AdminSettings | null>(
+          '/admin-settings',
+          null,
+          {
+            token: session.token,
+          },
+          'admin settings',
+        )
       : Promise.resolve(null),
-    backendFetch<NotificationItem[]>('/notifications', {
-      token: session.token,
-    }),
+    safeBackendFetch<NotificationItem[]>(
+      '/notifications',
+      [],
+      {
+        token: session.token,
+      },
+      'admin notifications',
+    ),
     activeTab === 'profile'
       ? backendFetch<AdminOwnProfile>('/users/me', {
           token: session.token,
@@ -452,6 +463,10 @@ export default async function AdminPage({
         <AdminOperationsPanel
           initialSettings={adminSettings}
         />
+      ) : activeTab === 'settings' ? (
+        <article className="list-card">
+          <p>No pudimos cargar la configuracion operativa en este momento.</p>
+        </article>
       ) : null}
     </AppShell>
   );

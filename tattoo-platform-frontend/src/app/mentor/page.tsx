@@ -4,6 +4,7 @@ import {
   getStatusClass,
 } from '@/components/dashboard-utils';
 import { backendFetch } from '@/lib/backend';
+import { safeBackendFetch } from '@/lib/server-fetch';
 import { requireRole } from '@/lib/session';
 
 type TabKey = 'dashboard' | 'results' | 'challenges' | 'profile';
@@ -56,9 +57,14 @@ export default async function MentorPage({
     backendFetch<MentorDashboard>('/dashboard/mentor', {
       token: session.token,
     }),
-    backendFetch<NotificationItem[]>('/notifications', {
-      token: session.token,
-    }),
+    safeBackendFetch<NotificationItem[]>(
+      '/notifications',
+      [],
+      {
+        token: session.token,
+      },
+      'mentor notifications',
+    ),
   ]);
 
   return (

@@ -1,6 +1,16 @@
 import { backendApiUrl } from './config';
 
-type FetchOptions = RequestInit & {
+export class BackendFetchError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = 'BackendFetchError';
+  }
+}
+
+export type FetchOptions = RequestInit & {
   token?: string;
 };
 
@@ -35,7 +45,7 @@ export async function backendFetch<T>(
       }
     }
 
-    throw new Error(message);
+    throw new BackendFetchError(message, response.status);
   }
 
   return (await response.json()) as T;

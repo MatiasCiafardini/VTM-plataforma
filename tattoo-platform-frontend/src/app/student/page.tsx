@@ -7,6 +7,7 @@ import { StudentChallengesPanel } from '@/components/student-challenges-panel';
 import { StudentProfilePanel } from '@/components/student-profile-panel';
 import { StudentWeekCalendar } from '@/components/student-week-calendar';
 import { backendFetch } from '@/lib/backend';
+import { safeBackendFetch } from '@/lib/server-fetch';
 import { requireRole } from '@/lib/session';
 import Link from 'next/link';
 
@@ -183,9 +184,14 @@ export default async function StudentPage({
           token: session.token,
         })
       : Promise.resolve([]),
-    backendFetch<NotificationItem[]>('/notifications', {
-      token: session.token,
-    }),
+    safeBackendFetch<NotificationItem[]>(
+      '/notifications',
+      [],
+      {
+        token: session.token,
+      },
+      'student notifications',
+    ),
   ]);
 
   const latestIncome = data?.latestMetrics.ingresosFacturacion ?? 0;

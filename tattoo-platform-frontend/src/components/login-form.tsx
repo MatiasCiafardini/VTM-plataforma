@@ -11,6 +11,13 @@ export function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const showTestCredentials =
+    process.env.NEXT_PUBLIC_SHOW_TEST_CREDENTIALS === 'true';
+  const testAdminEmail = process.env.NEXT_PUBLIC_TEST_ADMIN_EMAIL?.trim();
+  const testAdminPassword = process.env.NEXT_PUBLIC_TEST_ADMIN_PASSWORD?.trim();
+  const testStudentEmail = process.env.NEXT_PUBLIC_TEST_STUDENT_EMAIL?.trim();
+  const testStudentPassword =
+    process.env.NEXT_PUBLIC_TEST_STUDENT_PASSWORD?.trim();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -79,10 +86,16 @@ export function LoginForm() {
 
       <p className="login-footer-copy">No tienes cuenta? Registrate</p>
 
-      <div className="hint-box">
-        <p>Test admin: admin@plataformavtm.com / ChangeMe12345!</p>
-        <p>Test student: student@tattoo-platform.local / Student12345!</p>
-      </div>
+      {showTestCredentials &&
+      testAdminEmail &&
+      testAdminPassword &&
+      testStudentEmail &&
+      testStudentPassword ? (
+        <div className="hint-box">
+          <p>Test admin: {testAdminEmail} / {testAdminPassword}</p>
+          <p>Test student: {testStudentEmail} / {testStudentPassword}</p>
+        </div>
+      ) : null}
     </form>
   );
 }
