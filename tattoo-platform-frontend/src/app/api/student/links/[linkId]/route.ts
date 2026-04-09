@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { toApiErrorResponse } from '@/lib/api-errors';
 import { backendFetch } from '@/lib/backend';
 import { sessionCookieName } from '@/lib/config';
 
@@ -23,8 +24,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'No pudimos eliminar el link.';
-    return NextResponse.json({ message }, { status: 400 });
+    return toApiErrorResponse(error, 'No pudimos eliminar el link.');
   }
 }

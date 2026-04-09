@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { toApiErrorResponse } from '@/lib/api-errors';
 import { backendFetch } from '@/lib/backend';
 import { sessionCookieName } from '@/lib/config';
 
@@ -24,8 +25,6 @@ export async function PATCH(
     });
     return NextResponse.json(payload);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'No pudimos actualizar el desafio.';
-    return NextResponse.json({ message }, { status: 400 });
+    return toApiErrorResponse(error, 'No pudimos actualizar el desafio.');
   }
 }

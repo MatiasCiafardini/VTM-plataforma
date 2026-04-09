@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { toApiErrorResponse } from '@/lib/api-errors';
 import { backendFetch } from '@/lib/backend';
 import { sessionCookieName } from '@/lib/config';
 
@@ -15,9 +16,7 @@ export async function GET() {
     const payload = await backendFetch('/challenges', { token });
     return NextResponse.json(payload);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'No pudimos listar los desafios.';
-    return NextResponse.json({ message }, { status: 400 });
+    return toApiErrorResponse(error, 'No pudimos listar los desafios.');
   }
 }
 
@@ -38,8 +37,6 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(payload);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'No pudimos crear el desafio.';
-    return NextResponse.json({ message }, { status: 400 });
+    return toApiErrorResponse(error, 'No pudimos crear el desafio.');
   }
 }

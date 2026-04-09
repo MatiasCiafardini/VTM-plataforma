@@ -188,3 +188,44 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml down
 Cuando ya responda por dominio, conviene agregar:
 
 - backups del volumen de Postgres
+
+## 13. Automatizar backups y SSL
+
+Scripts disponibles en el repo:
+
+- `scripts/prod-backup-db.sh`
+- `scripts/prod-renew-ssl.sh`
+
+Dar permisos:
+
+```bash
+cd /root/plataforma-vmt
+chmod +x scripts/prod-backup-db.sh
+chmod +x scripts/prod-renew-ssl.sh
+mkdir -p backups
+```
+
+Probar backup manual:
+
+```bash
+cd /root/plataforma-vmt
+BACKUP_DIR=/root/plataforma-vmt/backups ./scripts/prod-backup-db.sh
+```
+
+Agregar cron diario para backup:
+
+```bash
+crontab -e
+```
+
+Linea sugerida:
+
+```cron
+0 3 * * * cd /root/plataforma-vmt && BACKUP_DIR=/root/plataforma-vmt/backups ./scripts/prod-backup-db.sh >> /var/log/vmt-backup.log 2>&1
+```
+
+Agregar cron mensual para renovacion SSL:
+
+```cron
+0 4 1 * * cd /root/plataforma-vmt && ./scripts/prod-renew-ssl.sh >> /var/log/vmt-ssl-renew.log 2>&1
+```

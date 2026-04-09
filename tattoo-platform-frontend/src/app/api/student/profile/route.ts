@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { toApiErrorResponse } from '@/lib/api-errors';
 import { backendFetch } from '@/lib/backend';
 import { shouldUseSecureCookies } from '@/lib/auth-cookies';
 import { nameCookieName, sessionCookieName } from '@/lib/config';
@@ -16,9 +17,7 @@ export async function GET() {
     const profile = await backendFetch('/students/me', { token });
     return NextResponse.json(profile);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'No pudimos cargar tu perfil.';
-    return NextResponse.json({ message }, { status: 400 });
+    return toApiErrorResponse(error, 'No pudimos cargar tu perfil.');
   }
 }
 
@@ -58,8 +57,6 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json(profile);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'No pudimos guardar tu perfil.';
-    return NextResponse.json({ message }, { status: 400 });
+    return toApiErrorResponse(error, 'No pudimos guardar tu perfil.');
   }
 }

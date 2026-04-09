@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
+import { toApiErrorResponse } from '@/lib/api-errors';
 import { backendFetch } from '@/lib/backend';
 import { shouldUseSecureCookies } from '@/lib/auth-cookies';
 import {
@@ -64,9 +65,6 @@ export async function POST(request: NextRequest) {
       role: payload.user.role,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'No pudimos iniciar sesion.';
-
-    return NextResponse.json({ message }, { status: 401 });
+    return toApiErrorResponse(error, 'No pudimos iniciar sesion.');
   }
 }
