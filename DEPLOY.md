@@ -7,6 +7,49 @@ Este proyecto ya queda preparado para levantar en un VPS Linux con Docker Compos
 - `backend` NestJS en `3004`
 - `postgres` persistente en volumen Docker
 
+## Flujo recomendado de deploy
+
+Para no olvidarte pasos ni romper SSL, este es el flujo que conviene usar siempre:
+
+1. En tu maquina local:
+
+```bash
+git add .
+git commit -m "descripcion del cambio"
+git push origin main
+```
+
+2. En la VPS:
+
+```bash
+cd /root/plataforma-vmt
+chmod +x scripts/prod-deploy.sh
+./scripts/prod-deploy.sh
+```
+
+Ese script hace:
+
+- `git pull`
+- `docker compose up -d --build`
+- `prisma migrate deploy`
+- chequeos de `nginx`, frontend, backend y dominio
+- si detecta certificados en `/etc/letsencrypt/live/plataformavmt.com/`, activa tambien el compose HTTPS
+
+Si quieres forzar modos:
+
+```bash
+./scripts/prod-deploy.sh --with-ssl
+./scripts/prod-deploy.sh --without-ssl
+./scripts/prod-deploy.sh --skip-pull
+./scripts/prod-deploy.sh --skip-migrate
+```
+
+Importante:
+
+- no corras `seed` en produccion salvo que quieras cargar datos demo
+- `git pull` y `docker compose up -d --build` no borran datos
+- `prisma migrate deploy` modifica esquema, pero no resetea la base
+
 ## 1. Datos de este entorno
 
 - SO del VPS: Ubuntu
@@ -129,6 +172,13 @@ docker compose --env-file .env.prod \
   up -d nginx
 ```
 
+Si despues de generar certificados quieres usar el flujo automatizado:
+
+```bash
+cd /root/plataforma-vmt
+./scripts/prod-deploy.sh --with-ssl
+```
+
 Despues de eso la app queda en:
 
 - `https://plataformavmt.com`
@@ -182,6 +232,24 @@ Bajar servicios:
 ```bash
 docker compose --env-file .env.prod -f docker-compose.prod.yml down
 ```
+
+Deploy completo con script:
+
+```bash
+cd /root/plataforma-vmt
+./scripts/prod-deploy.sh
+```
+
+Verificar HTTP y HTTPS:
+
+```bash
+curl -I http://plataformavmt.com
+curl -I https://plataformavmt.com
+curl -I http://www.plataformavmt.com
+curl -I https://www.plataformavmt.com
+```
+
+Si `http` responde y `https` no, la app esta viva pero falta SSL en `443`.
 
 ## 12. Siguiente paso recomendado
 
