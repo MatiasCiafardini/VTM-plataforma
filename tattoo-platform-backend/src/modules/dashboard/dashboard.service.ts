@@ -152,6 +152,9 @@ export class DashboardService {
           challenge: {
             title: studentChallenge.challenge.title,
             description: studentChallenge.challenge.description,
+            iconKey: studentChallenge.challenge.iconKey,
+            rewardTitle: studentChallenge.challenge.rewardTitle,
+            rewardUrl: studentChallenge.challenge.rewardUrl,
             metricSlug: studentChallenge.challenge.metricDefinition?.slug ?? null,
           },
         };
@@ -177,6 +180,9 @@ export class DashboardService {
             challenge: {
               title: challenge.title,
               description: challenge.description,
+              iconKey: challenge.iconKey,
+              rewardTitle: challenge.rewardTitle,
+              rewardUrl: challenge.rewardUrl,
               metricSlug: challenge.metricDefinition?.slug ?? null,
             },
           };
@@ -311,7 +317,7 @@ export class DashboardService {
 
     const studentsWithPeriods = await Promise.all(
       assignedStudents.map(async (student) => {
-        const latestPeriod = await this.prisma.monthlyMetricPeriod.findFirst({
+        const recentPeriods = await this.prisma.monthlyMetricPeriod.findMany({
           where: { studentId: student.id },
           include: {
             values: {
@@ -321,7 +327,10 @@ export class DashboardService {
             },
           },
           orderBy: [{ year: 'desc' }, { month: 'desc' }],
+          take: 6,
         });
+        const latestPeriod = recentPeriods[0] ?? null;
+        const previousPeriod = recentPeriods[1] ?? null;
 
         const latestScore = await this.prisma.attentionScore.findFirst({
           where: { studentId: student.id },
@@ -332,6 +341,7 @@ export class DashboardService {
           studentId: student.id,
           name: `${student.user.firstName} ${student.user.lastName}`,
           email: student.user.email,
+          country: student.country,
           latestPeriodStatus: latestPeriod?.status ?? null,
           latestPeriodMonth: latestPeriod?.month ?? null,
           latestPeriodYear: latestPeriod?.year ?? null,
@@ -355,6 +365,47 @@ export class DashboardService {
             : null,
           attentionLevel: latestScore?.level ?? null,
           attentionScore: latestScore?.score ?? null,
+          riskSummary: this.buildMentorRiskSummary({
+            latestScore,
+            latestPeriod,
+            previousPeriod,
+            metricLabels: trackedMetrics.labels,
+            trackedMetricSlugs: {
+              revenue: trackedMetrics.revenueMetricSlug,
+              leads: trackedMetrics.leadsMetricSlug,
+              closures: trackedMetrics.closuresMetricSlug,
+            },
+          }),
+          recentPeriods: recentPeriods.map((period) => ({
+            id: period.id,
+            month: period.month,
+            year: period.year,
+            status: period.status,
+            metricsCount: period.values.length,
+            ingresosFacturacion: this.getMetricNumericValue(
+              period.values,
+              trackedMetrics.revenueMetricSlug,
+            ),
+            consultasMensuales: this.getMetricNumericValue(
+              period.values,
+              trackedMetrics.leadsMetricSlug,
+            ),
+            cierresDelMes: this.getMetricNumericValue(
+              period.values,
+              trackedMetrics.closuresMetricSlug,
+            ),
+            values: period.values.map((value) => ({
+              id: value.id,
+              metricName: value.metricDefinition.name,
+              metricSlug: value.metricDefinition.slug,
+              value:
+                value.usdAmount ??
+                value.originalAmount ??
+                value.numberValue ??
+                value.textValue ??
+                value.booleanValue,
+            })),
+          })),
         };
       }),
     );
@@ -499,6 +550,13 @@ export class DashboardService {
       const latestPeriod = latestPeriodByStudent.get(student.id) ?? null;
       const latestScore =
         attentionScores.find((score) => score.studentId === student.id) ?? null;
+      const previousPeriod = periods.find(
+        (period) =>
+          period.studentId === student.id &&
+          latestPeriod &&
+          (period.year < latestPeriod.year ||
+            (period.year === latestPeriod.year && period.month < latestPeriod.month)),
+      );
 
       return {
         studentId: student.id,
@@ -514,6 +572,17 @@ export class DashboardService {
           : null,
         attentionLevel: latestScore?.level ?? null,
         attentionScore: latestScore?.score ?? null,
+        riskSummary: this.buildMentorRiskSummary({
+          latestScore,
+          latestPeriod,
+          previousPeriod: previousPeriod ?? null,
+          metricLabels: trackedMetrics.labels,
+          trackedMetricSlugs: {
+            revenue: trackedMetrics.revenueMetricSlug,
+            leads: trackedMetrics.leadsMetricSlug,
+            closures: trackedMetrics.closuresMetricSlug,
+          },
+        }),
         revenueHistory: periods
           .filter((period) => period.studentId === student.id)
           .map((period) => ({
@@ -740,6 +809,174 @@ export class DashboardService {
       student.attentionLevel === 'RED' ||
       student.attentionLevel === 'YELLOW'
     );
+  }
+
+  private buildMentorRiskSummary(params: {
+    latestScore: {
+      score: number;
+      level: string;
+      reasonNoMetrics: boolean;
+      reasonIncomeDrop: boolean;
+      reasonLeadsDrop: boolean;
+      reasonClosuresDrop: boolean;
+      reasonGoalsMissed: boolean;
+      reasonInactivity: boolean;
+    } | null;
+    latestPeriod: {
+      month: number;
+      year: number;
+      values: Array<{
+        numberValue: unknown;
+        originalAmount: unknown;
+        usdAmount: unknown;
+        metricDefinition: { slug: string };
+      }>;
+    } | null;
+    previousPeriod: {
+      month: number;
+      year: number;
+      values: Array<{
+        numberValue: unknown;
+        originalAmount: unknown;
+        usdAmount: unknown;
+        metricDefinition: { slug: string };
+      }>;
+    } | null;
+    metricLabels: {
+      revenue: string;
+      leads: string;
+      closures: string;
+    };
+    trackedMetricSlugs: {
+      revenue: string;
+      leads: string;
+      closures: string;
+    };
+  }) {
+    const { latestScore, latestPeriod, previousPeriod, metricLabels, trackedMetricSlugs } =
+      params;
+
+    if (!latestScore) {
+      return {
+        headline: 'Sin analisis reciente',
+        items: ['Todavia no hay score de seguimiento calculado para este alumno.'],
+      };
+    }
+
+    const items: string[] = [];
+
+    if (latestScore.reasonNoMetrics) {
+      items.push('No cargo metricas en el ultimo periodo mensual.');
+    }
+
+    if (latestScore.reasonIncomeDrop) {
+      items.push(
+        this.buildMetricDropCopy(
+          metricLabels.revenue,
+          latestPeriod,
+          previousPeriod,
+          trackedMetricSlugs.revenue,
+        ),
+      );
+    }
+
+    if (latestScore.reasonLeadsDrop) {
+      items.push(
+        this.buildMetricDropCopy(
+          metricLabels.leads,
+          latestPeriod,
+          previousPeriod,
+          trackedMetricSlugs.leads,
+        ),
+      );
+    }
+
+    if (latestScore.reasonClosuresDrop) {
+      items.push(
+        this.buildMetricDropCopy(
+          metricLabels.closures,
+          latestPeriod,
+          previousPeriod,
+          trackedMetricSlugs.closures,
+        ),
+      );
+    }
+
+    if (latestScore.reasonGoalsMissed) {
+      items.push('Tiene objetivos vencidos o incumplidos que requieren seguimiento.');
+    }
+
+    if (latestScore.reasonInactivity) {
+      items.push('Detectamos inactividad o un periodo en borrador sin actualizar.');
+    }
+
+    if (items.length === 0) {
+      return {
+        headline:
+          latestScore.level === 'GREEN'
+            ? 'Seguimiento saludable'
+            : `Seguimiento ${latestScore.level.toLowerCase()}`,
+        items: ['No hay alertas especificas activas en este momento.'],
+      };
+    }
+
+    return {
+      headline:
+        latestScore.level === 'RED'
+          ? 'Riesgo alto'
+          : latestScore.level === 'YELLOW'
+            ? 'Riesgo moderado'
+            : 'Seguimiento activo',
+      items,
+    };
+  }
+
+  private buildMetricDropCopy(
+    label: string,
+    latestPeriod: {
+      month: number;
+      year: number;
+      values: Array<{
+        numberValue: unknown;
+        originalAmount: unknown;
+        usdAmount: unknown;
+        metricDefinition: { slug: string };
+      }>;
+    } | null,
+    previousPeriod: {
+      month: number;
+      year: number;
+      values: Array<{
+        numberValue: unknown;
+        originalAmount: unknown;
+        usdAmount: unknown;
+        metricDefinition: { slug: string };
+      }>;
+    } | null,
+    slug: string,
+  ) {
+    const currentValue = latestPeriod
+      ? this.getMetricNumericValue(latestPeriod.values, slug)
+      : null;
+    const previousValue = previousPeriod
+      ? this.getMetricNumericValue(previousPeriod.values, slug)
+      : null;
+
+    if (currentValue === null || previousValue === null) {
+      return `${label} viene en baja respecto al periodo anterior.`;
+    }
+
+    return `${label} bajo de ${this.formatMetricValue(previousValue)} a ${this.formatMetricValue(
+      currentValue,
+    )} frente al periodo anterior.`;
+  }
+
+  private formatMetricValue(value: number) {
+    if (Number.isInteger(value)) {
+      return String(value);
+    }
+
+    return value.toFixed(2);
   }
 
   private async getTrackedMetrics() {

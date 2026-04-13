@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsNumber, IsOptional, IsString, IsUrl, Max, Min } from 'class-validator';
 
 export class UpdateChallengeDto {
   @ApiPropertyOptional()
@@ -12,6 +12,23 @@ export class UpdateChallengeDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  iconKey?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  rewardTitle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUrl({
+    require_tld: false,
+  })
+  rewardUrl?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
@@ -36,4 +53,9 @@ export class UpdateChallengeDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  prerequisiteChallengeId?: string;
 }

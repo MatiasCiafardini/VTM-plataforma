@@ -125,7 +125,10 @@ model AdminProfile {
 model StudentProfile {
   id                  String              @id @default(cuid())
   userId              String              @unique
+  nationality         String?
   country             String?
+  instagramHandle     String?
+  birthDate           DateTime?
   localCurrencyId     String?
   timezone            String?
   displayCurrencyMode DisplayCurrencyMode @default(BOTH)
@@ -366,20 +369,27 @@ model StudentGoal {
 }
 
 model Challenge {
-  id                 String   @id @default(cuid())
-  title              String
-  description        String?
-  metricDefinitionId String?
-  targetValue        Decimal? @db.Decimal(18, 4)
-  difficultyStars    Int      @default(1)
-  isActive           Boolean  @default(true)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  title                   String
+  description             String?
+  iconKey                 String   @default("trophy")
+  rewardTitle             String?
+  rewardUrl               String?
+  metricDefinitionId      String?
+  targetValue             Decimal? @db.Decimal(18, 4)
+  difficultyStars         Int      @default(1)
+  isActive                Boolean  @default(true)
+  prerequisiteChallengeId String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
-  metricDefinition  MetricDefinition? @relation(fields: [metricDefinitionId], references: [id])
-  studentChallenges StudentChallenge[]
+  metricDefinition      MetricDefinition? @relation(fields: [metricDefinitionId], references: [id])
+  prerequisiteChallenge Challenge?        @relation("ChallengePrerequisite", fields: [prerequisiteChallengeId], references: [id])
+  unlockedChallenges    Challenge[]       @relation("ChallengePrerequisite")
+  studentChallenges     StudentChallenge[]
 
   @@index([metricDefinitionId])
+  @@index([prerequisiteChallengeId])
 }
 
 model StudentChallenge {

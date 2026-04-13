@@ -40,6 +40,11 @@ export class CreateStudentDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  instagramHandle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   timezone?: string;
 
   @ApiPropertyOptional()

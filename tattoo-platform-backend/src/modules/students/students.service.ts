@@ -8,6 +8,7 @@ import { DisplayCurrencyMode, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { UsersService } from '../users/users.service';
+import { getCurrencyCodeForCountry } from './student-country-currency';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateOwnStudentProfileDto } from './dto/update-own-student-profile.dto';
 
@@ -32,6 +33,12 @@ export class StudentsService {
         await this.ensureCurrencyExists(dto.localCurrencyId, tx);
       }
 
+      const resolvedCurrencyId = await this.resolveLocalCurrencyId(
+        dto.localCurrencyId,
+        dto.country,
+        tx,
+      );
+
       const createdUser = await this.usersService.createUser(
         {
           email: dto.email,
@@ -48,8 +55,9 @@ export class StudentsService {
         data: {
           userId: createdUser.id,
           country: dto.country,
+          instagramHandle: dto.instagramHandle,
           timezone: dto.timezone,
-          localCurrencyId: dto.localCurrencyId,
+          localCurrencyId: resolvedCurrencyId,
           displayCurrencyMode:
             dto.displayCurrencyMode ?? DisplayCurrencyMode.BOTH,
           mentorAssignments: dto.mentorIds?.length
@@ -154,12 +162,21 @@ export class StudentsService {
         });
       }
 
+      const resolvedCurrencyId = await this.resolveLocalCurrencyId(
+        dto.localCurrencyId,
+        dto.country,
+        tx,
+      );
+
       return tx.studentProfile.update({
         where: { userId },
         data: {
+          nationality: dto.nationality,
           country: dto.country,
+          instagramHandle: dto.instagramHandle,
+          birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
           timezone: dto.timezone,
-          localCurrencyId: dto.localCurrencyId,
+          localCurrencyId: resolvedCurrencyId,
           displayCurrencyMode: dto.displayCurrencyMode,
         },
         include: this.studentInclude,
@@ -178,6 +195,28 @@ export class StudentsService {
     if (!currency) {
       throw new NotFoundException('Currency not found');
     }
+  }
+
+  private async resolveLocalCurrencyId(
+    localCurrencyId: string | undefined,
+    country: string | undefined,
+    client: Prisma.TransactionClient | PrismaService,
+  ) {
+    if (localCurrencyId) {
+      return localCurrencyId;
+    }
+
+    const inferredCurrencyCode = getCurrencyCodeForCountry(country);
+
+    if (!inferredCurrencyCode) {
+      return undefined;
+    }
+
+    const currency = await client.currency.findUnique({
+      where: { code: inferredCurrencyCode },
+    });
+
+    return currency?.id;
   }
 
   private readonly studentInclude = {

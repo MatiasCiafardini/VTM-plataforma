@@ -11,6 +11,7 @@ import type { AuthenticatedUser } from '../../common/types/authenticated-user.ty
 import { AuthService } from './auth.service';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
+import { RegisterStudentDto } from './dto/register-student.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -22,6 +23,13 @@ export class AuthController {
   @ApiOkResponse({ type: AuthResponseDto })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('register')
+  @ApiOperation({ summary: 'Register a student using the configured access code' })
+  @ApiOkResponse({ type: AuthResponseDto })
+  register(@Body() dto: RegisterStudentDto) {
+    return this.authService.registerStudent(dto);
   }
 
   @Get('me')

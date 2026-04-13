@@ -29,23 +29,23 @@ export class ChallengesService {
       data: {
         title: dto.title,
         description: dto.description,
+        iconKey: dto.iconKey ?? 'trophy',
+        rewardTitle: dto.rewardTitle,
+        rewardUrl: dto.rewardUrl,
         metricDefinitionId: dto.metricDefinitionId,
         targetValue: dto.targetValue,
         difficultyStars: dto.difficultyStars ?? 1,
         isActive: dto.isActive ?? true,
+        prerequisiteChallengeId: dto.prerequisiteChallengeId ?? null,
       },
-      include: {
-        metricDefinition: true,
-      },
+      include: this.challengeInclude,
     });
   }
 
   listChallenges() {
     return this.prisma.challenge.findMany({
-      include: {
-        metricDefinition: true,
-      },
-      orderBy: [{ createdAt: 'desc' }],
+      include: this.challengeInclude,
+      orderBy: [{ difficultyStars: 'asc' }, { createdAt: 'desc' }],
     });
   }
 
@@ -61,14 +61,16 @@ export class ChallengesService {
       data: {
         title: dto.title,
         description: dto.description,
+        iconKey: dto.iconKey,
+        rewardTitle: dto.rewardTitle,
+        rewardUrl: dto.rewardUrl,
         metricDefinitionId: dto.metricDefinitionId,
         targetValue: dto.targetValue,
         difficultyStars: dto.difficultyStars,
         isActive: dto.isActive,
+        prerequisiteChallengeId: dto.prerequisiteChallengeId,
       },
-      include: {
-        metricDefinition: true,
-      },
+      include: this.challengeInclude,
     });
   }
 
@@ -169,9 +171,7 @@ export class ChallengesService {
   private async findChallengeByIdOrThrow(id: string) {
     const challenge = await this.prisma.challenge.findUnique({
       where: { id },
-      include: {
-        metricDefinition: true,
-      },
+      include: this.challengeInclude,
     });
 
     if (!challenge) {
@@ -180,6 +180,18 @@ export class ChallengesService {
 
     return challenge;
   }
+
+  private readonly challengeInclude = {
+    metricDefinition: true,
+    prerequisiteChallenge: {
+      select: {
+        id: true,
+        title: true,
+        difficultyStars: true,
+        iconKey: true,
+      },
+    },
+  } as const;
 
   private async ensureMetricDefinitionExists(metricDefinitionId: string) {
     const metricDefinition = await this.prisma.metricDefinition.findUnique({

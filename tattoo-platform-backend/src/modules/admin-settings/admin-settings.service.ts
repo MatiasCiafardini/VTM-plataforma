@@ -9,6 +9,7 @@ export type AdminPlatformSettings = {
     inactivityThresholdDays: number;
     goodStandingLabel: string;
     riskStandingLabel: string;
+    studentRegistrationCode: string;
   };
   metrics: {
     revenueMetricSlug: string;
@@ -44,6 +45,7 @@ const DEFAULT_SETTINGS: AdminPlatformSettings = {
     inactivityThresholdDays: 45,
     goodStandingLabel: 'Bueno',
     riskStandingLabel: 'En riesgo',
+    studentRegistrationCode: 'VMT2026',
   },
   metrics: {
     revenueMetricSlug: 'ingresos-facturacion',
@@ -167,6 +169,10 @@ export class AdminSettingsService {
         riskStandingLabel: readString(
           userOperations.riskStandingLabel,
           DEFAULT_SETTINGS.userOperations.riskStandingLabel,
+        ),
+        studentRegistrationCode: readString(
+          userOperations.studentRegistrationCode,
+          DEFAULT_SETTINGS.userOperations.studentRegistrationCode,
         ),
       },
       metrics: {

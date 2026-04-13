@@ -16,7 +16,22 @@ export class UpdateOwnStudentProfileDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  nationality?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   country?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  instagramHandle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  birthDate?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
