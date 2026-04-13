@@ -1,6 +1,6 @@
 . (Join-Path $PSScriptRoot 'dev-common.ps1')
 
-Ensure-RuntimeDirectories
+Initialize-RuntimeDirectories
 
 $statuses = foreach ($service in $script:Services) {
   Get-ServiceStatus -Service $service

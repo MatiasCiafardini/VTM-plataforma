@@ -1,7 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
+import { getCurrencyCodeForCountry, supportedCountries } from '@/lib/countries';
 
 type QuickLink = {
   id: string;
@@ -18,7 +19,10 @@ type Currency = {
 
 type StudentProfileData = {
   id: string;
+  nationality: string | null;
   country: string | null;
+  instagramHandle: string | null;
+  birthDate: string | null;
   timezone: string | null;
   displayCurrencyMode: 'LOCAL' | 'USD' | 'BOTH';
   localCurrency: Currency | null;
@@ -32,47 +36,14 @@ type StudentProfileData = {
   };
 };
 
-type PersonalExtras = {
-  fullName: string;
-  nationality: string;
-  birthDate: string;
-};
-
-const emptyExtras: PersonalExtras = {
-  fullName: '',
-  nationality: '',
-  birthDate: '',
-};
-
 function formatDate(date: string | null | undefined) {
   if (!date) {
     return '-';
   }
-
-  return new Intl.DateTimeFormat('es-AR').format(new Date(date));
-}
-
-function readStoredExtras(storageKey: string, fallbackName: string) {
-  if (typeof window === 'undefined') {
-    return { ...emptyExtras, fullName: fallbackName };
-  }
-
-  const raw = window.localStorage.getItem(storageKey);
-  if (!raw) {
-    return { ...emptyExtras, fullName: fallbackName };
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as PersonalExtras;
-    return {
-      ...emptyExtras,
-      ...parsed,
-      fullName: parsed.fullName || fallbackName,
-    };
-  } catch {
-    window.localStorage.removeItem(storageKey);
-    return { ...emptyExtras, fullName: fallbackName };
-  }
+  // Parse date-only strings (YYYY-MM-DD) without timezone offset
+  const dateOnly = date.slice(0, 10);
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  return new Intl.DateTimeFormat('es-AR').format(new Date(year, month - 1, day));
 }
 
 function normalizeLinkUrl(url: string) {
@@ -87,25 +58,16 @@ function splitFullName(fullName: string) {
   const normalized = fullName.trim().replace(/\s+/g, ' ');
 
   if (!normalized) {
-    return {
-      firstName: '',
-      lastName: '',
-    };
+    return { firstName: '', lastName: '' };
   }
 
   const parts = normalized.split(' ');
 
   if (parts.length === 1) {
-    return {
-      firstName: parts[0],
-      lastName: '',
-    };
+    return { firstName: parts[0], lastName: '' };
   }
 
-  return {
-    firstName: parts[0],
-    lastName: parts.slice(1).join(' '),
-  };
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
 }
 
 function formatCurrencyOptionLabel(currency: Currency) {
@@ -136,7 +98,6 @@ export function StudentProfilePanel({
 }) {
   const router = useRouter();
   const fallbackName = `${profile.user.firstName} ${profile.user.lastName}`.trim();
-  const storageKey = useMemo(() => `student-profile-extras:${profile.id}`, [profile.id]);
 
   const [isExpanded, setIsExpanded] = useState(false);
   const [links, setLinks] = useState(initialLinks);
@@ -148,44 +109,34 @@ export function StudentProfilePanel({
   const [linkMessage, setLinkMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
-  const [extras, setExtras] = useState<PersonalExtras>({
-    ...emptyExtras,
-    fullName: fallbackName,
-  });
   const [form, setForm] = useState({
+    fullName: fallbackName,
+    nationality: profile.nationality ?? '',
     country: profile.country ?? '',
+    instagramHandle: profile.instagramHandle ?? '',
+    birthDate: profile.birthDate ? profile.birthDate.slice(0, 10) : '',
     timezone: profile.timezone ?? '',
     localCurrencyId: profile.localCurrency?.id ?? '',
     displayCurrencyMode: profile.displayCurrencyMode ?? 'BOTH',
   });
 
-  useEffect(() => {
-    setExtras(readStoredExtras(storageKey, fallbackName));
-  }, [storageKey, fallbackName]);
+  function updateForm(field: keyof typeof form, value: string) {
+    setForm((current) => {
+      const next = { ...current, [field]: value };
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
+      if (field === 'country') {
+        const inferredCurrencyCode = getCurrencyCodeForCountry(value);
+        const inferredCurrency = currencies.find(
+          (currency) => currency.code === inferredCurrencyCode,
+        );
 
-    window.localStorage.setItem(storageKey, JSON.stringify(extras));
-  }, [extras, storageKey]);
+        if (inferredCurrency) {
+          next.localCurrencyId = inferredCurrency.id;
+        }
+      }
 
-  function updateExtra(field: keyof PersonalExtras, value: string) {
-    setExtras((current) => ({
-      ...current,
-      [field]: value,
-    }));
-  }
-
-  function updateForm(
-    field: 'country' | 'timezone' | 'localCurrencyId' | 'displayCurrencyMode',
-    value: string,
-  ) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+      return next;
+    });
   }
 
   async function handleSaveProfile(event: React.FormEvent<HTMLFormElement>) {
@@ -195,16 +146,17 @@ export function StudentProfilePanel({
     setProfileMessage(null);
 
     try {
-      const { firstName, lastName } = splitFullName(extras.fullName || fallbackName);
+      const { firstName, lastName } = splitFullName(form.fullName || fallbackName);
       const response = await fetch('/api/student/profile', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstName,
           lastName,
+          nationality: form.nationality || undefined,
           country: form.country || undefined,
+          instagramHandle: form.instagramHandle || undefined,
+          birthDate: form.birthDate || undefined,
           timezone: form.timezone || undefined,
           localCurrencyId: form.localCurrencyId || undefined,
           displayCurrencyMode: form.displayCurrencyMode,
@@ -218,15 +170,15 @@ export function StudentProfilePanel({
       }
 
       setForm({
+        fullName: `${payload.user.firstName} ${payload.user.lastName}`.trim(),
+        nationality: payload.nationality ?? '',
         country: payload.country ?? '',
+        instagramHandle: payload.instagramHandle ?? '',
+        birthDate: payload.birthDate ? payload.birthDate.slice(0, 10) : '',
         timezone: payload.timezone ?? '',
         localCurrencyId: payload.localCurrency?.id ?? '',
         displayCurrencyMode: payload.displayCurrencyMode ?? 'BOTH',
       });
-      setExtras((current) => ({
-        ...current,
-        fullName: `${payload.user.firstName} ${payload.user.lastName}`.trim(),
-      }));
       setProfileMessage('Informacion personal actualizada.');
       router.refresh();
     } catch (error) {
@@ -254,9 +206,7 @@ export function StudentProfilePanel({
 
       const response = await fetch('/api/student/links', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           url: normalizeLinkUrl(url),
@@ -330,11 +280,15 @@ export function StudentProfilePanel({
           <div className="profile-personal-preview student-profile-preview">
             <div className="profile-preview-item">
               <span>Nombre</span>
-              <strong>{extras.fullName || fallbackName}</strong>
+              <strong>{form.fullName || fallbackName}</strong>
             </div>
             <div className="profile-preview-item">
               <span>Pais</span>
               <strong>{form.country || '-'}</strong>
+            </div>
+            <div className="profile-preview-item">
+              <span>Instagram</span>
+              <strong>{form.instagramHandle ? `@${form.instagramHandle}` : '-'}</strong>
             </div>
             <div className="profile-preview-item">
               <span>Moneda local</span>
@@ -363,8 +317,8 @@ export function StudentProfilePanel({
                   <span>Nombre completo</span>
                   <input
                     type="text"
-                    value={extras.fullName}
-                    onChange={(event) => updateExtra('fullName', event.target.value)}
+                    value={form.fullName}
+                    onChange={(event) => updateForm('fullName', event.target.value)}
                     placeholder="Nombre y apellido"
                   />
                 </label>
@@ -372,8 +326,8 @@ export function StudentProfilePanel({
                   <span>Nacionalidad</span>
                   <input
                     type="text"
-                    value={extras.nationality}
-                    onChange={(event) => updateExtra('nationality', event.target.value)}
+                    value={form.nationality}
+                    onChange={(event) => updateForm('nationality', event.target.value)}
                     placeholder="Argentina"
                   />
                 </label>
@@ -381,17 +335,31 @@ export function StudentProfilePanel({
                   <span>Fecha de nacimiento</span>
                   <input
                     type="date"
-                    value={extras.birthDate}
-                    onChange={(event) => updateExtra('birthDate', event.target.value)}
+                    value={form.birthDate}
+                    onChange={(event) => updateForm('birthDate', event.target.value)}
                   />
                 </label>
                 <label>
                   <span>Pais</span>
-                  <input
-                    type="text"
+                  <select
                     value={form.country}
                     onChange={(event) => updateForm('country', event.target.value)}
-                    placeholder="Argentina"
+                  >
+                    <option value="">Seleccionar pais</option>
+                    {supportedCountries.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Instagram</span>
+                  <input
+                    type="text"
+                    value={form.instagramHandle}
+                    onChange={(event) => updateForm('instagramHandle', event.target.value)}
+                    placeholder="@tuusuario"
                   />
                 </label>
                 <label>

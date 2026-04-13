@@ -171,22 +171,26 @@ export function NotificationBell({
           ) : (
             <div className="notification-popover-list">
               {items.map((notification) => (
-                <button
+                <div
                   key={notification.id}
-                  type="button"
                   className={
                     notification.readAt
-                      ? 'notification-popover-item notification-popover-item-button'
-                      : 'notification-popover-item notification-popover-item-unread notification-popover-item-button'
+                      ? 'notification-popover-item'
+                      : 'notification-popover-item notification-popover-item-unread'
                   }
-                  onClick={() => handleOpenNotification(notification)}
-                  disabled={isPending}
                 >
-                  <div className="notification-popover-item-top">
-                    <strong>{notification.title}</strong>
-                    <span>{formatNotificationDate(notification.createdAt)}</span>
-                  </div>
-                  <p>{notification.message}</p>
+                  <button
+                    type="button"
+                    className="notification-popover-item-button"
+                    onClick={() => handleOpenNotification(notification)}
+                    disabled={isPending}
+                  >
+                    <div className="notification-popover-item-top">
+                      <strong>{notification.title}</strong>
+                      <span>{formatNotificationDate(notification.createdAt)}</span>
+                    </div>
+                    <p>{notification.message}</p>
+                  </button>
                   <div className="notification-popover-item-actions">
                     <button
                       type="button"
@@ -197,7 +201,7 @@ export function NotificationBell({
                       Borrar
                     </button>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}

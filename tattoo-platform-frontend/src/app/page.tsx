@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { BrandLogo } from '@/components/brand-logo';
 import { LoginForm } from '@/components/login-form';
 import { getDashboardPath, getSession } from '@/lib/session';
 
@@ -10,20 +11,19 @@ export default async function Home() {
   }
 
   return (
-    <main className="auth-page">
-      <section className="auth-shell">
-        <div className="auth-brand">
-          <div className="auth-logo" aria-hidden="true">
-            <span className="auth-logo-bolt" />
-            <span className="auth-logo-text">
-              Tattoo<span>Academy</span>
-            </span>
+    <main className="auth-page auth-page-reference">
+      <div className="auth-background-orb auth-background-orb-left" aria-hidden="true" />
+      <div className="auth-background-orb auth-background-orb-right" aria-hidden="true" />
+      <div className="auth-scene">
+        <section className="auth-shell auth-shell-reference">
+          <div className="auth-brand">
+            <BrandLogo priority chrome={false} className="auth-brand-logo auth-brand-logo-classic" />
+            <p className="auth-subtitle auth-subtitle-reference">Ingresa a tu cuenta</p>
           </div>
-          <p className="auth-subtitle">Ingresa a tu cuenta</p>
-        </div>
 
-        <LoginForm />
-      </section>
+          <LoginForm />
+        </section>
+      </div>
     </main>
   );
 }

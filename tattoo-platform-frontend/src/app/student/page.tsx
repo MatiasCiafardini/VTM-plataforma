@@ -74,7 +74,13 @@ type StudentDashboard = {
     id: string;
     status: string;
     dueDate: string | null;
-    challenge: { title: string; description: string | null };
+    challenge: {
+      title: string;
+      description: string | null;
+      iconKey: string | null;
+      rewardTitle: string | null;
+      rewardUrl: string | null;
+    };
   }>;
   rewards: Array<{ id: string; status: string; reward: { title: string } }>;
   upcomingEvents: Array<{
@@ -88,7 +94,10 @@ type StudentDashboard = {
 
 type StudentOwnProfile = {
   id: string;
+  nationality: string | null;
   country: string | null;
+  instagramHandle: string | null;
+  birthDate: string | null;
   timezone: string | null;
   displayCurrencyMode: 'LOCAL' | 'USD' | 'BOTH';
   localCurrency: {

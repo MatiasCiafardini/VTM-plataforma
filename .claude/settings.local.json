@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -ExecutionPolicy Bypass -Command ':*)",
+      "Bash(npx prisma:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(powershell -NoProfile -Command \"Get-Process -Id 17532 -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,CPU,StartTime\")",
+      "Bash(tail -40 \".local-runtime/logs/backend-20260413-164026.log\")",
+      "Bash(tail -20 \".local-runtime/logs/backend-20260413-164026.error.log\")",
+      "Bash(cat .local-runtime/state/backend.pid)",
+      "Bash(cat .local-runtime/state/frontend.pid)",
+      "Bash(cat .local-runtime/state/backend.log.path)",
+      "Bash(powershell -NoProfile -Command \"Get-Process -Name node,npm -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Sort-Object StartTime\")"
+    ]
+  }
+}

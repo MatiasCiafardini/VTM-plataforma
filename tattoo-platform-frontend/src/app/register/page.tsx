@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation';
 import { BrandLogo } from '@/components/brand-logo';
-import { LoginForm } from '@/components/login-form';
+import { RegisterForm } from '@/components/register-form';
 import { getDashboardPath, getSession } from '@/lib/session';
 
-export default async function LoginPage() {
+export default async function RegisterPage() {
   const session = await getSession();
 
   if (session) {
@@ -17,11 +17,17 @@ export default async function LoginPage() {
       <div className="auth-scene">
         <section className="auth-shell auth-shell-reference">
           <div className="auth-brand">
-            <BrandLogo priority chrome={false} className="auth-brand-logo auth-brand-logo-classic" />
-            <p className="auth-subtitle auth-subtitle-reference">Ingresa a tu cuenta</p>
+            <BrandLogo
+              priority
+              chrome={false}
+              className="auth-brand-logo auth-brand-logo-classic"
+            />
+            <p className="auth-subtitle auth-subtitle-reference">
+              Crea tu cuenta con el codigo de acceso
+            </p>
           </div>
 
-          <LoginForm />
+          <RegisterForm />
         </section>
       </div>
     </main>

@@ -3,11 +3,15 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ChallengeIcon, challengeIconOptions } from './challenge-icons';
 
 type ChallengeTemplate = {
   id: string;
   title: string;
   description: string | null;
+  iconKey: string;
+  rewardTitle: string | null;
+  rewardUrl: string | null;
   targetValue: number | null;
   difficultyStars: number;
   isActive: boolean;
@@ -17,6 +21,12 @@ type ChallengeTemplate = {
     slug: string;
     valueType: 'INTEGER' | 'DECIMAL' | 'CURRENCY' | 'TEXT' | 'BOOLEAN';
   } | null;
+  prerequisiteChallenge: {
+    id: string;
+    title: string;
+    difficultyStars: number;
+    iconKey: string;
+  } | null;
 };
 
 type MetricDefinition = {
@@ -25,26 +35,6 @@ type MetricDefinition = {
   slug: string;
   valueType: 'INTEGER' | 'DECIMAL' | 'CURRENCY' | 'TEXT' | 'BOOLEAN';
 };
-
-function TrophyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M8 3h8v3a4 4 0 0 0 3 3.87V11a7 7 0 0 1-5.5 6.83V20H16v2H8v-2h2.5v-2.17A7 7 0 0 1 5 11V9.87A4 4 0 0 0 8 6V3Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M5 5H3v1a4 4 0 0 0 4 4M19 5h2v1a4 4 0 0 1-4 4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function formatTargetValue(value: number | string, metric?: MetricDefinition | null) {
   const numericValue = Number(value);
@@ -101,6 +91,10 @@ export function AdminChallengesPanel({
   const [targetValue, setTargetValue] = useState('');
   const [difficultyStars, setDifficultyStars] = useState(3);
   const [description, setDescription] = useState('');
+  const [iconKey, setIconKey] = useState('trophy');
+  const [rewardTitle, setRewardTitle] = useState('');
+  const [rewardUrl, setRewardUrl] = useState('');
+  const [prerequisiteChallengeId, setPrerequisiteChallengeId] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -116,12 +110,19 @@ export function AdminChallengesPanel({
     ? description.trim()
     : buildChallengeDescription(selectedMetric ?? undefined, targetValue, difficultyStars);
 
+  // Challenges available as prerequisites: all except the one being edited
+  const prerequisiteOptions = challenges.filter((c) => c.id !== editingId);
+
   function startEdit(challenge: ChallengeTemplate) {
     setEditingId(challenge.id);
     setMetricDefinitionId(challenge.metricDefinition?.id ?? '');
     setTargetValue(challenge.targetValue !== null ? String(challenge.targetValue) : '');
     setDifficultyStars(challenge.difficultyStars);
     setDescription(challenge.description ?? '');
+    setIconKey(challenge.iconKey || 'trophy');
+    setRewardTitle(challenge.rewardTitle ?? '');
+    setRewardUrl(challenge.rewardUrl ?? '');
+    setPrerequisiteChallengeId(challenge.prerequisiteChallenge?.id ?? '');
     setIsActive(challenge.isActive);
     setError(null);
   }
@@ -132,6 +133,10 @@ export function AdminChallengesPanel({
     setTargetValue('');
     setDifficultyStars(3);
     setDescription('');
+    setIconKey('trophy');
+    setRewardTitle('');
+    setRewardUrl('');
+    setPrerequisiteChallengeId('');
     setIsActive(true);
     setError(null);
   }
@@ -149,10 +154,14 @@ export function AdminChallengesPanel({
       const payload = {
         title: generatedTitle,
         description: generatedDescription || undefined,
+        iconKey,
+        rewardTitle: rewardTitle.trim() || undefined,
+        rewardUrl: rewardUrl.trim() || undefined,
         metricDefinitionId,
         targetValue: Number(targetValue),
         difficultyStars,
         isActive,
+        prerequisiteChallengeId: prerequisiteChallengeId || undefined,
       };
 
       const response = await fetch(
@@ -197,7 +206,7 @@ export function AdminChallengesPanel({
         <div>
           <div className="admin-challenges-title-row">
             <span className="admin-challenges-title-icon">
-              <TrophyIcon />
+              {ChallengeIcon({ iconKey: "trophy" })}
             </span>
             <div>
               <h3>Gestion de Desafios</h3>
@@ -248,6 +257,17 @@ export function AdminChallengesPanel({
           </label>
 
           <label>
+            <span>Icono del desafio</span>
+            <select value={iconKey} onChange={(event) => setIconKey(event.target.value)}>
+              {challengeIconOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
             <span>Cantidad objetivo</span>
             <input
               type="number"
@@ -275,12 +295,47 @@ export function AdminChallengesPanel({
           </label>
 
           <label>
+            <span>Se activa luego de completar</span>
+            <select
+              value={prerequisiteChallengeId}
+              onChange={(event) => setPrerequisiteChallengeId(event.target.value)}
+            >
+              <option value="">Sin requisito previo (disponible desde el inicio)</option>
+              {prerequisiteOptions.map((challenge) => (
+                <option key={challenge.id} value={challenge.id}>
+                  {renderStars(challenge.difficultyStars)} — {challenge.title}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label>
             <span>Descripcion del logro</span>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               placeholder="Opcional. Si lo dejas vacio, se genera una descripcion automaticamente."
               rows={4}
+            />
+          </label>
+
+          <label>
+            <span>Recompensa desbloqueable</span>
+            <input
+              type="text"
+              value={rewardTitle}
+              onChange={(event) => setRewardTitle(event.target.value)}
+              placeholder="Ej. Clase de cierres por WhatsApp"
+            />
+          </label>
+
+          <label>
+            <span>Enlace de la recompensa</span>
+            <input
+              type="url"
+              value={rewardUrl}
+              onChange={(event) => setRewardUrl(event.target.value)}
+              placeholder="https://..."
             />
           </label>
 
@@ -295,8 +350,20 @@ export function AdminChallengesPanel({
 
           <article className="admin-challenge-preview-card">
             <span>Vista previa</span>
+            <span className="admin-challenge-preview-icon" aria-hidden="true">
+              {ChallengeIcon({ iconKey })}
+            </span>
             <strong>{generatedTitle || 'Selecciona una metrica y una meta'}</strong>
             <p>{generatedDescription || 'Todavia no hay descripcion.'}</p>
+            {rewardTitle.trim() ? (
+              <p>Recompensa: {rewardTitle.trim()}</p>
+            ) : null}
+            {prerequisiteChallengeId ? (
+              <p className="admin-challenge-prereq-hint">
+                🔒 Se desbloquea al completar:{' '}
+                {prerequisiteOptions.find((c) => c.id === prerequisiteChallengeId)?.title ?? ''}
+              </p>
+            ) : null}
             <em>{renderStars(difficultyStars)}</em>
           </article>
 
@@ -316,16 +383,37 @@ export function AdminChallengesPanel({
 
         <div className="admin-challenges-list">
           {challenges.map((challenge) => (
-            <article className="admin-challenge-card" key={challenge.id}>
+            <article
+              className={`admin-challenge-card${challenge.prerequisiteChallenge ? ' admin-challenge-card-locked' : ''}`}
+              key={challenge.id}
+            >
               <div className="admin-challenge-card-top">
                 <div>
+                  <span className="admin-challenge-preview-icon" aria-hidden="true">
+                    {ChallengeIcon({ iconKey: challenge.iconKey })}
+                  </span>
                   <h4>{challenge.title}</h4>
                   <p>{challenge.description ?? 'Sin descripcion por ahora.'}</p>
                 </div>
-                <span className={challenge.isActive ? 'student-results-status' : 'admin-challenge-inactive'}>
-                  {challenge.isActive ? 'Activo' : 'Inactivo'}
-                </span>
+                <div className="admin-challenge-card-badges">
+                  {challenge.prerequisiteChallenge ? (
+                    <span className="admin-challenge-locked-badge" title={`Requiere: ${challenge.prerequisiteChallenge.title}`}>
+                      🔒
+                    </span>
+                  ) : null}
+                  <span className={challenge.isActive ? 'student-results-status' : 'admin-challenge-inactive'}>
+                    {challenge.isActive ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
               </div>
+
+              {challenge.prerequisiteChallenge ? (
+                <p className="admin-challenge-prereq-copy">
+                  Requiere completar:{' '}
+                  <span>{renderStars(challenge.prerequisiteChallenge.difficultyStars)}</span>
+                  {' '}{challenge.prerequisiteChallenge.title}
+                </p>
+              ) : null}
 
               <div className="admin-challenge-card-meta">
                 <span>{challenge.metricDefinition?.name ?? 'Sin metrica'}</span>
@@ -337,6 +425,12 @@ export function AdminChallengesPanel({
                 </span>
                 <span>{renderStars(challenge.difficultyStars)}</span>
               </div>
+
+              {challenge.rewardTitle ? (
+                <p className="admin-challenge-reward-copy">
+                  Recompensa: {challenge.rewardTitle}
+                </p>
+              ) : null}
 
               <button type="button" className="ghost-button" onClick={() => startEdit(challenge)}>
                 Modificar

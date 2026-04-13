@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useDeferredValue, useMemo, useState } from 'react';
 
 type StudentOverview = {
@@ -11,6 +12,10 @@ type StudentOverview = {
   latestPeriodYear: number | null;
   latestRevenue: number | null;
   attentionLevel: string | null;
+  riskSummary: {
+    headline: string;
+    items: string[];
+  };
   revenueHistory: Array<{
     id: string;
     month: number;
@@ -148,13 +153,13 @@ export function AdminStudentManagement({
           placeholder="Buscar alumno..."
           autoComplete="off"
         />
-        <select value={riskFilter} onChange={(event) => setRiskFilter(event.target.value as never)}>
+        <select aria-label="Filtrar por riesgo" value={riskFilter} onChange={(event) => setRiskFilter(event.target.value as never)}>
           <option value="ALL">Todos los riesgos</option>
           <option value="RED">En riesgo</option>
           <option value="YELLOW">Seguimiento</option>
           <option value="GREEN">Estables</option>
         </select>
-        <select value={countryFilter} onChange={(event) => setCountryFilter(event.target.value)}>
+        <select aria-label="Filtrar por nacionalidad" value={countryFilter} onChange={(event) => setCountryFilter(event.target.value)}>
           <option value="ALL">Todas las nacionalidades</option>
           {availableCountries.map((country) => (
             <option key={country} value={country}>
@@ -195,11 +200,29 @@ export function AdminStudentManagement({
                   ) : (
                     <span className="student-management-empty">Sin resultados</span>
                   )}
+                  <Link
+                    href={`/admin/students/${student.studentId}`}
+                    className="ghost-button student-management-profile-link"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Ver perfil
+                  </Link>
                 </div>
               </summary>
 
               {student.revenueHistory.length > 0 ? (
                 <div className="student-management-expanded">
+                  <div className="student-management-risk-callout">
+                    <div className="student-management-risk-callout-header">
+                      <strong>{student.riskSummary.headline}</strong>
+                      <span>{student.attentionLevel ?? 'GREEN'}</span>
+                    </div>
+                    <ul className="student-management-risk-list">
+                      {student.riskSummary.items.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
                   <div className="student-management-metrics">
                     <div>
                       <span>Primer mes</span>
@@ -231,7 +254,21 @@ export function AdminStudentManagement({
                     ))}
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <div className="student-management-expanded">
+                  <div className="student-management-risk-callout">
+                    <div className="student-management-risk-callout-header">
+                      <strong>{student.riskSummary.headline}</strong>
+                      <span>{student.attentionLevel ?? 'GREEN'}</span>
+                    </div>
+                    <ul className="student-management-risk-list">
+                      {student.riskSummary.items.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
             </details>
           );
         })}

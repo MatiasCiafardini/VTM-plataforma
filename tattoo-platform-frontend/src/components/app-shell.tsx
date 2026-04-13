@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import type { AppRole } from '@/lib/session';
@@ -85,34 +86,43 @@ export function AppShell({
           { key: 'profile', label: 'Equipo', href: `${dashboardPath}?tab=profile` },
         ];
 
+  const navLinks = navItems.map((item) => (
+    <Link
+      key={item.key}
+      href={item.href}
+      prefetch
+      scroll={false}
+      className={activeNav === item.key ? 'nav-item nav-item-active' : 'nav-item'}
+    >
+      {item.label}
+    </Link>
+  ));
+
   return (
     <div className="shell">
       <header className="topbar">
         <div className="topbar-brand">
-          <span className="brand-dot">V</span>
+          <Image
+            src="/logo-04.png"
+            alt="Vende Mas Tattoo"
+            width={48}
+            height={48}
+            className="topbar-brand-logo"
+            priority
+          />
           <div className="brand-copy">
-            <strong>VMT Studio</strong>
-            <p>Growth dashboard</p>
+            <strong>Vende Más Tattoo</strong>
+            <p>Panel operativo</p>
           </div>
         </div>
 
         {role === 'ADMIN' || role === 'STUDENT' ? (
-          <nav className="topbar-center-nav topbar-nav topbar-nav-centered">
-            {navItems.map((item) => (
-              <Link
-                key={item.key}
-                href={item.href}
-                prefetch
-                scroll={false}
-                className={activeNav === item.key ? 'nav-item nav-item-active' : 'nav-item'}
-              >
-                {item.label}
-              </Link>
-            ))}
+          <nav className="topbar-center-nav topbar-nav topbar-nav-centered topbar-desktop-nav">
+            {navLinks}
           </nav>
         ) : null}
 
-        <div className="topbar-actions">
+        <div className="topbar-actions topbar-desktop-actions">
           {role === 'ADMIN' ? (
             <>
               <NotificationBell notifications={notifications} role={role} />
@@ -167,19 +177,7 @@ export function AppShell({
             </>
           ) : (
             <>
-              <nav className="topbar-nav">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.key}
-                    href={item.href}
-                    prefetch
-                    scroll={false}
-                    className={activeNav === item.key ? 'nav-item nav-item-active' : 'nav-item'}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
+              <nav className="topbar-nav topbar-desktop-nav">{navLinks}</nav>
               <div className="topbar-user-cluster">
                 <NotificationBell notifications={notifications} role={role} />
                 <div className="topbar-user-meta">
@@ -191,6 +189,43 @@ export function AppShell({
             </>
           )}
         </div>
+
+        <details className="topbar-mobile">
+          <summary className="topbar-mobile-trigger" aria-label="Abrir menu">
+            <span />
+            <span />
+            <span />
+          </summary>
+
+          <div className="topbar-mobile-panel">
+            <div className="topbar-mobile-user">
+              <div className="topbar-user-meta">
+                <span className="role-pill">{roleLabels[role]}</span>
+                <p className="topbar-user">{displayName}</p>
+              </div>
+              <p className="topbar-copy">Panel operativo</p>
+            </div>
+
+            <nav className="topbar-mobile-nav">
+              {navLinks}
+              {role === 'ADMIN' ? (
+                <Link
+                  href={`${dashboardPath}?tab=profile`}
+                  prefetch
+                  scroll={false}
+                  className={activeNav === 'profile' ? 'nav-item nav-item-active' : 'nav-item'}
+                >
+                  Mi perfil
+                </Link>
+              ) : null}
+            </nav>
+
+            <div className="topbar-mobile-actions">
+              <NotificationBell notifications={notifications} role={role} />
+              <LogoutButton />
+            </div>
+          </div>
+        </details>
       </header>
 
       <main className="main-panel shell-main">

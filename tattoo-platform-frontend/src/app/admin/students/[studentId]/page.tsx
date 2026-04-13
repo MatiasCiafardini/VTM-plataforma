@@ -1,0 +1,495 @@
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { AppShell } from '@/components/app-shell';
+import { ChallengeIcon } from '@/components/challenge-icons';
+import { safeBackendFetch } from '@/lib/server-fetch';
+import { requireRole } from '@/lib/session';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type StudentProfile = {
+  id: string;
+  userId: string;
+  country: string | null;
+  timezone: string | null;
+  displayCurrencyMode: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+    status: string;
+    lastLoginAt: string | null;
+    createdAt: string;
+  };
+  localCurrency: { id: string; code: string; symbol: string | null } | null;
+  mentorAssignments: Array<{
+    mentor: {
+      user: {
+        firstName: string;
+        lastName: string;
+        email: string;
+      };
+    };
+  }>;
+};
+
+type StudentChallenge = {
+  id: string;
+  status: 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'EXPIRED' | 'CANCELLED';
+  assignedAt: string;
+  dueDate: string | null;
+  challenge: {
+    id: string;
+    title: string;
+    description: string | null;
+    iconKey: string;
+    rewardTitle: string | null;
+    difficultyStars: number;
+    targetValue: number | null;
+    metricDefinition: {
+      name: string;
+      slug: string;
+      valueType: string;
+    } | null;
+    prerequisiteChallenge: {
+      id: string;
+      title: string;
+      difficultyStars: number;
+    } | null;
+  };
+};
+
+type MetricPeriod = {
+  id: string;
+  month: number;
+  year: number;
+  status: string;
+  values: Array<{
+    id: string;
+    value: string | null;
+    metricDefinition: {
+      name: string;
+      slug: string;
+      valueType: string;
+    };
+  }>;
+};
+
+type NotificationItem = {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  readAt: string | null;
+};
+
+type AttentionScore = {
+  studentId: string;
+  score: number;
+  level: 'GREEN' | 'YELLOW' | 'RED';
+  reasonNoMetrics: boolean;
+  reasonIncomeDrop: boolean;
+  reasonLeadsDrop: boolean;
+  reasonClosuresDrop: boolean;
+  reasonGoalsMissed: boolean;
+  reasonInactivity: boolean;
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getInitials(firstName: string, lastName: string) {
+  return `${firstName[0] ?? ''}${lastName[0] ?? ''}`.toUpperCase();
+}
+
+function formatDate(iso: string) {
+  return new Intl.DateTimeFormat('es-AR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(iso));
+}
+
+function getMonthLabel(month: number, year: number) {
+  return new Intl.DateTimeFormat('es-AR', {
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(year, month - 1, 1));
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function renderStars(stars: number) {
+  return '★'.repeat(stars) + '☆'.repeat(Math.max(0, 5 - stars));
+}
+
+function getRevenueHistory(periods: MetricPeriod[]) {
+  return periods
+    .map((period) => {
+      const revenueValue = period.values.find((v) => v.metricDefinition.valueType === 'CURRENCY');
+      return {
+        month: period.month,
+        year: period.year,
+        revenue: revenueValue?.value ? Number(revenueValue.value) : null,
+        label: getMonthLabel(period.month, period.year),
+      };
+    })
+    .filter((entry) => entry.revenue !== null);
+}
+
+function getGrowthStats(revenueHistory: ReturnType<typeof getRevenueHistory>) {
+  if (revenueHistory.length < 2) return null;
+  const first = revenueHistory[revenueHistory.length - 1]!.revenue!;
+  const latest = revenueHistory[0]!.revenue!;
+  if (!first) return null;
+  const pct = Math.round(((latest - first) / first) * 100);
+  return { first, latest, pct };
+}
+
+function getRiskInfo(score: AttentionScore | null) {
+  if (!score) {
+    return {
+      label: 'Sin registros',
+      className: 'student-profile-risk-none',
+      summary: ['Todavia no hay un analisis de riesgo calculado para este alumno.'],
+    };
+  }
+
+  const summary: string[] = [];
+
+  if (score.reasonNoMetrics) summary.push('No cargo metricas en el ultimo periodo.');
+  if (score.reasonIncomeDrop) summary.push('Los ingresos bajaron frente al periodo anterior.');
+  if (score.reasonLeadsDrop) summary.push('Las consultas bajaron frente al periodo anterior.');
+  if (score.reasonClosuresDrop) summary.push('Los cierres bajaron frente al periodo anterior.');
+  if (score.reasonGoalsMissed) summary.push('Tiene objetivos vencidos o incumplidos.');
+  if (score.reasonInactivity) summary.push('Se detecta inactividad o un borrador sin movimiento.');
+
+  if (score.level === 'RED') {
+    return {
+      label: 'En riesgo',
+      className: 'student-profile-risk-danger',
+      summary: summary.length > 0 ? summary : ['El alumno necesita accion inmediata.'],
+    };
+  }
+
+  if (score.level === 'YELLOW') {
+    return {
+      label: 'En seguimiento',
+      className: 'student-profile-risk-active',
+      summary: summary.length > 0 ? summary : ['Hay senales para revisar de cerca.'],
+    };
+  }
+
+  return {
+    label: 'Estable',
+    className: 'student-profile-risk-success',
+    summary: summary.length > 0 ? summary : ['No hay alertas activas en este momento.'],
+  };
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default async function StudentProfilePage({
+  params,
+}: {
+  params: Promise<{ studentId: string }>;
+}) {
+  const session = await requireRole('ADMIN');
+  const { studentId } = await params;
+
+  const [profile, challenges, periods, notifications, attentionScores] = await Promise.all([
+    safeBackendFetch<StudentProfile | null>(
+      `/students/${studentId}`,
+      null,
+      { token: session.token },
+      'student profile',
+    ),
+    safeBackendFetch<StudentChallenge[]>(
+      `/challenges/student/${studentId}`,
+      [],
+      { token: session.token },
+      'student challenges',
+    ),
+    safeBackendFetch<MetricPeriod[]>(
+      `/metrics/periods/student/${studentId}`,
+      [],
+      { token: session.token },
+      'student periods',
+    ),
+    safeBackendFetch<NotificationItem[]>(
+      '/notifications',
+      [],
+      { token: session.token },
+      'admin notifications',
+    ),
+    safeBackendFetch<AttentionScore[]>(
+      '/attention-scores/admin',
+      [],
+      { token: session.token },
+      'attention scores',
+    ),
+  ]);
+
+  if (!profile) {
+    notFound();
+  }
+
+  const revenueHistory = getRevenueHistory(periods);
+  const growthStats = getGrowthStats(revenueHistory);
+  const completedChallenges = challenges.filter((c) => c.status === 'COMPLETED');
+  const activeChallenges = challenges.filter(
+    (c) => c.status === 'ASSIGNED' || c.status === 'IN_PROGRESS',
+  );
+  const riskScore = attentionScores.find((item) => item.studentId === studentId) ?? null;
+  const riskInfo = getRiskInfo(riskScore);
+  const mentors = profile.mentorAssignments.map((a) => a.mentor.user);
+  const fullName = `${profile.user.firstName} ${profile.user.lastName}`;
+
+  return (
+    <AppShell
+      title=""
+      subtitle=""
+      role={session.role}
+      displayName={session.displayName}
+      activeNav="results"
+      showSectionEyebrow={false}
+      notifications={notifications}
+    >
+      <div className="student-profile-page">
+
+        {/* Back nav */}
+        <Link href="/admin?tab=results" className="student-profile-back-link">
+          ← Volver a gestion de alumnos
+        </Link>
+
+        {/* Hero */}
+        <section className="student-profile-hero">
+          <div className="student-profile-avatar">
+            {getInitials(profile.user.firstName, profile.user.lastName)}
+          </div>
+          <div className="student-profile-hero-info">
+            <div className="student-profile-hero-top">
+              <h2 className="student-profile-name">{fullName}</h2>
+              <span className={`student-profile-risk-badge ${riskInfo.className}`}>
+                {riskInfo.label}
+              </span>
+            </div>
+            <p className="student-profile-email">{profile.user.email}</p>
+            <div className="student-profile-hero-meta">
+              {profile.country ? <span>{profile.country}</span> : null}
+              {profile.timezone ? <span>{profile.timezone}</span> : null}
+              <span>Miembro desde {formatDate(profile.user.createdAt)}</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Stats */}
+        <section className="student-profile-stats">
+          <article className="student-profile-stat-card student-profile-stat-risk">
+            <span>Estado de riesgo</span>
+            <strong>{riskInfo.label}</strong>
+            <small>{riskScore ? `${riskScore.score} puntos` : 'Sin score'}</small>
+          </article>
+          {growthStats ? (
+            <>
+              <article className="student-profile-stat-card">
+                <span>Primer mes</span>
+                <strong>{formatCurrency(growthStats.first)}</strong>
+              </article>
+              <article className="student-profile-stat-card">
+                <span>Ultimo mes registrado</span>
+                <strong>{formatCurrency(growthStats.latest)}</strong>
+              </article>
+              <article className="student-profile-stat-card student-profile-stat-accent">
+                <span>Crecimiento total</span>
+                <strong>{growthStats.pct > 0 ? '+' : ''}{growthStats.pct}%</strong>
+              </article>
+            </>
+          ) : (
+            <article className="student-profile-stat-card">
+              <span>Facturacion</span>
+              <strong>Sin datos aun</strong>
+            </article>
+          )}
+          <article className="student-profile-stat-card">
+            <span>Logros completados</span>
+            <strong>{completedChallenges.length}</strong>
+          </article>
+          <article className="student-profile-stat-card">
+            <span>Desafios activos</span>
+            <strong>{activeChallenges.length}</strong>
+          </article>
+        </section>
+
+        <div className="student-profile-body">
+          <section className="student-profile-section student-profile-risk-section">
+            <h3 className="student-profile-section-title">Resumen de riesgo</h3>
+            <div className="student-profile-risk-summary">
+              <div className="student-profile-risk-summary-head">
+                <strong>{riskInfo.label}</strong>
+                <span>{riskScore ? `${riskScore.score} puntos de attention score` : 'Sin score'}</span>
+              </div>
+              <ul className="student-profile-risk-summary-list">
+                {riskInfo.summary.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
+          {/* Achievements */}
+          <section className="student-profile-section">
+            <h3 className="student-profile-section-title">
+              Logros desbloqueados
+              <span className="student-profile-section-count">{completedChallenges.length}</span>
+            </h3>
+            {completedChallenges.length > 0 ? (
+              <div className="student-profile-achievements-grid">
+                {completedChallenges.map((sc) => (
+                  <article key={sc.id} className="student-profile-achievement-card">
+                    <div className="student-profile-achievement-icon">
+                      {ChallengeIcon({ iconKey: sc.challenge.iconKey })}
+                    </div>
+                    <div className="student-profile-achievement-info">
+                      <strong>{sc.challenge.title}</strong>
+                      {sc.challenge.description ? (
+                        <p>{sc.challenge.description}</p>
+                      ) : null}
+                      <span className="student-profile-achievement-stars">
+                        {renderStars(sc.challenge.difficultyStars)}
+                      </span>
+                      {sc.challenge.rewardTitle ? (
+                        <span className="student-profile-achievement-reward">
+                          Recompensa: {sc.challenge.rewardTitle}
+                        </span>
+                      ) : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="student-profile-empty">Todavia no hay logros completados.</p>
+            )}
+          </section>
+
+          {/* Active challenges */}
+          {activeChallenges.length > 0 ? (
+            <section className="student-profile-section">
+              <h3 className="student-profile-section-title">
+                Desafios en curso
+                <span className="student-profile-section-count">{activeChallenges.length}</span>
+              </h3>
+              <div className="student-profile-challenges-list">
+                {activeChallenges.map((sc) => (
+                  <article key={sc.id} className="student-profile-challenge-row">
+                    <div className="student-profile-challenge-icon">
+                      {ChallengeIcon({ iconKey: sc.challenge.iconKey })}
+                    </div>
+                    <div>
+                      <strong>{sc.challenge.title}</strong>
+                      <div className="student-profile-challenge-meta">
+                        <span>{renderStars(sc.challenge.difficultyStars)}</span>
+                        <span className={`student-profile-challenge-status student-profile-challenge-status-${sc.status.toLowerCase()}`}>
+                          {sc.status === 'IN_PROGRESS' ? 'En progreso' : 'Asignado'}
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {/* Revenue history */}
+          {revenueHistory.length > 0 ? (
+            <section className="student-profile-section">
+              <h3 className="student-profile-section-title">Historial de facturacion</h3>
+              <div className="student-profile-revenue-list">
+                {revenueHistory.map((entry, index) => (
+                  <div key={`${entry.year}-${entry.month}`} className="student-profile-revenue-row">
+                    <span>{entry.label}</span>
+                    <strong>{formatCurrency(entry.revenue!)}</strong>
+                    {index < revenueHistory.length - 1 && revenueHistory[index + 1]?.revenue ? (
+                      <span className={
+                        entry.revenue! >= revenueHistory[index + 1]!.revenue!
+                          ? 'student-profile-revenue-up'
+                          : 'student-profile-revenue-down'
+                      }>
+                        {entry.revenue! >= revenueHistory[index + 1]!.revenue! ? '▲' : '▼'}
+                      </span>
+                    ) : <span />}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {/* Student info sidebar */}
+          <section className="student-profile-section student-profile-info-section">
+            <h3 className="student-profile-section-title">Informacion del alumno</h3>
+            <dl className="student-profile-info-list">
+              <div>
+                <dt>Nombre completo</dt>
+                <dd>{fullName}</dd>
+              </div>
+              <div>
+                <dt>Email</dt>
+                <dd>{profile.user.email}</dd>
+              </div>
+              {profile.country ? (
+                <div>
+                  <dt>Pais</dt>
+                  <dd>{profile.country}</dd>
+                </div>
+              ) : null}
+              {profile.timezone ? (
+                <div>
+                  <dt>Zona horaria</dt>
+                  <dd>{profile.timezone}</dd>
+                </div>
+              ) : null}
+              {profile.localCurrency ? (
+                <div>
+                  <dt>Moneda local</dt>
+                  <dd>{profile.localCurrency.code}{profile.localCurrency.symbol ? ` (${profile.localCurrency.symbol})` : ''}</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt>Estado</dt>
+                <dd>{profile.user.status === 'ACTIVE' ? 'Activo' : 'Inactivo'}</dd>
+              </div>
+              <div>
+                <dt>Miembro desde</dt>
+                <dd>{formatDate(profile.user.createdAt)}</dd>
+              </div>
+              {profile.user.lastLoginAt ? (
+                <div>
+                  <dt>Ultimo acceso</dt>
+                  <dd>{formatDate(profile.user.lastLoginAt)}</dd>
+                </div>
+              ) : null}
+              {mentors.length > 0 ? (
+                <div>
+                  <dt>Mentor{mentors.length > 1 ? 'es' : ''}</dt>
+                  <dd>
+                    {mentors.map((m) => `${m.firstName} ${m.lastName}`).join(', ')}
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </section>
+
+        </div>
+      </div>
+    </AppShell>
+  );
+}

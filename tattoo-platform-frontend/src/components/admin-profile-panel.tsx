@@ -38,8 +38,10 @@ function formatDate(date: string | null | undefined) {
   if (!date) {
     return '-';
   }
-
-  return new Intl.DateTimeFormat('es-AR').format(new Date(date));
+  // Parse date-only strings (YYYY-MM-DD) without timezone offset
+  const dateOnly = date.slice(0, 10);
+  const [year, month, day] = dateOnly.split('-').map(Number);
+  return new Intl.DateTimeFormat('es-AR').format(new Date(year, month - 1, day));
 }
 
 function normalizeLinkUrl(url: string) {
@@ -54,25 +56,16 @@ function splitFullName(fullName: string) {
   const normalized = fullName.trim().replace(/\s+/g, ' ');
 
   if (!normalized) {
-    return {
-      firstName: '',
-      lastName: '',
-    };
+    return { firstName: '', lastName: '' };
   }
 
   const parts = normalized.split(' ');
 
   if (parts.length === 1) {
-    return {
-      firstName: parts[0],
-      lastName: '',
-    };
+    return { firstName: parts[0], lastName: '' };
   }
 
-  return {
-    firstName: parts[0],
-    lastName: parts.slice(1).join(' '),
-  };
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
 }
 
 function formatCurrencyOptionLabel(currency: Currency) {
@@ -94,6 +87,7 @@ export function AdminProfilePanel({
   const router = useRouter();
   const fullNameFallback = `${profile.firstName} ${profile.lastName}`.trim() || displayName;
   const [links, setLinks] = useState<QuickLink[]>(initialLinks);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [form, setForm] = useState({
     fullName: fullNameFallback,
     nationality: profile.adminProfile?.nationality ?? '',
@@ -114,10 +108,7 @@ export function AdminProfilePanel({
   const [profileError, setProfileError] = useState<string | null>(null);
 
   function updateField(field: keyof typeof form, value: string) {
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+    setForm((current) => ({ ...current, [field]: value }));
   }
 
   async function handleSaveProfile(event: React.FormEvent<HTMLFormElement>) {
@@ -130,9 +121,7 @@ export function AdminProfilePanel({
       const { firstName, lastName } = splitFullName(form.fullName || fullNameFallback);
       const response = await fetch('/api/admin/profile', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           firstName,
           lastName,
@@ -190,9 +179,7 @@ export function AdminProfilePanel({
     try {
       const response = await fetch('/api/admin/student-dashboard-links', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           url: normalizedUrl,
@@ -236,115 +223,127 @@ export function AdminProfilePanel({
         <h3>Mi Perfil</h3>
       </header>
 
-      <article className="profile-card profile-personal-card">
-        <div className="profile-card-header">
-          <h4>
-            <span className="profile-card-icon" aria-hidden="true">
-              o
-            </span>
-            Informacion Personal
-          </h4>
-        </div>
+      <article className={`profile-card profile-personal-card ${isExpanded ? 'profile-card-expanded' : ''}`}>
+        <div className="profile-personal-summary student-profile-summary">
+          <div className="profile-card-header">
+            <h4>
+              <span className="profile-card-icon" aria-hidden="true">
+                o
+              </span>
+              Informacion Personal
+            </h4>
+          </div>
 
-        <div className="profile-personal-preview">
-          <div className="profile-preview-item">
-            <span>Nombre</span>
-            <strong>{form.fullName || fullNameFallback}</strong>
-          </div>
-          <div className="profile-preview-item">
-            <span>Pais</span>
-            <strong>{form.country || '-'}</strong>
-          </div>
-          <div className="profile-preview-item">
-            <span>Moneda local</span>
-            <strong>{selectedCurrency ? formatCurrencyOptionLabel(selectedCurrency) : '-'}</strong>
-          </div>
-          <div className="profile-preview-item">
-            <span>Inicio</span>
-            <strong>{form.startDate ? formatDate(form.startDate) : formatDate(profile.createdAt)}</strong>
-          </div>
-        </div>
-
-        <div className="profile-personal-content">
-          <form className="student-profile-form" onSubmit={handleSaveProfile}>
-            <div className="profile-personal-grid">
-              <label>
-                <span>Nombre completo</span>
-                <input
-                  type="text"
-                  value={form.fullName}
-                  onChange={(event) => updateField('fullName', event.target.value)}
-                  placeholder="Nombre y apellido"
-                />
-              </label>
-              <label>
-                <span>Nacionalidad</span>
-                <input
-                  type="text"
-                  value={form.nationality}
-                  onChange={(event) => updateField('nationality', event.target.value)}
-                  placeholder="Argentina"
-                />
-              </label>
-              <label>
-                <span>Pais</span>
-                <input
-                  type="text"
-                  value={form.country}
-                  onChange={(event) => updateField('country', event.target.value)}
-                  placeholder="Argentina"
-                />
-              </label>
-              <label>
-                <span>Moneda local</span>
-                <select
-                  value={form.localCurrencyId}
-                  onChange={(event) => updateField('localCurrencyId', event.target.value)}
-                >
-                  <option value="">Seleccionar moneda</option>
-                  {currencies.map((currency) => (
-                    <option key={currency.id} value={currency.id}>
-                      {formatCurrencyOptionLabel(currency)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span>Fecha de nacimiento</span>
-                <input
-                  type="date"
-                  value={form.birthDate}
-                  onChange={(event) => updateField('birthDate', event.target.value)}
-                />
-              </label>
-              <label>
-                <span>Inicio</span>
-                <input
-                  type="date"
-                  value={form.startDate}
-                  onChange={(event) => updateField('startDate', event.target.value)}
-                />
-              </label>
-              <label>
-                <span>Email</span>
-                <input type="text" value={profile.email} readOnly />
-              </label>
-              <label>
-                <span>Ultimo acceso</span>
-                <input type="text" value={formatDate(profile.lastLoginAt)} readOnly />
-              </label>
+          <div className="profile-personal-preview student-profile-preview">
+            <div className="profile-preview-item">
+              <span>Nombre</span>
+              <strong>{form.fullName || fullNameFallback}</strong>
             </div>
-
-            {profileError ? <p className="student-results-form-error">{profileError}</p> : null}
-            {profileMessage ? <p className="student-profile-success">{profileMessage}</p> : null}
-
-            <div className="student-results-form-actions">
-              <button type="submit" className="primary-button" disabled={isSavingProfile}>
-                {isSavingProfile ? 'Guardando...' : 'Guardar informacion'}
-              </button>
+            <div className="profile-preview-item">
+              <span>Pais</span>
+              <strong>{form.country || '-'}</strong>
             </div>
-          </form>
+            <div className="profile-preview-item">
+              <span>Moneda local</span>
+              <strong>{selectedCurrency ? formatCurrencyOptionLabel(selectedCurrency) : '-'}</strong>
+            </div>
+            <div className="profile-preview-item">
+              <span>Inicio</span>
+              <strong>{form.startDate ? formatDate(form.startDate) : formatDate(profile.createdAt)}</strong>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            className="ghost-button student-profile-configure-button"
+            onClick={() => setIsExpanded((current) => !current)}
+          >
+            {isExpanded ? 'Cerrar configuracion' : 'Editar informacion personal'}
+          </button>
         </div>
+
+        {isExpanded ? (
+          <div className="profile-personal-content">
+            <form className="student-profile-form" onSubmit={handleSaveProfile}>
+              <div className="profile-personal-grid">
+                <label>
+                  <span>Nombre completo</span>
+                  <input
+                    type="text"
+                    value={form.fullName}
+                    onChange={(event) => updateField('fullName', event.target.value)}
+                    placeholder="Nombre y apellido"
+                  />
+                </label>
+                <label>
+                  <span>Nacionalidad</span>
+                  <input
+                    type="text"
+                    value={form.nationality}
+                    onChange={(event) => updateField('nationality', event.target.value)}
+                    placeholder="Argentina"
+                  />
+                </label>
+                <label>
+                  <span>Pais</span>
+                  <input
+                    type="text"
+                    value={form.country}
+                    onChange={(event) => updateField('country', event.target.value)}
+                    placeholder="Argentina"
+                  />
+                </label>
+                <label>
+                  <span>Moneda local</span>
+                  <select
+                    value={form.localCurrencyId}
+                    onChange={(event) => updateField('localCurrencyId', event.target.value)}
+                  >
+                    <option value="">Seleccionar moneda</option>
+                    {currencies.map((currency) => (
+                      <option key={currency.id} value={currency.id}>
+                        {formatCurrencyOptionLabel(currency)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Fecha de nacimiento</span>
+                  <input
+                    type="date"
+                    value={form.birthDate}
+                    onChange={(event) => updateField('birthDate', event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span>Inicio</span>
+                  <input
+                    type="date"
+                    value={form.startDate}
+                    onChange={(event) => updateField('startDate', event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span>Email</span>
+                  <input type="text" value={profile.email} readOnly />
+                </label>
+                <label>
+                  <span>Ultimo acceso</span>
+                  <input type="text" value={formatDate(profile.lastLoginAt)} readOnly />
+                </label>
+              </div>
+
+              {profileError ? <p className="student-results-form-error">{profileError}</p> : null}
+              {profileMessage ? <p className="student-profile-success">{profileMessage}</p> : null}
+
+              <div className="student-results-form-actions">
+                <button type="submit" className="primary-button" disabled={isSavingProfile}>
+                  {isSavingProfile ? 'Guardando...' : 'Guardar informacion'}
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : null}
       </article>
 
       <article className="profile-card profile-links-card">

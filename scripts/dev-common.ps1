@@ -5,6 +5,8 @@ $script:RuntimeDir = Join-Path $script:RootDir '.local-runtime'
 $script:LogsDir = Join-Path $script:RuntimeDir 'logs'
 $script:StateDir = Join-Path $script:RuntimeDir 'state'
 
+$script:PgCtl = 'C:\Program Files\PostgreSQL\18\bin\pg_ctl.exe'
+
 $script:Services = @(
   @{
     Name = 'backend'
@@ -22,7 +24,7 @@ $script:Services = @(
   }
 )
 
-function Ensure-RuntimeDirectories {
+function Initialize-RuntimeDirectories {
   foreach ($path in @($script:RuntimeDir, $script:LogsDir, $script:StateDir)) {
     if (-not (Test-Path $path)) {
       New-Item -ItemType Directory -Path $path | Out-Null
@@ -45,23 +47,52 @@ function Get-ErrorLogFilePath {
   Join-Path $script:LogsDir "$Name.error.log"
 }
 
+function Get-LogPathStateFile {
+  param(
+    [string]$Name,
+    [string]$Kind
+  )
+  Join-Path $script:StateDir "$Name.$Kind.path"
+}
+
+function Get-ResolvedLogFilePath {
+  param([string]$Name)
+  $stateFile = Get-LogPathStateFile -Name $Name -Kind 'log'
+  if (Test-Path $stateFile) {
+    $storedPath = (Get-Content $stateFile -Raw -ErrorAction SilentlyContinue).Trim()
+    if ($storedPath) { return $storedPath }
+  }
+  return Get-LogFilePath -Name $Name
+}
+
+function Set-ResolvedLogFilePath {
+  param([string]$Name, [string]$Path)
+  Set-Content -Path (Get-LogPathStateFile -Name $Name -Kind 'log') -Value $Path
+}
+
+function Get-ResolvedErrorLogFilePath {
+  param([string]$Name)
+  $stateFile = Get-LogPathStateFile -Name $Name -Kind 'error'
+  if (Test-Path $stateFile) {
+    $storedPath = (Get-Content $stateFile -Raw -ErrorAction SilentlyContinue).Trim()
+    if ($storedPath) { return $storedPath }
+  }
+  return Get-ErrorLogFilePath -Name $Name
+}
+
+function Set-ResolvedErrorLogFilePath {
+  param([string]$Name, [string]$Path)
+  Set-Content -Path (Get-LogPathStateFile -Name $Name -Kind 'error') -Value $Path
+}
+
 function Read-ServicePid {
   param([string]$Name)
   $pidFile = Get-PidFilePath -Name $Name
-  if (-not (Test-Path $pidFile)) {
-    return $null
-  }
-
+  if (-not (Test-Path $pidFile)) { return $null }
   $content = Get-Content $pidFile -Raw -ErrorAction SilentlyContinue
-  if ($null -eq $content) {
-    return $null
-  }
-
+  if ($null -eq $content) { return $null }
   $raw = $content.Trim()
-  if ([string]::IsNullOrWhiteSpace($raw)) {
-    return $null
-  }
-
+  if ([string]::IsNullOrWhiteSpace($raw)) { return $null }
   return [int]$raw
 }
 
@@ -71,196 +102,372 @@ function Test-ProcessRunning {
     $null = Get-Process -Id $ProcessId -ErrorAction Stop
     return $true
   }
-  catch {
-    return $false
-  }
+  catch { return $false }
 }
 
 function Remove-ServicePidFile {
   param([string]$Name)
   $pidFile = Get-PidFilePath -Name $Name
-  if (Test-Path $pidFile) {
-    Remove-Item $pidFile -Force
-  }
+  if (Test-Path $pidFile) { Remove-Item $pidFile -Force }
 }
 
 function Get-ListeningProcessIdForPort {
   param([int]$Port)
-
   $connection = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
     Select-Object -First 1
+  if ($null -eq $connection) { return $null }
+  return [int]$connection.OwningProcess
+}
 
-  if ($null -eq $connection) {
-    return $null
+# Kill a PID and its entire child process tree using taskkill /T.
+# Silently ignores errors (process already gone, etc.).
+function Remove-ProcessTree {
+  param([int]$ProcessId)
+  & taskkill /F /T /PID $ProcessId 2>&1 | Out-Null
+}
+
+# Given a PID that is listening on a port, walk UP the process tree and kill
+# the highest ancestor that is still a dev process (node / npm / powershell
+# with our working directory).  Using /T on that ancestor kills the entire
+# subtree - watcher + server - in one shot, preventing the watcher from
+# respawning the server before we bind.
+function Remove-PortOwnerTree {
+  param([int]$PortOwnerPid)
+
+  $devNames = @('node', 'npm', 'powershell', 'pwsh')
+  $topPid = $PortOwnerPid
+
+  # Walk up looking for the highest dev-process ancestor
+  $currentPid = $PortOwnerPid
+  $visited = @{}
+  while ($true) {
+    if ($visited.ContainsKey($currentPid)) { break }
+    $visited[$currentPid] = $true
+
+    $wmiProc = Get-CimInstance Win32_Process -Filter "ProcessId=$currentPid" -ErrorAction SilentlyContinue
+    if ($null -eq $wmiProc) { break }
+
+    $parentPid = [int]$wmiProc.ParentProcessId
+    if ($parentPid -le 4) { break }  # PID 0/4 = System
+
+    $parentProc = Get-Process -Id $parentPid -ErrorAction SilentlyContinue
+    if ($null -eq $parentProc) { break }
+    if ($parentProc.ProcessName -notin $devNames) { break }
+
+    $topPid = $parentPid
+    $currentPid = $parentPid
   }
 
-  return [int]$connection.OwningProcess
+  Remove-ProcessTree -ProcessId $topPid
+}
+
+function Wait-ForPortRelease {
+  param(
+    [int]$Port,
+    [int]$TimeoutMs = 5000
+  )
+
+  $deadline = (Get-Date).AddMilliseconds($TimeoutMs)
+  while ((Get-Date) -lt $deadline) {
+    if (-not (Get-ListeningProcessIdForPort -Port $Port)) {
+      return $true
+    }
+    Start-Sleep -Milliseconds 250
+  }
+
+  return -not (Get-ListeningProcessIdForPort -Port $Port)
 }
 
 function Stop-ServiceIfRunning {
   param([hashtable]$Service)
   $servicePid = Read-ServicePid -Name $Service.Name
-
   if (-not $servicePid) {
+    $portOwner = Get-ListeningProcessIdForPort -Port $Service.Port
+    if ($portOwner) {
+      $ownerProc = Get-Process -Id $portOwner -ErrorAction SilentlyContinue
+      $ownerName = if ($ownerProc) { $ownerProc.ProcessName } else { 'unknown' }
+      if ($ownerName -in @('node', 'next-server', 'next', 'npm', 'powershell', 'pwsh')) {
+        Remove-PortOwnerTree -PortOwnerPid $portOwner
+        Wait-ForPortRelease -Port $Service.Port | Out-Null
+        return $true
+      }
+    }
     return $false
   }
-
   if (Test-ProcessRunning -ProcessId $servicePid) {
-    Stop-Process -Id $servicePid -Force
+    # Kill the entire process tree so the watcher does not respawn the server.
+    Remove-ProcessTree -ProcessId $servicePid
+    Wait-ForPortRelease -Port $Service.Port | Out-Null
   }
-
+  else {
+    $portOwner = Get-ListeningProcessIdForPort -Port $Service.Port
+    if ($portOwner) {
+      $ownerProc = Get-Process -Id $portOwner -ErrorAction SilentlyContinue
+      $ownerName = if ($ownerProc) { $ownerProc.ProcessName } else { 'unknown' }
+      if ($ownerName -in @('node', 'next-server', 'next', 'npm', 'powershell', 'pwsh')) {
+        Remove-PortOwnerTree -PortOwnerPid $portOwner
+        Wait-ForPortRelease -Port $Service.Port | Out-Null
+      }
+    }
+  }
   Remove-ServicePidFile -Name $Service.Name
   return $true
 }
 
+function Reset-FileIfPossible {
+  param([string]$Path)
+  if (-not (Test-Path $Path)) { return }
+  $deadline = (Get-Date).AddSeconds(5)
+  $lastError = $null
+  while ((Get-Date) -lt $deadline) {
+    try {
+      Remove-Item $Path -Force -ErrorAction Stop
+      return
+    }
+    catch {
+      $lastError = $_
+      Start-Sleep -Milliseconds 250
+    }
+  }
+  try {
+    Clear-Content $Path -Force -ErrorAction Stop
+  }
+  catch {
+    if ($lastError) { throw $lastError }
+    throw
+  }
+}
+
+# Wait for a port to start listening, showing progress dots every 5s.
+# Increased to 120s (NestJS + Next.js first compile can take 60-90s).
 function Wait-ForServicePort {
   param(
     [hashtable]$Service,
-    [int]$TimeoutMs = 30000
+    [int]$TimeoutMs = 120000
   )
 
   $deadline = (Get-Date).AddMilliseconds($TimeoutMs)
+  $ticks = 0
+
+  Write-Host -NoNewline "  Esperando $($Service.Name) en :$($Service.Port)"
 
   while ((Get-Date) -lt $deadline) {
     $portOwner = Get-ListeningProcessIdForPort -Port $Service.Port
     if ($portOwner) {
+      Write-Host ' listo.'
       return $portOwner
     }
-
-    Start-Sleep -Milliseconds 500
+    Start-Sleep -Milliseconds 1000
+    $ticks++
+    if ($ticks % 5 -eq 0) { Write-Host -NoNewline '.' }
   }
 
+  Write-Host ' tiempo agotado.'
   return $null
 }
 
-function Start-ServiceProcess {
+# ---- Database ---------------------------------------------------------------
+# Calls pg_ctl directly - avoids the npm -> powershell -> pg_ctl pipe hang.
+
+function Start-BackendDatabase {
+  $backendDir = Join-Path $script:RootDir 'tattoo-platform-backend'
+  $databasePort = 5433
+  $pgDataDir = Join-Path $backendDir '.postgres\data'
+  $startupDeadline = (Get-Date).AddSeconds(25)
+
+  if (-not (Test-Path $script:PgCtl)) {
+    throw "No encontre pg_ctl en '$($script:PgCtl)'. Verifica que PostgreSQL 18 este instalado."
+  }
+
+  # Already listening on the port? Done.
+  if (Get-ListeningProcessIdForPort -Port $databasePort) {
+    Write-Host '  Base de datos ya en ejecucion.'
+    return
+  }
+
+  # pg_ctl status is the authoritative check (exit 0 = running).
+  $null = & $script:PgCtl -D $pgDataDir status 2>&1
+  if ($LASTEXITCODE -eq 0) {
+    Write-Host '  Base de datos ya en ejecucion.'
+    return
+  }
+
+  Write-Host -NoNewline '  Iniciando base de datos'
+
+  # -W (uppercase) = no wait, returns immediately. No -l flag to avoid
+  # "Permission denied" on a locked log file from a previous session.
+  $startOut = & $script:PgCtl -D $pgDataDir -o '-p 5433 -h 127.0.0.1' start -W 2>&1 | Out-String
+
+  # Poll until the port is listening or we time out.
+  while ((Get-Date) -lt $startupDeadline) {
+    if (Get-ListeningProcessIdForPort -Port $databasePort) {
+      Write-Host ' lista.'
+      return
+    }
+    Start-Sleep -Milliseconds 500
+    Write-Host -NoNewline '.'
+  }
+
+  # Final authoritative check via pg_ctl status.
+  $null = & $script:PgCtl -D $pgDataDir status 2>&1
+  if ($LASTEXITCODE -eq 0) {
+    Write-Host ' lista.'
+    return
+  }
+
+  throw "No pude iniciar PostgreSQL (el puerto $databasePort no quedo escuchando).`nOutput de inicio: $startOut"
+}
+
+function Stop-BackendDatabase {
+  if (-not (Test-Path $script:PgCtl)) { return }
+  $backendDir = Join-Path $script:RootDir 'tattoo-platform-backend'
+  $pgDataDir = Join-Path $backendDir '.postgres\data'
+
+  try {
+    $out = & $script:PgCtl -D $pgDataDir stop 2>&1 | Out-String
+    if ($LASTEXITCODE -ne 0) {
+      $msg = "$out"
+      if ($msg -notmatch 'no se est. ejecutando|is not running|no server running|postmaster\.pid|no existe') {
+        throw $msg
+      }
+    }
+  }
+  catch {
+    $msg = $_ | Out-String
+    if ($msg -notmatch 'no se est. ejecutando|is not running|no server running|postmaster\.pid|no existe') {
+      throw
+    }
+  }
+}
+
+# ---- Service launch (two-phase) ---------------------------------------------
+#
+# Phase 1 - Invoke-ServiceLaunch  : starts background process, saves wrapper PID.
+# Phase 2 - Confirm-ServiceReady  : waits for port to be listening.
+#
+# Splitting into two phases lets all services compile in parallel.
+# The wrapper PID is saved immediately so Stop-ServiceIfRunning can later
+# kill the entire tree (watcher + server) with taskkill /T.
+
+function Invoke-ServiceLaunch {
   param([hashtable]$Service)
 
   $workingDirectory = $Service.WorkingDirectory
   if (-not (Test-Path $workingDirectory)) {
-    throw "No encontre la carpeta del servicio $($Service.Name) en $workingDirectory"
+    throw "No encontre la carpeta del servicio '$($Service.Name)' en $workingDirectory"
   }
 
+  # Kill the tracked process tree if it's still alive.
   Stop-ServiceIfRunning -Service $Service | Out-Null
 
+  # Kill any untracked process still on our port.
+  # Walk up the tree so the watcher dies together with the server.
   $portOwner = Get-ListeningProcessIdForPort -Port $Service.Port
   if ($portOwner) {
-    throw "El puerto $($Service.Port) ya esta ocupado por un proceso externo (PID $portOwner). Liberalo antes de correr dev:up."
+    $ownerProc = Get-Process -Id $portOwner -ErrorAction SilentlyContinue
+    $ownerName = if ($ownerProc) { $ownerProc.ProcessName } else { 'unknown' }
+
+    $isOurProcess = $ownerName -in @('node', 'next-server', 'next', 'npm')
+    if ($isOurProcess) {
+      Write-Host "  Puerto $($Service.Port) ocupado por '$ownerName' (PID $portOwner) - deteniendo arbol..."
+      Remove-PortOwnerTree -PortOwnerPid $portOwner
+
+      # Wait up to 5s for the port to be fully released (and confirm it
+      # doesn't get re-bound by a surviving watcher within that window).
+      $freed = $false
+      $deadline = (Get-Date).AddSeconds(5)
+      while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Milliseconds 500
+        $stillOwner = Get-ListeningProcessIdForPort -Port $Service.Port
+        if (-not $stillOwner) { $freed = $true; break }
+        # Port re-appeared - kill whatever grabbed it (watcher respawn race)
+        Remove-PortOwnerTree -PortOwnerPid $stillOwner
+      }
+
+      if (-not $freed) {
+        if (Get-ListeningProcessIdForPort -Port $Service.Port) {
+          throw "No pude liberar el puerto $($Service.Port). Intentalo manualmente."
+        }
+      }
+    } else {
+      throw "El puerto $($Service.Port) esta ocupado por '$ownerName' (PID $portOwner), que no parece ser un proceso de dev. Liberalo manualmente antes de correr dev:up."
+    }
   }
 
-  $logFile = Get-LogFilePath -Name $Service.Name
-  $errorLogFile = Get-ErrorLogFilePath -Name $Service.Name
-  if (Test-Path $logFile) {
-    Remove-Item $logFile -Force
-  }
-  if (Test-Path $errorLogFile) {
-    Remove-Item $errorLogFile -Force
-  }
+  $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+  $logFile = Join-Path $script:LogsDir "$($Service.Name)-$timestamp.log"
+  $errorLogFile = Join-Path $script:LogsDir "$($Service.Name)-$timestamp.error.log"
+  Set-ResolvedLogFilePath -Name $Service.Name -Path $logFile
+  Set-ResolvedErrorLogFilePath -Name $Service.Name -Path $errorLogFile
 
   $wrappedCommand = "Set-Location '$workingDirectory'; $($Service.Command)"
 
   $process = Start-Process powershell -ArgumentList @(
-    '-NoProfile',
-    '-ExecutionPolicy',
-    'Bypass',
-    '-Command',
-    $wrappedCommand
-  ) -WorkingDirectory $workingDirectory -WindowStyle Hidden -RedirectStandardOutput $logFile -RedirectStandardError $errorLogFile -PassThru
+    '-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', $wrappedCommand
+  ) -WorkingDirectory $workingDirectory -WindowStyle Hidden `
+    -RedirectStandardOutput $logFile -RedirectStandardError $errorLogFile -PassThru
 
-  Start-Sleep -Milliseconds 600
+  # Save the wrapper PID immediately so future dev:up / dev:down can
+  # kill the entire tree (powershell -> npm -> node watcher -> node server).
+  Set-Content -Path (Get-PidFilePath -Name $Service.Name) -Value $process.Id
+
+  # Brief pause to detect an immediate crash before moving on.
+  Start-Sleep -Milliseconds 800
 
   if ($process.HasExited) {
     $logText = if (Test-Path $logFile) { Get-Content $logFile -Raw } else { '' }
-    $errorText = if (Test-Path $errorLogFile) { Get-Content $errorLogFile -Raw } else { '' }
-    throw "El servicio $($Service.Name) termino apenas arranco.`n$logText`n$errorText"
+    $errText = if (Test-Path $errorLogFile) { Get-Content $errorLogFile -Raw } else { '' }
+    throw "El servicio '$($Service.Name)' termino apenas arranco.`n$logText`n$errText"
   }
 
-  $trackedPid = Wait-ForServicePort -Service $Service
-
-  if (-not $trackedPid) {
-    $logText = if (Test-Path $logFile) { Get-Content $logFile -Raw } else { '' }
-    $errorText = if (Test-Path $errorLogFile) { Get-Content $errorLogFile -Raw } else { '' }
-    throw "El servicio $($Service.Name) no quedo escuchando en el puerto $($Service.Port).`n$logText`n$errorText"
-  }
-
-  Set-Content -Path (Get-PidFilePath -Name $Service.Name) -Value $trackedPid
+  Write-Host "  $($Service.Name) arrancando (PID $($process.Id))..."
 
   return @{
-    Name = $Service.Name
-    Pid = $trackedPid
-    LogFile = $logFile
+    Service      = $Service
+    Process      = $process
+    LogFile      = $logFile
+    ErrorLogFile = $errorLogFile
   }
 }
 
-function Start-BackendDatabase {
-  $backendDir = Join-Path $script:RootDir 'tattoo-platform-backend'
+function Confirm-ServiceReady {
+  param([hashtable]$Launch)
 
-  try {
-    Push-Location $backendDir
-    $statusOutput = npm run db:status 2>&1 | Out-String
-    if ($LASTEXITCODE -eq 0 -and $statusOutput -match 'en ejecuci.n|is running') {
-      return
-    }
+  $service = $Launch.Service
 
-    if (Get-ListeningProcessIdForPort -Port 5433) {
-      return
-    }
-
-    $startOutput = npm run db:start 2>&1 | Out-String
-    if ($LASTEXITCODE -ne 0) {
-      throw $startOutput.Trim()
-    }
-
-    $finalStatusOutput = npm run db:status 2>&1 | Out-String
-    if ($LASTEXITCODE -eq 0 -and $finalStatusOutput -match 'en ejecuci.n|is running') {
-      return
-    }
-
-    if (
-      $startOutput -match 'otro servidor puede estar en ejecuci.n|server might be running' -or
-      $startOutput -match 'servidor est. en ejecuci.n|server is running'
-    ) {
-      return
-    }
-
-    throw "No pude confirmar que PostgreSQL haya quedado en ejecucion.`n$startOutput`n$finalStatusOutput"
+  if ($Launch.Process.HasExited) {
+    $logText = if (Test-Path $Launch.LogFile) { Get-Content $Launch.LogFile -Raw } else { '' }
+    $errText = if (Test-Path $Launch.ErrorLogFile) { Get-Content $Launch.ErrorLogFile -Raw } else { '' }
+    throw "El servicio '$($service.Name)' murio antes de estar listo.`n$logText`n$errText"
   }
-  catch {
-    $message = $_.Exception.Message
-    if (
-      $message -notmatch 'servidor est. en ejecuci.n' -and
-      $message -notmatch 'server is running' -and
-      $message -notmatch 'otro servidor puede estar en ejecuci.n' -and
-      $message -notmatch 'server might be running'
-    ) {
-      throw
-    }
+
+  $portPid = Wait-ForServicePort -Service $service
+
+  if (-not $portPid) {
+    $logText = if (Test-Path $Launch.LogFile) { Get-Content $Launch.LogFile -Raw } else { '' }
+    $errText = if (Test-Path $Launch.ErrorLogFile) { Get-Content $Launch.ErrorLogFile -Raw } else { '' }
+    throw "El servicio '$($service.Name)' no quedo escuchando en el puerto $($service.Port) despues de 120s.`n`n--- log ---`n$logText`n--- error ---`n$errText"
   }
-  finally {
-    Pop-Location
+
+  # PID file already has the wrapper PID (saved in Invoke-ServiceLaunch).
+  # No need to overwrite it.
+
+  return @{
+    Name    = $service.Name
+    Pid     = $Launch.Process.Id
+    LogFile = $Launch.LogFile
+    Url     = $service.Url
   }
 }
 
-function Stop-BackendDatabase {
-  $backendDir = Join-Path $script:RootDir 'tattoo-platform-backend'
-
-  try {
-    Push-Location $backendDir
-    npm run db:stop | Out-Null
-  }
-  catch {
-    $message = $_.Exception.Message
-    if (
-      $message -notmatch 'no se est. ejecutando' -and
-      $message -notmatch 'is not running'
-    ) {
-      throw
-    }
-  }
-  finally {
-    Pop-Location
-  }
+# Kept for backward compatibility (dev-status / dev-down don't use this).
+function Start-ServiceProcess {
+  param([hashtable]$Service)
+  $launch = Invoke-ServiceLaunch -Service $Service
+  return Confirm-ServiceReady -Launch $launch
 }
+
+# ---- Status helper ----------------------------------------------------------
 
 function Get-ServiceStatus {
   param([hashtable]$Service)
@@ -269,12 +476,12 @@ function Get-ServiceStatus {
   if (-not $servicePid) {
     $externalOwner = Get-ListeningProcessIdForPort -Port $Service.Port
     return [pscustomobject]@{
-      Name = $Service.Name
-      Status = 'stopped'
-      Pid = $null
-      LogFile = Get-LogFilePath -Name $Service.Name
-      Url = $Service.Url
-      Note = if ($externalOwner) { "port-busy:$externalOwner" } else { $null }
+      Name    = $Service.Name
+      Status  = 'stopped'
+      Pid     = $null
+      LogFile = Get-ResolvedLogFilePath -Name $Service.Name
+      Url     = $Service.Url
+      Note    = if ($externalOwner) { "port-busy:$externalOwner" } else { $null }
     }
   }
 
@@ -282,21 +489,21 @@ function Get-ServiceStatus {
     Remove-ServicePidFile -Name $Service.Name
     $externalOwner = Get-ListeningProcessIdForPort -Port $Service.Port
     return [pscustomobject]@{
-      Name = $Service.Name
-      Status = 'stopped'
-      Pid = $null
-      LogFile = Get-LogFilePath -Name $Service.Name
-      Url = $Service.Url
-      Note = if ($externalOwner) { "port-busy:$externalOwner" } else { $null }
+      Name    = $Service.Name
+      Status  = 'stopped'
+      Pid     = $null
+      LogFile = Get-ResolvedLogFilePath -Name $Service.Name
+      Url     = $Service.Url
+      Note    = if ($externalOwner) { "port-busy:$externalOwner" } else { $null }
     }
   }
 
   return [pscustomobject]@{
-    Name = $Service.Name
-    Status = 'running'
-    Pid = $servicePid
-    LogFile = Get-LogFilePath -Name $Service.Name
-    Url = $Service.Url
-    Note = $null
+    Name    = $Service.Name
+    Status  = 'running'
+    Pid     = $servicePid
+    LogFile = Get-ResolvedLogFilePath -Name $Service.Name
+    Url     = $Service.Url
+    Note    = $null
   }
 }

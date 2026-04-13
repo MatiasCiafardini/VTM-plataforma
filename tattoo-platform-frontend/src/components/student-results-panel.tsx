@@ -665,7 +665,7 @@ export function StudentResultsPanel({
                     <div
                       className="student-history-pie"
                       style={{
-                        background: `conic-gradient(#f4bf19 0 ${newPct}%, #8b6c12 ${newPct}% ${newPct + recPct}%, #f4f0e6 ${newPct + recPct}% 100%)`,
+                        background: `conic-gradient(#FFD102 0 ${newPct}%, #232223 ${newPct}% ${newPct + recPct}%, #9A999A ${newPct + recPct}% 100%)`,
                       }}
                     />
                     <div className="student-history-legend">

@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import { ChallengeIcon } from "./challenge-icons";
 import { useState } from "react";
 
 type StudentChallengeItem = {
@@ -9,6 +10,9 @@ type StudentChallengeItem = {
   challenge: {
     title: string;
     description: string | null;
+    iconKey?: string | null;
+    rewardTitle?: string | null;
+    rewardUrl?: string | null;
   };
 };
 
@@ -39,58 +43,6 @@ function SparkIcon() {
         d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"
         stroke="currentColor"
         strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function DollarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 3v18M16 7.5c0-1.66-1.79-3-4-3s-4 1.34-4 3 1.79 3 4 3 4 1.34 4 3-1.79 3-4 3-4-1.34-4-3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function FlameIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12.3 3c1.5 2.2 3.9 3.7 3.9 7a4.2 4.2 0 1 1-8.4 0c0-1.7.9-3.1 2-4.4.6 1.5 1.8 2.6 2.5 3 .4-1.7 0-3.8 0-5.6Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 13.5c1.3.8 2 1.8 2 3a2 2 0 1 1-4 0c0-.8.4-1.6 1.1-2.3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function RocketIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M14.5 4.5c2.7-.4 4.5.4 5 1 .6.6 1.4 2.3 1 5l-5.3 5.3-5.7-5.7 5-5.6Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9.2 10.2 5 11l1.4-4.2M13.8 15.8 13 20l4.2-1.4M15.8 8.2h.01"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
         strokeLinejoin="round"
       />
     </svg>
@@ -191,22 +143,18 @@ function getAccentToneClass(status: string) {
     : "student-challenge-top-badge student-challenge-top-badge-muted";
 }
 
-function getChallengeIcon(status: string) {
-  if (status === "COMPLETED") {
-    return <DollarIcon />;
-  }
-
-  if (status === "IN_PROGRESS") {
-    return <FlameIcon />;
-  }
-
-  return <RocketIcon />;
+function getConfiguredChallengeIcon(iconKey?: string | null) {
+  return ChallengeIcon({ iconKey: iconKey ?? "trophy" });
 }
 
 function getChallengeAccentIcon(
   challenge: StudentChallengeItem,
   index: number,
 ) {
+  if (challenge.challenge.iconKey) {
+    return getConfiguredChallengeIcon(challenge.challenge.iconKey);
+  }
+
   const title = challenge.challenge.title.toLowerCase();
 
   if (
@@ -269,8 +217,8 @@ export function StudentChallengesPanel({
         : "Vas muy bien. Este desafio ya forma parte de tu progreso.";
     const footer =
       challenge.status === "COMPLETED"
-        ? "TattooAcademy · Logro desbloqueado"
-        : "TattooAcademy · Seguimiento activo";
+        ? "Vende Mas Tattoo - Logro desbloqueado"
+        : "Vende Mas Tattoo - Seguimiento activo";
 
     return `
       <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
@@ -281,27 +229,27 @@ export function StudentChallengesPanel({
             <stop offset="100%" stop-color="#1c1607"/>
           </linearGradient>
           <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#ffda57"/>
-            <stop offset="100%" stop-color="#f4bf19"/>
+            <stop offset="0%" stop-color="#FFD102"/>
+            <stop offset="100%" stop-color="#FFD102"/>
           </linearGradient>
         </defs>
         <rect width="1080" height="1920" fill="url(#bg)"/>
-        <circle cx="930" cy="240" r="220" fill="rgba(244,191,25,0.14)"/>
-        <circle cx="180" cy="1620" r="240" fill="rgba(244,191,25,0.08)"/>
-        <rect x="88" y="116" width="904" height="1688" rx="44" fill="#141414" stroke="rgba(244,191,25,0.28)"/>
+        <circle cx="930" cy="240" r="220" fill="rgba(255,209,2,0.14)"/>
+        <circle cx="180" cy="1620" r="240" fill="rgba(255,209,2,0.08)"/>
+        <rect x="88" y="116" width="904" height="1688" rx="44" fill="#232223" stroke="rgba(255,209,2,0.28)"/>
         <rect x="136" y="182" width="120" height="120" rx="28" fill="url(#gold)"/>
-        <text x="196" y="260" text-anchor="middle" fill="#1a1403" font-size="62" font-family="Arial" font-weight="700">🏆</text>
-        <text x="136" y="402" fill="#f4bf19" font-size="34" font-family="Arial" font-weight="700" letter-spacing="5">DESAFIO</text>
-        <text x="136" y="492" fill="#fff8ea" font-size="88" font-family="Arial" font-weight="700">${title}</text>
-        <text x="136" y="598" fill="#d0cbc0" font-size="44" font-family="Arial">${subtitle}</text>
+        <text x="196" y="260" text-anchor="middle" fill="#1a1403" font-size="62" font-family="Arial" font-weight="700">ðŸ†</text>
+        <text x="136" y="402" fill="#FFD102" font-size="34" font-family="Arial" font-weight="700" letter-spacing="5">DESAFIO</text>
+        <text x="136" y="492" fill="#FFFFFF" font-size="88" font-family="Arial" font-weight="700">${title}</text>
+        <text x="136" y="598" fill="#9A999A" font-size="44" font-family="Arial">${subtitle}</text>
         <rect x="136" y="708" width="808" height="2" fill="rgba(255,255,255,0.09)"/>
-        <text x="136" y="862" fill="#f5f1e8" font-size="62" font-family="Arial" font-weight="700">${challenge.progress}% completado</text>
-        <rect x="136" y="916" width="808" height="24" rx="12" fill="#2a2a2a"/>
+        <text x="136" y="862" fill="#FFFFFF" font-size="62" font-family="Arial" font-weight="700">${challenge.progress}% completado</text>
+        <rect x="136" y="916" width="808" height="24" rx="12" fill="#0A0A0A"/>
         <rect x="136" y="916" width="${Math.max(32, (808 * challenge.progress) / 100)}" height="24" rx="12" fill="url(#gold)"/>
-        <text x="136" y="1088" fill="#9d988f" font-size="34" font-family="Arial">Estado actual</text>
-        <text x="136" y="1154" fill="#fff8ea" font-size="64" font-family="Arial" font-weight="700">${challenge.statusCopy}</text>
-        <text x="136" y="1310" fill="#f4d98b" font-size="42" font-family="Arial">${getEncouragement(challenge.progress, challenge.status)}</text>
-        <text x="136" y="1678" fill="#8f8a80" font-size="32" font-family="Arial">${footer}</text>
+        <text x="136" y="1088" fill="#9A999A" font-size="34" font-family="Arial">Estado actual</text>
+        <text x="136" y="1154" fill="#FFFFFF" font-size="64" font-family="Arial" font-weight="700">${challenge.statusCopy}</text>
+        <text x="136" y="1310" fill="#FFD102" font-size="42" font-family="Arial">${getEncouragement(challenge.progress, challenge.status)}</text>
+        <text x="136" y="1678" fill="#9A999A" font-size="32" font-family="Arial">${footer}</text>
       </svg>
     `.trim();
   }
@@ -440,7 +388,7 @@ export function StudentChallengesPanel({
               >
                 <div className="student-challenge-card-top">
                   <div className={getIconToneClass(challenge.status)}>
-                    {getChallengeIcon(challenge.status)}
+                    {getConfiguredChallengeIcon(challenge.challenge.iconKey)}
                   </div>
                   <span className={getAccentToneClass(challenge.status)}>
                     {getChallengeAccentIcon(challenge, index)}
@@ -478,6 +426,12 @@ export function StudentChallengesPanel({
                   <strong>
                     {getEncouragement(challenge.progress, challenge.status)}
                   </strong>
+                  {challenge.status === "COMPLETED" &&
+                  challenge.challenge.rewardTitle ? (
+                    <span>
+                      Recompensa desbloqueada: {challenge.challenge.rewardTitle}
+                    </span>
+                  ) : null}
                   {challenge.dueDate ? (
                     <span>
                       Vence{" "}
@@ -515,10 +469,10 @@ export function StudentChallengesPanel({
 
             <div className="student-challenge-flyer">
               <div className="student-challenge-flyer-mark">
-                <TrophyIcon />
+                {getConfiguredChallengeIcon(selectedChallenge.challenge.iconKey)}
               </div>
               <span className="student-challenge-flyer-kicker">
-                Logro de TattooAcademy
+                Logro de Vende Mas Tattoo
               </span>
               <h4>{selectedChallenge.challenge.title}</h4>
               <p>
@@ -537,6 +491,31 @@ export function StudentChallengesPanel({
               <div className="student-challenge-flyer-footer">
                 <span>{selectedChallenge.statusCopy}</span>
               </div>
+
+              {selectedChallenge.status === "COMPLETED" &&
+              selectedChallenge.challenge.rewardTitle ? (
+                <div className="student-challenge-reward-panel">
+                  <span className="student-challenge-reward-kicker">
+                    Recompensa desbloqueada
+                  </span>
+                  <strong>{selectedChallenge.challenge.rewardTitle}</strong>
+                  <p>
+                    {selectedChallenge.challenge.rewardUrl
+                      ? "Haz click para abrir el video o curso desbloqueado."
+                      : "Este desafio ya tiene una recompensa asignada."}
+                  </p>
+                  {selectedChallenge.challenge.rewardUrl ? (
+                    <a
+                      className="primary-button student-challenge-reward-link"
+                      href={selectedChallenge.challenge.rewardUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Abrir recompensa
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <div className="student-challenge-modal-actions">
@@ -561,3 +540,6 @@ export function StudentChallengesPanel({
     </>
   );
 }
+
+
+

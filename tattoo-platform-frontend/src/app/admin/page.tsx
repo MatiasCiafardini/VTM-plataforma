@@ -47,6 +47,10 @@ type AdminDashboard = {
     latestRevenue: number | null;
     attentionLevel: string | null;
     attentionScore: number | null;
+    riskSummary: {
+      headline: string;
+      items: string[];
+    };
     revenueHistory: Array<{
       id: string;
       month: number;
@@ -108,6 +112,9 @@ type ChallengeTemplate = {
   id: string;
   title: string;
   description: string | null;
+  iconKey: string;
+  rewardTitle: string | null;
+  rewardUrl: string | null;
   targetValue: number | null;
   difficultyStars: number;
   isActive: boolean;
@@ -116,6 +123,12 @@ type ChallengeTemplate = {
     name: string;
     slug: string;
     valueType: 'INTEGER' | 'DECIMAL' | 'CURRENCY' | 'TEXT' | 'BOOLEAN';
+  } | null;
+  prerequisiteChallenge: {
+    id: string;
+    title: string;
+    difficultyStars: number;
+    iconKey: string;
   } | null;
 };
 
@@ -133,6 +146,7 @@ type AdminSettings = {
     inactivityThresholdDays: number;
     goodStandingLabel: string;
     riskStandingLabel: string;
+    studentRegistrationCode: string;
   };
   metrics: {
     revenueMetricSlug: string;

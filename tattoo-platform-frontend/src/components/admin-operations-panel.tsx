@@ -9,6 +9,7 @@ type AdminSettings = {
     inactivityThresholdDays: number;
     goodStandingLabel: string;
     riskStandingLabel: string;
+    studentRegistrationCode: string;
   };
   metrics: {
     revenueMetricSlug: string;
@@ -258,6 +259,24 @@ export function AdminOperationsPanel({
                       updateSection('userOperations', 'riskStandingLabel', event.target.value)
                     }
                   />
+                </label>
+
+                <label>
+                  <span>Codigo de registro para alumnos</span>
+                  <input
+                    type="text"
+                    value={settings.userOperations.studentRegistrationCode}
+                    onChange={(event) =>
+                      updateSection(
+                        'userOperations',
+                        'studentRegistrationCode',
+                        event.target.value,
+                      )
+                    }
+                  />
+                  <small>
+                    Este codigo se pide en la pantalla de registro y lo puedes cambiar cuando quieras.
+                  </small>
                 </label>
               </div>
             </div>
