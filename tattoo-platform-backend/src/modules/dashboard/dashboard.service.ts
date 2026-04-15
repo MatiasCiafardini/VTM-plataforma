@@ -221,7 +221,15 @@ export class DashboardService {
       metricLabels: trackedMetrics.labels,
       latestMetrics: {
         ingresosFacturacion:
-          metricsBySlug[trackedMetrics.revenueMetricSlug]?.value ?? null,
+          this.getMetricOriginalNumericValue(
+            latestPeriod?.values ?? [],
+            trackedMetrics.revenueMetricSlug,
+          ),
+        ingresosFacturacionUsd:
+          this.getMetricUsdValue(
+            latestPeriod?.values ?? [],
+            trackedMetrics.revenueMetricSlug,
+          ),
         consultasMensuales: metricsBySlug[trackedMetrics.leadsMetricSlug]?.value ?? null,
         cierresDelMes: metricsBySlug[trackedMetrics.closuresMetricSlug]?.value ?? null,
       },
@@ -238,7 +246,15 @@ export class DashboardService {
             period.values,
             'balance-general',
           ),
-          ingresosFacturacion: this.getMetricNumericValue(
+          balanceGeneralUsd: this.getMetricUsdValue(
+            period.values,
+            'balance-general',
+          ),
+          ingresosFacturacion: this.getMetricOriginalNumericValue(
+            period.values,
+            trackedMetrics.revenueMetricSlug,
+          ),
+          ingresosFacturacionUsd: this.getMetricUsdValue(
             period.values,
             trackedMetrics.revenueMetricSlug,
           ),
@@ -246,7 +262,11 @@ export class DashboardService {
             period.values,
             'cantidad-total-tatuajes',
           ),
-          comisionEstudio: this.getMetricNumericValue(
+          comisionEstudio: this.getMetricOriginalNumericValue(
+            period.values,
+            'comision-estudio',
+          ),
+          comisionEstudioUsd: this.getMetricUsdValue(
             period.values,
             'comision-estudio',
           ),
@@ -254,7 +274,11 @@ export class DashboardService {
             period.values,
             'comision-estudio-porcentaje',
           ),
-          gastosDelMes: this.getMetricNumericValue(
+          gastosDelMes: this.getMetricOriginalNumericValue(
+            period.values,
+            'gastos-del-mes',
+          ),
+          gastosDelMesUsd: this.getMetricUsdValue(
             period.values,
             'gastos-del-mes',
           ),
@@ -742,6 +766,40 @@ export class DashboardService {
     return candidate === null || candidate === undefined
       ? null
       : Number(candidate);
+  }
+
+  private getMetricOriginalNumericValue(
+    values: Array<{
+      numberValue: unknown;
+      originalAmount: unknown;
+      metricDefinition: { slug: string };
+    }>,
+    slug: string,
+  ) {
+    const metric = values.find((value) => value.metricDefinition.slug === slug);
+
+    if (!metric) {
+      return null;
+    }
+
+    const candidate = metric.originalAmount ?? metric.numberValue;
+    return candidate === null || candidate === undefined ? null : Number(candidate);
+  }
+
+  private getMetricUsdValue(
+    values: Array<{
+      usdAmount: unknown;
+      metricDefinition: { slug: string };
+    }>,
+    slug: string,
+  ) {
+    const metric = values.find((value) => value.metricDefinition.slug === slug);
+
+    if (!metric || metric.usdAmount === null || metric.usdAmount === undefined) {
+      return null;
+    }
+
+    return Number(metric.usdAmount);
   }
 
   private getChallengeProgress(

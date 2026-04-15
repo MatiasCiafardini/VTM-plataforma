@@ -68,14 +68,15 @@ export function RegisterForm() {
       }
 
       router.replace(
-        payload.nextPath ??
-          (payload.role === "ADMIN"
-          ? "/admin"
-          : payload.role === "MENTOR"
-            ? "/mentor"
-            : "/student"),
+        payload.role === "STUDENT"
+          ? "/student/setup"
+          : payload.nextPath ??
+              (payload.role === "ADMIN"
+                ? "/admin"
+                : payload.role === "MENTOR"
+                  ? "/mentor"
+                  : "/student"),
       );
-      router.refresh();
     });
   };
 

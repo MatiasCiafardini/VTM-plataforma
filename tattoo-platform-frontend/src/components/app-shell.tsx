@@ -59,8 +59,6 @@ export function AppShell({
           { key: 'dashboard', label: 'Dashboard', href: `${dashboardPath}?tab=dashboard` },
           { key: 'results', label: 'Resultados', href: `${dashboardPath}?tab=results` },
           { key: 'challenges', label: 'Desafios', href: `${dashboardPath}?tab=challenges` },
-          { key: 'analyzer', label: 'Analizador', href: `${dashboardPath}?tab=analyzer` },
-          { key: 'followups', label: 'Seguimientos', href: `${dashboardPath}?tab=followups` },
           { key: 'onboarding', label: 'On boarding', href: '/student/onboarding' },
           { key: 'profile', label: 'Mi perfil', href: `${dashboardPath}?tab=profile` },
         ]
@@ -76,16 +74,6 @@ export function AppShell({
               key: 'challenges',
               label: 'Muro de Logros',
               href: `${dashboardPath}?tab=challenges`,
-            },
-            {
-              key: 'analyzer',
-              label: 'Analizador',
-              href: `${dashboardPath}?tab=analyzer`,
-            },
-            {
-              key: 'followups',
-              label: 'Seguimientos',
-              href: `${dashboardPath}?tab=followups`,
             },
             {
               key: 'onboarding',

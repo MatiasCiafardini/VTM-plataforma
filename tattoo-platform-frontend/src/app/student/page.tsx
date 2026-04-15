@@ -44,6 +44,7 @@ type StudentDashboard = {
   };
   latestMetrics: {
     ingresosFacturacion: number | null;
+    ingresosFacturacionUsd: number | null;
     consultasMensuales: number | null;
     cierresDelMes: number | null;
   };
@@ -54,11 +55,15 @@ type StudentDashboard = {
     status: string;
     metricsCount: number;
     balanceGeneral: number | null;
+    balanceGeneralUsd: number | null;
     ingresosFacturacion: number | null;
+    ingresosFacturacionUsd: number | null;
     cantidadTotalTatuajes: number | null;
     comisionEstudio: number | null;
+    comisionEstudioUsd: number | null;
     comisionEstudioPorcentaje: number | null;
     gastosDelMes: number | null;
+    gastosDelMesUsd: number | null;
     seguidoresInstagramActuales: number | null;
     consultasMensuales: number | null;
     conversacionesANuevos: number | null;
@@ -166,6 +171,16 @@ function formatCurrencyAmount(value: number, currencyCode: string) {
   }).format(value);
 }
 
+function formatMoneyWithUsd(localValue: number, currencyCode: string, usdValue?: number | null) {
+  const local = formatCurrencyAmount(localValue, currencyCode);
+  if (usdValue === null || usdValue === undefined) {
+    return local;
+  }
+
+  const usd = formatCurrencyAmount(usdValue, 'USD');
+  return `${local} (${usd})`;
+}
+
 export default async function StudentPage({
   searchParams,
 }: {
@@ -211,12 +226,13 @@ export default async function StudentPage({
   ]);
 
   const latestIncome = data?.latestMetrics.ingresosFacturacion ?? 0;
+  const latestIncomeUsd = data?.latestMetrics.ingresosFacturacionUsd ?? null;
   const estimatedCosts = Math.max(0, latestIncome - Math.round(latestIncome * 0.6));
   const estimatedMargin =
     latestIncome > 0 ? Math.round(((latestIncome - estimatedCosts) / latestIncome) * 100) : 0;
   const localCurrencyCode = data?.student.localCurrency?.code ?? 'USD';
-  const facturacionAmount = formatCurrencyAmount(latestIncome, localCurrencyCode);
-  const localIncomeAmount = formatCurrencyAmount(latestIncome, localCurrencyCode);
+  const facturacionAmount = formatMoneyWithUsd(latestIncome, localCurrencyCode, latestIncomeUsd);
+  const localIncomeAmount = formatMoneyWithUsd(latestIncome, localCurrencyCode, latestIncomeUsd);
   const localCostsAmount = formatCurrencyAmount(estimatedCosts, localCurrencyCode);
 
   return (

@@ -2110,6 +2110,7 @@ h3 {
 .student-results-chart-tooltip small {
   display: block;
   margin-top: 8px;
+  color: #fff8ea;
   font-size: 0.95rem;
   font-weight: 700;
 }

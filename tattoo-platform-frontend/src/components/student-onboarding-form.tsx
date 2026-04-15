@@ -95,10 +95,9 @@ function buildInitialState(profile: StudentProfileData): OnboardingFormState {
 
 function toNumber(value: string): number {
   if (!value.trim()) return 0;
-  // Accept both comma and dot as decimal separator (e.g. "1400,00" → 1400)
   const normalized = value.replace(',', '.');
   const num = Number(normalized);
-  return isNaN(num) ? 0 : num;
+  return Number.isNaN(num) ? 0 : num;
 }
 
 function formatCurrencyLabel(currency: Currency | null) {
@@ -136,10 +135,7 @@ export function StudentOnboardingForm({
       return profile.localCurrency;
     }
 
-    return (
-      currencies.find((currency) => currency.code === currencyCode) ??
-      profile.localCurrency
-    );
+    return currencies.find((currency) => currency.code === currencyCode) ?? profile.localCurrency;
   }, [currencies, form.country, profile.localCurrency]);
 
   function updateField(field: keyof OnboardingFormState, value: string) {
@@ -206,7 +202,11 @@ export function StudentOnboardingForm({
         );
         const existingPeriodsPayload = await existingPeriodsResponse.json();
 
-        if (!existingPeriodsResponse.ok || !Array.isArray(existingPeriodsPayload) || !existingPeriodsPayload[0]?.id) {
+        if (
+          !existingPeriodsResponse.ok ||
+          !Array.isArray(existingPeriodsPayload) ||
+          !existingPeriodsPayload[0]?.id
+        ) {
           throw new Error(periodPayload.message ?? 'No pudimos crear el periodo inicial.');
         }
 
@@ -217,11 +217,16 @@ export function StudentOnboardingForm({
         throw new Error('No pudimos identificar el periodo inicial.');
       }
 
+      const comisionCalculada = Number(
+        ((toNumber(form.ingresosFacturacion) * toNumber(form.comisionEstudioPorcentaje)) / 100).toFixed(2),
+      );
+
       const metricEntries: Array<[string, string]> = [
         ['balance-general', form.balanceGeneral],
         ['ingresos-facturacion', form.ingresosFacturacion],
         ['cantidad-total-tatuajes', form.cantidadTotalTatuajes],
         ['comision-estudio-porcentaje', form.comisionEstudioPorcentaje],
+        ['comision-estudio', String(comisionCalculada)],
         ['gastos-del-mes', form.gastosDelMes],
         ['seguidores-instagram-actuales', form.seguidoresInstagramActuales],
         ['consultas-mensuales', form.consultasMensuales],
@@ -299,8 +304,8 @@ export function StudentOnboardingForm({
             <p className="eyebrow">Paso 2</p>
             <h1>Completa tu configuracion inicial</h1>
             <p>
-              Carga tu pais, tu Instagram y el primer mes de datos desde el que
-              arrancaste la mentoria.
+              Carga tu pais, tu Instagram y el primer mes de datos desde el que arrancaste la
+              mentoria.
             </p>
           </div>
           <div className="student-onboarding-currency">
@@ -338,7 +343,7 @@ export function StudentOnboardingForm({
           </label>
 
           <label className="field login-field-simple">
-            <span>Mes de inicio de mentoría</span>
+            <span>Mes de inicio de mentoria</span>
             <select value={form.month} onChange={(event) => updateField('month', event.target.value)}>
               {monthOptions.map((month) => (
                 <option key={month.value} value={month.value}>
@@ -363,73 +368,183 @@ export function StudentOnboardingForm({
 
       <section className="student-onboarding-card">
         <div className="student-onboarding-section-head">
-          <h2>Datos del mes previo a la mentoría</h2>
-          <p>Datos del mes anterior al inicio de la mentoría, para tener una base de comparación.</p>
+          <h2>Datos del mes previo a la mentoria</h2>
+          <p>Datos del mes anterior al inicio de la mentoria, para tener una base de comparación.</p>
         </div>
 
-        <div className="student-onboarding-metrics-grid">
-          <label className="field login-field-simple">
-            <span>Balance general</span>
-            <div className="student-form-money-field">
-              <span>{selectedCurrency?.symbol ?? '$'}</span>
-              <input type="number" min="0" step="1" placeholder="0" value={form.balanceGeneral} onChange={(event) => updateField('balanceGeneral', event.target.value)} />
-            </div>
-          </label>
-          <label className="field login-field-simple">
-            <span>Ingresos por ventas totales</span>
-            <div className="student-form-money-field">
-              <span>{selectedCurrency?.symbol ?? '$'}</span>
-              <input type="number" min="0" step="1" placeholder="0" value={form.ingresosFacturacion} onChange={(event) => updateField('ingresosFacturacion', event.target.value)} />
-            </div>
-          </label>
-          <label className="field login-field-simple">
-            <span>Cantidad total tatuajes</span>
-            <input type="number" min="0" step="1" placeholder="0" value={form.cantidadTotalTatuajes} onChange={(event) => updateField('cantidadTotalTatuajes', event.target.value)} />
-          </label>
-          <label className="field login-field-simple">
-            <span>Comision estudio %</span>
-            <input type="number" min="0" max="100" step="0.1" placeholder="0" value={form.comisionEstudioPorcentaje} onChange={(event) => updateField('comisionEstudioPorcentaje', event.target.value)} />
-          </label>
-          <label className="field login-field-simple">
-            <span>Gastos del mes</span>
-            <div className="student-form-money-field">
-              <span>{selectedCurrency?.symbol ?? '$'}</span>
-              <input type="number" min="0" step="1" placeholder="0" value={form.gastosDelMes} onChange={(event) => updateField('gastosDelMes', event.target.value)} />
-            </div>
-          </label>
-          <label className="field login-field-simple">
-            <span>Seguidores Instagram actuales</span>
-            <input type="number" min="0" step="1" placeholder="0" value={form.seguidoresInstagramActuales} onChange={(event) => updateField('seguidoresInstagramActuales', event.target.value)} />
-          </label>
-          <label className="field login-field-simple">
-            <span>Consultas mensuales</span>
-            <input type="number" min="0" step="1" placeholder="0" value={form.consultasMensuales} onChange={(event) => updateField('consultasMensuales', event.target.value)} />
-          </label>
-          <label className="field login-field-simple">
-            <span>Conversaciones a nuevos</span>
-            <input type="number" min="0" step="1" placeholder="0" value={form.conversacionesANuevos} onChange={(event) => updateField('conversacionesANuevos', event.target.value)} />
-          </label>
-          <label className="field login-field-simple">
-            <span>Cotizaciones</span>
-            <input type="number" min="0" step="1" placeholder="0" value={form.cotizaciones} onChange={(event) => updateField('cotizaciones', event.target.value)} />
-          </label>
-          <label className="field login-field-simple">
-            <span>Cierres del mes</span>
-            <input type="number" min="0" step="1" placeholder="0" value={form.cierresDelMes} onChange={(event) => updateField('cierresDelMes', event.target.value)} />
-          </label>
-          <label className="field login-field-simple">
-            <span>Cierres nuevos clientes</span>
-            <input type="number" min="0" step="1" placeholder="0" value={form.cierresNuevosClientes} onChange={(event) => updateField('cierresNuevosClientes', event.target.value)} />
-          </label>
-          <label className="field login-field-simple">
-            <span>Cierres por recomendaciones</span>
-            <input type="number" min="0" step="1" placeholder="0" value={form.cierresPorRecomendaciones} onChange={(event) => updateField('cierresPorRecomendaciones', event.target.value)} />
-          </label>
-          <label className="field login-field-simple">
-            <span>Cierres recurrentes</span>
-            <input type="number" min="0" step="1" placeholder="0" value={form.cierresRecurrentes} onChange={(event) => updateField('cierresRecurrentes', event.target.value)} />
-          </label>
-        </div>
+        <article className="student-form-card">
+          <h4>Balance General</h4>
+          <div className="student-form-grid">
+            <label>
+              <span>Ingresos totales del mes</span>
+              <div className="student-form-money-field">
+                <span>{selectedCurrency?.symbol ?? '$'}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  value={form.balanceGeneral}
+                  onChange={(event) => updateField('balanceGeneral', event.target.value)}
+                />
+              </div>
+            </label>
+            <label>
+              <span>Facturacion</span>
+              <div className="student-form-money-field">
+                <span>{selectedCurrency?.symbol ?? '$'}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  value={form.ingresosFacturacion}
+                  onChange={(event) => updateField('ingresosFacturacion', event.target.value)}
+                />
+              </div>
+            </label>
+            <label>
+              <span>Cantidad total de tatuajes</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={form.cantidadTotalTatuajes}
+                onChange={(event) => updateField('cantidadTotalTatuajes', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Comision del estudio %</span>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="0"
+                value={form.comisionEstudioPorcentaje}
+                onChange={(event) => updateField('comisionEstudioPorcentaje', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Gastos del mes</span>
+              <div className="student-form-money-field">
+                <span>{selectedCurrency?.symbol ?? '$'}</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  value={form.gastosDelMes}
+                  onChange={(event) => updateField('gastosDelMes', event.target.value)}
+                />
+              </div>
+            </label>
+          </div>
+        </article>
+
+        <article className="student-form-card">
+          <h4>Metricas</h4>
+          <div className="student-form-grid">
+            <label>
+              <span>Seguidores en IG</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={form.seguidoresInstagramActuales}
+                onChange={(event) => updateField('seguidoresInstagramActuales', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Consultas mensuales</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={form.consultasMensuales}
+                onChange={(event) => updateField('consultasMensuales', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Conversaciones a nuevos</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={form.conversacionesANuevos}
+                onChange={(event) => updateField('conversacionesANuevos', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Cotizaciones</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={form.cotizaciones}
+                onChange={(event) => updateField('cotizaciones', event.target.value)}
+              />
+            </label>
+          </div>
+        </article>
+
+        <article className="student-form-card">
+          <h4>Cierres Mensuales</h4>
+          <p className="student-form-card-copy">
+            Esta card muestra de donde salen los nuevos clientes del mes.
+          </p>
+          <div className="student-form-grid">
+            <label>
+              <span>Total cierres del mes</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={form.cierresDelMes}
+                onChange={(event) => updateField('cierresDelMes', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Nuevos clientes</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={form.cierresNuevosClientes}
+                onChange={(event) => updateField('cierresNuevosClientes', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Por recomendacion</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={form.cierresPorRecomendaciones}
+                onChange={(event) => updateField('cierresPorRecomendaciones', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>Clientes habituales</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={form.cierresRecurrentes}
+                onChange={(event) => updateField('cierresRecurrentes', event.target.value)}
+              />
+            </label>
+          </div>
+        </article>
 
         {error ? <p className="error-text">{error}</p> : null}
         {success ? <p className="student-profile-success">{success}</p> : null}

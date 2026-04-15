@@ -10,11 +10,15 @@ type EvolutionPeriod = {
   status: string;
   metricsCount: number;
   balanceGeneral: number | null;
+  balanceGeneralUsd: number | null;
   ingresosFacturacion: number | null;
+  ingresosFacturacionUsd: number | null;
   cantidadTotalTatuajes: number | null;
   comisionEstudio: number | null;
+  comisionEstudioUsd: number | null;
   comisionEstudioPorcentaje: number | null;
   gastosDelMes: number | null;
+  gastosDelMesUsd: number | null;
   seguidoresInstagramActuales: number | null;
   consultasMensuales: number | null;
   conversacionesANuevos: number | null;
@@ -92,6 +96,32 @@ function formatCompactNumber(value: number | null) {
     minimumFractionDigits: value !== null && value % 1 !== 0 ? 2 : 0,
     maximumFractionDigits: 2,
   }).format(value ?? 0);
+}
+
+function formatLocalAndUsd(
+  localValue: number | null,
+  usdValue: number | null,
+  currencyCode: string,
+) {
+  const localFormatted = new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: currencyCode,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(localValue ?? 0);
+
+  if (usdValue === null || usdValue === undefined) {
+    return localFormatted;
+  }
+
+  const usdFormatted = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(usdValue);
+
+  return `${localFormatted} (${usdFormatted})`;
 }
 
 function formatMonthLabel(month: number, year: number) {
@@ -521,7 +551,13 @@ export function StudentResultsPanel({
                         {isActive ? (
                           <span className="student-results-chart-tooltip student-results-chart-tooltip-inline">
                             <span>{formatMonthLabel(period.month, period.year)}</span>
-                            <strong>{formatCurrency(period.ingresosFacturacion)}</strong>
+                            <strong>
+                              {formatLocalAndUsd(
+                                period.ingresosFacturacion,
+                                period.ingresosFacturacionUsd,
+                                localCurrency?.code ?? 'USD',
+                              )}
+                            </strong>
                             {delta ? (
                               <small
                                 className={
@@ -620,13 +656,22 @@ export function StudentResultsPanel({
                     <div className="student-history-metrics-grid">
                       <div>
                         <span>{revenueLabel}</span>
-                        <strong>${formatCompactNumber(period.ingresosFacturacion)}</strong>
+                        <strong>
+                          {formatLocalAndUsd(
+                            period.ingresosFacturacion,
+                            period.ingresosFacturacionUsd,
+                            localCurrency?.code ?? 'USD',
+                          )}
+                        </strong>
                       </div>
                       <div>
                         <span>Ingreso tatuador</span>
                         <strong>
-                          {localCurrency?.symbol ?? '$'}
-                          {formatCompactNumber(period.balanceGeneral)}
+                          {formatLocalAndUsd(
+                            period.balanceGeneral,
+                            period.balanceGeneralUsd,
+                            localCurrency?.code ?? 'USD',
+                          )}
                         </strong>
                       </div>
                       <div>
@@ -652,12 +697,20 @@ export function StudentResultsPanel({
                         Comision del estudio: {formatCompactNumber(period.comisionEstudioPorcentaje)}%
                       </span>
                       <span>
-                        Monto: {localCurrency?.symbol ?? '$'}
-                        {formatCompactNumber(period.comisionEstudio)}
+                        Monto:{' '}
+                        {formatLocalAndUsd(
+                          period.comisionEstudio,
+                          period.comisionEstudioUsd,
+                          localCurrency?.code ?? 'USD',
+                        )}
                       </span>
                       <span>
-                        Gastos: {localCurrency?.symbol ?? '$'}
-                        {formatCompactNumber(period.gastosDelMes)}
+                        Gastos:{' '}
+                        {formatLocalAndUsd(
+                          period.gastosDelMes,
+                          period.gastosDelMesUsd,
+                          localCurrency?.code ?? 'USD',
+                        )}
                       </span>
                     </div>
                   </div>

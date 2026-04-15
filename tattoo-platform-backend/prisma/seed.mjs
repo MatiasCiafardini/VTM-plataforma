@@ -617,7 +617,7 @@ const onboardingRoadmapSeed = {
       steps: [
         {
           id: 'seed-onboarding-step-continuity-1',
-          title: 'Continuar en post mentoria (1 ano)',
+          title: 'Continuar en post mentoria (1 año)',
           description:
             'Marca este paso si el alumno decide continuar en el proceso posterior a la mentoria principal.',
           locationHint: 'Confirmacion administrativa o comercial con el equipo.',
