@@ -4,12 +4,20 @@ import { AdminProfilePanel } from '@/components/admin-profile-panel';
 import { AdminChallengesPanel } from '@/components/admin-challenges-panel';
 import { AdminOperationsPanel } from '@/components/admin-operations-panel';
 import { AppShell } from '@/components/app-shell';
+import { EMBEDDED_TOOLS, EmbeddedToolEmbed, EmbeddedToolPromo } from '@/components/embedded-tool';
 import { formatCompactNumber } from '@/components/dashboard-utils';
 import { backendFetch } from '@/lib/backend';
 import { safeBackendFetch } from '@/lib/server-fetch';
 import { requireRole } from '@/lib/session';
 
-type TabKey = 'dashboard' | 'results' | 'challenges' | 'profile' | 'settings';
+type TabKey =
+  | 'dashboard'
+  | 'results'
+  | 'challenges'
+  | 'analyzer'
+  | 'followups'
+  | 'profile'
+  | 'settings';
 
 type AdminDashboard = {
   metricLabels: {
@@ -193,6 +201,8 @@ function resolveTab(tab?: string): TabKey {
   if (
     tab === 'results' ||
     tab === 'challenges' ||
+    tab === 'analyzer' ||
+    tab === 'followups' ||
     tab === 'profile' ||
     tab === 'settings'
   ) {
@@ -319,6 +329,10 @@ export default async function AdminPage({
           ''
         ) : activeTab === 'challenges' ? (
           ''
+        ) : activeTab === 'analyzer' ? (
+          ''
+        ) : activeTab === 'followups' ? (
+          ''
         ) : activeTab === 'profile' ? (
           ''
         ) : activeTab === 'settings' ? (
@@ -334,6 +348,10 @@ export default async function AdminPage({
             ? ''
             : activeTab === 'challenges'
               ? ''
+            : activeTab === 'analyzer'
+              ? ''
+            : activeTab === 'followups'
+              ? ''
             : activeTab === 'profile'
               ? ''
             : activeTab === 'settings'
@@ -348,6 +366,8 @@ export default async function AdminPage({
     >
       {activeTab !== 'dashboard' &&
       activeTab !== 'results' &&
+      activeTab !== 'analyzer' &&
+      activeTab !== 'followups' &&
       activeTab !== 'profile' &&
       activeTab !== 'challenges' ? (
         <section className="dashboard-headline mentor-secondary-headline">
@@ -442,6 +462,15 @@ export default async function AdminPage({
               ))}
             </div>
           </article>
+
+          <section className="section-heading">
+            <h3>Herramientas</h3>
+          </section>
+
+          <section className="tools-grid">
+            <EmbeddedToolPromo href="/admin?tab=analyzer" tool={EMBEDDED_TOOLS.analyzer} />
+            <EmbeddedToolPromo href="/admin?tab=followups" tool={EMBEDDED_TOOLS.followups} />
+          </section>
         </>
       ) : null}
 
@@ -462,6 +491,22 @@ export default async function AdminPage({
         ) : data ? (
           <AdminAchievementsWall achievements={data.completedAchievements} />
         ) : null
+      ) : null}
+
+      {activeTab === 'analyzer' ? (
+        <EmbeddedToolEmbed
+          dashboardHref="/admin?tab=dashboard"
+          dashboardLabel="Volver al dashboard"
+          tool={EMBEDDED_TOOLS.analyzer}
+        />
+      ) : null}
+
+      {activeTab === 'followups' ? (
+        <EmbeddedToolEmbed
+          dashboardHref="/admin?tab=dashboard"
+          dashboardLabel="Volver al dashboard"
+          tool={EMBEDDED_TOOLS.followups}
+        />
       ) : null}
 
       {activeTab === 'profile' && adminProfile ? (

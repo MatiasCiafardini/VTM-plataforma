@@ -98,6 +98,30 @@ type AttentionScore = {
   reasonInactivity: boolean;
 };
 
+type StudentOnboardingRoadmap = {
+  summary: {
+    completedSteps: number;
+    pendingSteps: number;
+    progressPercentage: number;
+    currentPhaseTitle: string | null;
+    nextStep: {
+      id: string;
+      title: string;
+      phaseTitle: string;
+    } | null;
+    lastProgressAt: string | null;
+    isCompleted: boolean;
+  };
+  phases: Array<{
+    id: string;
+    title: string;
+    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+    completedSteps: number;
+    pendingSteps: number;
+    progressPercentage: number;
+  }>;
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getInitials(firstName: string, lastName: string) {
@@ -206,7 +230,7 @@ export default async function StudentProfilePage({
   const session = await requireRole('ADMIN');
   const { studentId } = await params;
 
-  const [profile, challenges, periods, notifications, attentionScores] = await Promise.all([
+  const [profile, challenges, periods, notifications, attentionScores, onboarding] = await Promise.all([
     safeBackendFetch<StudentProfile | null>(
       `/students/${studentId}`,
       null,
@@ -236,6 +260,12 @@ export default async function StudentProfilePage({
       [],
       { token: session.token },
       'attention scores',
+    ),
+    safeBackendFetch<StudentOnboardingRoadmap | null>(
+      `/onboarding/student/${studentId}`,
+      null,
+      { token: session.token },
+      'student onboarding',
     ),
   ]);
 
@@ -345,6 +375,61 @@ export default async function StudentProfilePage({
               </ul>
             </div>
           </section>
+
+          {onboarding ? (
+            <section className="student-profile-section">
+              <h3 className="student-profile-section-title">Resumen de onboarding</h3>
+              <div className="onboarding-board-topline">
+                <div>
+                  <span className="list-row-label">Progreso</span>
+                  <strong>{onboarding.summary.progressPercentage}%</strong>
+                </div>
+                <div>
+                  <span className="list-row-label">Fase actual</span>
+                  <strong>{onboarding.summary.currentPhaseTitle ?? 'Finalizado'}</strong>
+                </div>
+                <div>
+                  <span className="list-row-label">Siguiente paso</span>
+                  <strong>{onboarding.summary.nextStep?.title ?? 'Sin pendientes'}</strong>
+                </div>
+              </div>
+
+              <div className="onboarding-student-progress-track">
+                <span style={{ width: `${onboarding.summary.progressPercentage}%` }} />
+              </div>
+
+              <div className="onboarding-board-phase-list">
+                {onboarding.phases.map((phase) => (
+                  <article className="onboarding-board-phase-card" key={phase.id}>
+                    <div className="onboarding-board-phase-head">
+                      <strong>{phase.title}</strong>
+                      <span
+                        className={
+                          phase.status === 'COMPLETED'
+                            ? 'status-chip status-green'
+                            : phase.status === 'IN_PROGRESS'
+                              ? 'status-chip status-yellow'
+                              : 'status-chip status-neutral'
+                        }
+                      >
+                        {phase.status === 'COMPLETED'
+                          ? 'Completada'
+                          : phase.status === 'IN_PROGRESS'
+                            ? 'En progreso'
+                            : 'No iniciada'}
+                      </span>
+                    </div>
+                    <div className="onboarding-board-phase-track">
+                      <span style={{ width: `${phase.progressPercentage}%` }} />
+                    </div>
+                    <p>
+                      {phase.completedSteps} completados · {phase.pendingSteps} pendientes
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           {/* Achievements */}
           <section className="student-profile-section">

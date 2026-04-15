@@ -107,19 +107,19 @@ function buildInitialFormState(): FormState {
   return {
     month: now.getMonth() + 1,
     year: now.getFullYear(),
-    balanceGeneral: '0',
-    ingresosFacturacion: '0',
-    cantidadTotalTatuajes: '0',
-    comisionEstudioPorcentaje: '0',
-    gastosDelMes: '0',
-    seguidoresInstagramActuales: '0',
-    consultasMensuales: '0',
-    conversacionesANuevos: '0',
-    cotizaciones: '0',
-    cierresDelMes: '0',
-    cierresNuevosClientes: '0',
-    cierresPorRecomendaciones: '0',
-    cierresRecurrentes: '0',
+    balanceGeneral: '',
+    ingresosFacturacion: '',
+    cantidadTotalTatuajes: '',
+    comisionEstudioPorcentaje: '',
+    gastosDelMes: '',
+    seguidoresInstagramActuales: '',
+    consultasMensuales: '',
+    conversacionesANuevos: '',
+    cotizaciones: '',
+    cierresDelMes: '',
+    cierresNuevosClientes: '',
+    cierresPorRecomendaciones: '',
+    cierresRecurrentes: '',
   };
 }
 
@@ -128,31 +128,32 @@ function buildFormStateForPeriod(
   year: number,
   period?: EvolutionPeriod,
 ): FormState {
+  const val = (v: number | null) => (v !== null ? String(v) : '');
   return {
     month,
     year,
-    balanceGeneral: String(period?.balanceGeneral ?? 0),
-    ingresosFacturacion: String(period?.ingresosFacturacion ?? 0),
-    cantidadTotalTatuajes: String(period?.cantidadTotalTatuajes ?? 0),
-    comisionEstudioPorcentaje: String(period?.comisionEstudioPorcentaje ?? 0),
-    gastosDelMes: String(period?.gastosDelMes ?? 0),
-    seguidoresInstagramActuales: String(period?.seguidoresInstagramActuales ?? 0),
-    consultasMensuales: String(period?.consultasMensuales ?? 0),
-    conversacionesANuevos: String(period?.conversacionesANuevos ?? 0),
-    cotizaciones: String(period?.cotizaciones ?? 0),
-    cierresDelMes: String(period?.cierresDelMes ?? 0),
-    cierresNuevosClientes: String(period?.cierresNuevosClientes ?? 0),
-    cierresPorRecomendaciones: String(period?.cierresPorRecomendaciones ?? 0),
-    cierresRecurrentes: String(period?.cierresRecurrentes ?? 0),
+    balanceGeneral: val(period?.balanceGeneral ?? null),
+    ingresosFacturacion: val(period?.ingresosFacturacion ?? null),
+    cantidadTotalTatuajes: val(period?.cantidadTotalTatuajes ?? null),
+    comisionEstudioPorcentaje: val(period?.comisionEstudioPorcentaje ?? null),
+    gastosDelMes: val(period?.gastosDelMes ?? null),
+    seguidoresInstagramActuales: val(period?.seguidoresInstagramActuales ?? null),
+    consultasMensuales: val(period?.consultasMensuales ?? null),
+    conversacionesANuevos: val(period?.conversacionesANuevos ?? null),
+    cotizaciones: val(period?.cotizaciones ?? null),
+    cierresDelMes: val(period?.cierresDelMes ?? null),
+    cierresNuevosClientes: val(period?.cierresNuevosClientes ?? null),
+    cierresPorRecomendaciones: val(period?.cierresPorRecomendaciones ?? null),
+    cierresRecurrentes: val(period?.cierresRecurrentes ?? null),
   };
 }
 
-function toNumber(value: string) {
-  if (!value.trim()) {
-    return null;
-  }
-
-  return Number(value);
+function toNumber(value: string): number {
+  if (!value.trim()) return 0;
+  // Accept both comma and dot as decimal separator (e.g. "1400,00" → 1400)
+  const normalized = value.replace(',', '.');
+  const num = Number(normalized);
+  return isNaN(num) ? 0 : num;
 }
 
 export function StudentResultsPanel({
@@ -286,7 +287,7 @@ export function StudentResultsPanel({
           const definition = metricDefinitionMap[slug];
           const parsedValue = toNumber(rawValue);
 
-          if (!definition || parsedValue === null) {
+          if (!definition) {
             return null;
           }
 
@@ -744,29 +745,29 @@ export function StudentResultsPanel({
                     <span>Ingresos totales del mes</span>
                     <div className="student-form-money-field">
                       <span>{currencySymbol}</span>
-                      <input value={form.balanceGeneral} onChange={(event) => updateField('balanceGeneral', event.target.value)} />
+                      <input type="number" min="0" step="1" placeholder="0" value={form.balanceGeneral} onChange={(event) => updateField('balanceGeneral', event.target.value)} />
                     </div>
                   </label>
                   <label>
                     <span>Facturacion</span>
                     <div className="student-form-money-field">
                       <span>{currencySymbol}</span>
-                      <input value={form.ingresosFacturacion} onChange={(event) => updateField('ingresosFacturacion', event.target.value)} />
+                      <input type="number" min="0" step="1" placeholder="0" value={form.ingresosFacturacion} onChange={(event) => updateField('ingresosFacturacion', event.target.value)} />
                     </div>
                   </label>
                   <label>
                     <span>Cantidad total de tatuajes</span>
-                    <input value={form.cantidadTotalTatuajes} onChange={(event) => updateField('cantidadTotalTatuajes', event.target.value)} />
+                    <input type="number" min="0" step="1" placeholder="0" value={form.cantidadTotalTatuajes} onChange={(event) => updateField('cantidadTotalTatuajes', event.target.value)} />
                   </label>
                   <label>
                     <span>Comision del estudio %</span>
-                    <input value={form.comisionEstudioPorcentaje} onChange={(event) => updateField('comisionEstudioPorcentaje', event.target.value)} />
+                    <input type="number" min="0" max="100" step="0.1" placeholder="0" value={form.comisionEstudioPorcentaje} onChange={(event) => updateField('comisionEstudioPorcentaje', event.target.value)} />
                   </label>
                   <label>
                     <span>Gastos del mes</span>
                     <div className="student-form-money-field">
                       <span>{currencySymbol}</span>
-                      <input value={form.gastosDelMes} onChange={(event) => updateField('gastosDelMes', event.target.value)} />
+                      <input type="number" min="0" step="1" placeholder="0" value={form.gastosDelMes} onChange={(event) => updateField('gastosDelMes', event.target.value)} />
                     </div>
                   </label>
                 </div>
@@ -777,19 +778,19 @@ export function StudentResultsPanel({
                 <div className="student-form-grid">
                   <label>
                     <span>Seguidores en IG</span>
-                    <input value={form.seguidoresInstagramActuales} onChange={(event) => updateField('seguidoresInstagramActuales', event.target.value)} />
+                    <input type="number" min="0" step="1" placeholder="0" value={form.seguidoresInstagramActuales} onChange={(event) => updateField('seguidoresInstagramActuales', event.target.value)} />
                   </label>
                   <label>
                     <span>Consultas mensuales</span>
-                    <input value={form.consultasMensuales} onChange={(event) => updateField('consultasMensuales', event.target.value)} />
+                    <input type="number" min="0" step="1" placeholder="0" value={form.consultasMensuales} onChange={(event) => updateField('consultasMensuales', event.target.value)} />
                   </label>
                   <label>
                     <span>Conversaciones a nuevos</span>
-                    <input value={form.conversacionesANuevos} onChange={(event) => updateField('conversacionesANuevos', event.target.value)} />
+                    <input type="number" min="0" step="1" placeholder="0" value={form.conversacionesANuevos} onChange={(event) => updateField('conversacionesANuevos', event.target.value)} />
                   </label>
                   <label>
                     <span>Cotizaciones</span>
-                    <input value={form.cotizaciones} onChange={(event) => updateField('cotizaciones', event.target.value)} />
+                    <input type="number" min="0" step="1" placeholder="0" value={form.cotizaciones} onChange={(event) => updateField('cotizaciones', event.target.value)} />
                   </label>
                 </div>
               </article>
@@ -802,19 +803,19 @@ export function StudentResultsPanel({
                 <div className="student-form-grid">
                   <label>
                     <span>Total cierres del mes</span>
-                    <input value={form.cierresDelMes} onChange={(event) => updateField('cierresDelMes', event.target.value)} />
+                    <input type="number" min="0" step="1" placeholder="0" value={form.cierresDelMes} onChange={(event) => updateField('cierresDelMes', event.target.value)} />
                   </label>
                   <label>
                     <span>Nuevos clientes</span>
-                    <input value={form.cierresNuevosClientes} onChange={(event) => updateField('cierresNuevosClientes', event.target.value)} />
+                    <input type="number" min="0" step="1" placeholder="0" value={form.cierresNuevosClientes} onChange={(event) => updateField('cierresNuevosClientes', event.target.value)} />
                   </label>
                   <label>
                     <span>Por recomendacion</span>
-                    <input value={form.cierresPorRecomendaciones} onChange={(event) => updateField('cierresPorRecomendaciones', event.target.value)} />
+                    <input type="number" min="0" step="1" placeholder="0" value={form.cierresPorRecomendaciones} onChange={(event) => updateField('cierresPorRecomendaciones', event.target.value)} />
                   </label>
                   <label>
                     <span>Clientes habituales</span>
-                    <input value={form.cierresRecurrentes} onChange={(event) => updateField('cierresRecurrentes', event.target.value)} />
+                    <input type="number" min="0" step="1" placeholder="0" value={form.cierresRecurrentes} onChange={(event) => updateField('cierresRecurrentes', event.target.value)} />
                   </label>
                 </div>
               </article>

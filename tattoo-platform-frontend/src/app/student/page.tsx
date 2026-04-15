@@ -6,12 +6,13 @@ import { StudentResultsPanel } from '@/components/student-results-panel';
 import { StudentChallengesPanel } from '@/components/student-challenges-panel';
 import { StudentProfilePanel } from '@/components/student-profile-panel';
 import { StudentWeekCalendar } from '@/components/student-week-calendar';
+import { EMBEDDED_TOOLS, EmbeddedToolEmbed, EmbeddedToolPromo } from '@/components/embedded-tool';
 import { backendFetch } from '@/lib/backend';
 import { safeBackendFetch } from '@/lib/server-fetch';
 import { requireRole } from '@/lib/session';
 import Link from 'next/link';
 
-type TabKey = 'dashboard' | 'results' | 'challenges' | 'profile';
+type TabKey = 'dashboard' | 'results' | 'challenges' | 'analyzer' | 'followups' | 'profile';
 
 type StudentDashboard = {
   metricLabels: {
@@ -143,7 +144,13 @@ type QuickLink = {
 };
 
 function resolveTab(tab?: string): TabKey {
-  if (tab === 'results' || tab === 'challenges' || tab === 'profile') {
+  if (
+    tab === 'results' ||
+    tab === 'challenges' ||
+    tab === 'analyzer' ||
+    tab === 'followups' ||
+    tab === 'profile'
+  ) {
     return tab;
   }
 
@@ -222,7 +229,10 @@ export default async function StudentPage({
       showSectionEyebrow={false}
       notifications={notifications}
     >
-      {activeTab !== 'challenges' && activeTab !== 'profile' ? (
+      {activeTab !== 'challenges' &&
+      activeTab !== 'profile' &&
+      activeTab !== 'analyzer' &&
+      activeTab !== 'followups' ? (
         <section className="dashboard-headline">
           <div>
             <h3 className="dashboard-headline-title">
@@ -250,7 +260,7 @@ export default async function StudentPage({
           >
             {activeTab === 'dashboard' ? 'Ver resultados' : 'Volver al dashboard'}
           </Link>
-        </section>
+          </section>
       ) : null}
 
       {activeTab === 'dashboard' && data ? (
@@ -315,6 +325,15 @@ export default async function StudentPage({
             )}
           </section>
 
+          <section className="section-heading">
+            <h3>Herramientas</h3>
+          </section>
+
+          <section className="tools-grid">
+            <EmbeddedToolPromo href="/student?tab=analyzer" tool={EMBEDDED_TOOLS.analyzer} />
+            <EmbeddedToolPromo href="/student?tab=followups" tool={EMBEDDED_TOOLS.followups} />
+          </section>
+
           <section className="student-calendar-shell">
             <header className="student-calendar-header">
               <div>
@@ -351,6 +370,22 @@ export default async function StudentPage({
 
       {activeTab === 'challenges' && data ? (
         <StudentChallengesPanel challenges={data.challenges} />
+      ) : null}
+
+      {activeTab === 'analyzer' ? (
+        <EmbeddedToolEmbed
+          dashboardHref="/student?tab=dashboard"
+          dashboardLabel="Volver al dashboard"
+          tool={EMBEDDED_TOOLS.analyzer}
+        />
+      ) : null}
+
+      {activeTab === 'followups' ? (
+        <EmbeddedToolEmbed
+          dashboardHref="/student?tab=dashboard"
+          dashboardLabel="Volver al dashboard"
+          tool={EMBEDDED_TOOLS.followups}
+        />
       ) : null}
 
       {activeTab === 'profile' ? (

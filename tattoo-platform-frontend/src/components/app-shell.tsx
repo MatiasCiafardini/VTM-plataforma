@@ -19,7 +19,14 @@ type AppShellProps = {
   subtitle: ReactNode;
   role: AppRole;
   displayName: string;
-  activeNav?: 'dashboard' | 'results' | 'challenges' | 'profile' | 'settings';
+  activeNav?:
+    | 'dashboard'
+    | 'results'
+    | 'challenges'
+    | 'analyzer'
+    | 'profile'
+    | 'settings'
+    | 'onboarding';
   showSectionEyebrow?: boolean;
   notifications?: NotificationItem[];
   children: ReactNode;
@@ -51,6 +58,9 @@ export function AppShell({
           { key: 'dashboard', label: 'Dashboard', href: `${dashboardPath}?tab=dashboard` },
           { key: 'results', label: 'Resultados', href: `${dashboardPath}?tab=results` },
           { key: 'challenges', label: 'Desafios', href: `${dashboardPath}?tab=challenges` },
+          { key: 'analyzer', label: 'Analizador', href: `${dashboardPath}?tab=analyzer` },
+          { key: 'followups', label: 'Seguimientos', href: `${dashboardPath}?tab=followups` },
+          { key: 'onboarding', label: 'On boarding', href: '/student/onboarding' },
           { key: 'profile', label: 'Mi perfil', href: `${dashboardPath}?tab=profile` },
         ]
       : role === 'ADMIN'
@@ -67,6 +77,21 @@ export function AppShell({
               href: `${dashboardPath}?tab=challenges`,
             },
             {
+              key: 'analyzer',
+              label: 'Analizador',
+              href: `${dashboardPath}?tab=analyzer`,
+            },
+            {
+              key: 'followups',
+              label: 'Seguimientos',
+              href: `${dashboardPath}?tab=followups`,
+            },
+            {
+              key: 'onboarding',
+              label: 'On boarding',
+              href: '/admin/onboarding',
+            },
+            {
               key: 'settings',
               label: 'Configuracion',
               href: `${dashboardPath}?tab=settings`,
@@ -77,6 +102,7 @@ export function AppShell({
             { key: 'dashboard', label: 'Dashboard', href: `${dashboardPath}?tab=dashboard` },
             { key: 'results', label: 'Gestion de Alumnos', href: `${dashboardPath}?tab=results` },
             { key: 'challenges', label: 'Muro de Alertas', href: `${dashboardPath}?tab=challenges` },
+            { key: 'onboarding', label: 'On boarding', href: '/mentor/onboarding' },
             { key: 'profile', label: 'Equipo', href: `${dashboardPath}?tab=profile` },
           ]
       : [

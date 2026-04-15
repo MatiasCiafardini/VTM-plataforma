@@ -11,7 +11,15 @@
       "Bash(cat .local-runtime/state/backend.pid)",
       "Bash(cat .local-runtime/state/frontend.pid)",
       "Bash(cat .local-runtime/state/backend.log.path)",
-      "Bash(powershell -NoProfile -Command \"Get-Process -Name node,npm -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Sort-Object StartTime\")"
+      "Bash(powershell -NoProfile -Command \"Get-Process -Name node,npm -ErrorAction SilentlyContinue | Select-Object Id,ProcessName,StartTime | Sort-Object StartTime\")",
+      "Bash(node prisma/seed.mjs)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(node -e ' *)",
+      "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\pg_ctl.exe\" -D \"c:/Users/mat_i/OneDrive/Documentos/trabajos/Plataforma VMT/tattoo-platform-backend/.postgres/data\" status)",
+      "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\pg_ctl.exe\" -D \"c:/Users/mat_i/OneDrive/Documentos/trabajos/Plataforma VMT/tattoo-platform-backend/.postgres/data\" -o \"-p 5433 -h 127.0.0.1\" start -W)",
+      "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\pg_ctl.exe\" -D \"c:/Users/mat_i/OneDrive/Documentos/trabajos/Plataforma VMT/tattoo-platform-backend/.postgres/data\" stop)",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \". scripts/dev-common.ps1; Start-BackendDatabase\")",
+      "Bash(powershell -ExecutionPolicy Bypass -Command \". scripts/dev-common.ps1; Start-BackendDatabase; Write-Host 'DONE'\")"
     ]
   }
 }

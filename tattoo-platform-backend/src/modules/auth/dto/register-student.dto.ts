@@ -8,7 +8,7 @@ export class RegisterStudentDto {
 
   @ApiProperty({ example: 'supersecret123' })
   @IsString()
-  @MinLength(8)
+  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres.' })
   password!: string;
 
   @ApiProperty({ example: 'Vende' })

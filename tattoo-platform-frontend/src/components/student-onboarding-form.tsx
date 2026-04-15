@@ -57,6 +57,18 @@ const monthOptions = [
   { value: 12, label: 'Diciembre' },
 ];
 
+const currentYear = new Date().getFullYear();
+const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - 3 + i);
+
+function getPreviousMonthPeriod(month: string, year: string): { month: number; year: number } {
+  const m = Number(month);
+  const y = Number(year);
+  if (m === 1) {
+    return { month: 12, year: y - 1 };
+  }
+  return { month: m - 1, year: y };
+}
+
 function buildInitialState(profile: StudentProfileData): OnboardingFormState {
   const now = new Date();
 
@@ -65,28 +77,28 @@ function buildInitialState(profile: StudentProfileData): OnboardingFormState {
     year: String(now.getFullYear()),
     country: profile.country ?? '',
     instagramHandle: profile.instagramHandle ?? '',
-    balanceGeneral: '0',
-    ingresosFacturacion: '0',
-    cantidadTotalTatuajes: '0',
-    comisionEstudioPorcentaje: '0',
-    gastosDelMes: '0',
-    seguidoresInstagramActuales: '0',
-    consultasMensuales: '0',
-    conversacionesANuevos: '0',
-    cotizaciones: '0',
-    cierresDelMes: '0',
-    cierresNuevosClientes: '0',
-    cierresPorRecomendaciones: '0',
-    cierresRecurrentes: '0',
+    balanceGeneral: '',
+    ingresosFacturacion: '',
+    cantidadTotalTatuajes: '',
+    comisionEstudioPorcentaje: '',
+    gastosDelMes: '',
+    seguidoresInstagramActuales: '',
+    consultasMensuales: '',
+    conversacionesANuevos: '',
+    cotizaciones: '',
+    cierresDelMes: '',
+    cierresNuevosClientes: '',
+    cierresPorRecomendaciones: '',
+    cierresRecurrentes: '',
   };
 }
 
-function toNumber(value: string) {
-  if (!value.trim()) {
-    return null;
-  }
-
-  return Number(value);
+function toNumber(value: string): number {
+  if (!value.trim()) return 0;
+  // Accept both comma and dot as decimal separator (e.g. "1400,00" → 1400)
+  const normalized = value.replace(',', '.');
+  const num = Number(normalized);
+  return isNaN(num) ? 0 : num;
 }
 
 function formatCurrencyLabel(currency: Currency | null) {
@@ -171,13 +183,15 @@ export function StudentOnboardingForm({
         throw new Error(profilePayload.message ?? 'No pudimos guardar tu perfil inicial.');
       }
 
+      const basePeriod = getPreviousMonthPeriod(form.month, form.year);
+
       let periodId: string | null = null;
       const periodResponse = await fetch('/api/student/metrics/periods', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          month: Number(form.month),
-          year: Number(form.year),
+          month: basePeriod.month,
+          year: basePeriod.year,
         }),
       });
 
@@ -187,7 +201,7 @@ export function StudentOnboardingForm({
         periodId = periodPayload.id ?? null;
       } else {
         const existingPeriodsResponse = await fetch(
-          `/api/student/metrics/periods?month=${form.month}&year=${form.year}`,
+          `/api/student/metrics/periods?month=${basePeriod.month}&year=${basePeriod.year}`,
           { cache: 'no-store' },
         );
         const existingPeriodsPayload = await existingPeriodsResponse.json();
@@ -324,7 +338,7 @@ export function StudentOnboardingForm({
           </label>
 
           <label className="field login-field-simple">
-            <span>Mes de inicio</span>
+            <span>Mes de inicio de mentoría</span>
             <select value={form.month} onChange={(event) => updateField('month', event.target.value)}>
               {monthOptions.map((month) => (
                 <option key={month.value} value={month.value}>
@@ -335,77 +349,85 @@ export function StudentOnboardingForm({
           </label>
 
           <label className="field login-field-simple">
-            <span>Anio</span>
-            <input
-              type="number"
-              min="2020"
-              max="2100"
-              value={form.year}
-              onChange={(event) => updateField('year', event.target.value)}
-              required
-            />
+            <span>Año de inicio</span>
+            <select value={form.year} onChange={(event) => updateField('year', event.target.value)}>
+              {yearOptions.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
       </section>
 
       <section className="student-onboarding-card">
         <div className="student-onboarding-section-head">
-          <h2>Primer mes de datos</h2>
-          <p>Usa los mismos campos que luego vas a completar cada mes.</p>
+          <h2>Datos del mes previo a la mentoría</h2>
+          <p>Datos del mes anterior al inicio de la mentoría, para tener una base de comparación.</p>
         </div>
 
         <div className="student-onboarding-metrics-grid">
           <label className="field login-field-simple">
             <span>Balance general</span>
-            <input value={form.balanceGeneral} onChange={(event) => updateField('balanceGeneral', event.target.value)} />
+            <div className="student-form-money-field">
+              <span>{selectedCurrency?.symbol ?? '$'}</span>
+              <input type="number" min="0" step="1" placeholder="0" value={form.balanceGeneral} onChange={(event) => updateField('balanceGeneral', event.target.value)} />
+            </div>
           </label>
           <label className="field login-field-simple">
-            <span>Ingresos facturacion</span>
-            <input value={form.ingresosFacturacion} onChange={(event) => updateField('ingresosFacturacion', event.target.value)} />
+            <span>Ingresos por ventas totales</span>
+            <div className="student-form-money-field">
+              <span>{selectedCurrency?.symbol ?? '$'}</span>
+              <input type="number" min="0" step="1" placeholder="0" value={form.ingresosFacturacion} onChange={(event) => updateField('ingresosFacturacion', event.target.value)} />
+            </div>
           </label>
           <label className="field login-field-simple">
             <span>Cantidad total tatuajes</span>
-            <input value={form.cantidadTotalTatuajes} onChange={(event) => updateField('cantidadTotalTatuajes', event.target.value)} />
+            <input type="number" min="0" step="1" placeholder="0" value={form.cantidadTotalTatuajes} onChange={(event) => updateField('cantidadTotalTatuajes', event.target.value)} />
           </label>
           <label className="field login-field-simple">
             <span>Comision estudio %</span>
-            <input value={form.comisionEstudioPorcentaje} onChange={(event) => updateField('comisionEstudioPorcentaje', event.target.value)} />
+            <input type="number" min="0" max="100" step="0.1" placeholder="0" value={form.comisionEstudioPorcentaje} onChange={(event) => updateField('comisionEstudioPorcentaje', event.target.value)} />
           </label>
           <label className="field login-field-simple">
             <span>Gastos del mes</span>
-            <input value={form.gastosDelMes} onChange={(event) => updateField('gastosDelMes', event.target.value)} />
+            <div className="student-form-money-field">
+              <span>{selectedCurrency?.symbol ?? '$'}</span>
+              <input type="number" min="0" step="1" placeholder="0" value={form.gastosDelMes} onChange={(event) => updateField('gastosDelMes', event.target.value)} />
+            </div>
           </label>
           <label className="field login-field-simple">
             <span>Seguidores Instagram actuales</span>
-            <input value={form.seguidoresInstagramActuales} onChange={(event) => updateField('seguidoresInstagramActuales', event.target.value)} />
+            <input type="number" min="0" step="1" placeholder="0" value={form.seguidoresInstagramActuales} onChange={(event) => updateField('seguidoresInstagramActuales', event.target.value)} />
           </label>
           <label className="field login-field-simple">
             <span>Consultas mensuales</span>
-            <input value={form.consultasMensuales} onChange={(event) => updateField('consultasMensuales', event.target.value)} />
+            <input type="number" min="0" step="1" placeholder="0" value={form.consultasMensuales} onChange={(event) => updateField('consultasMensuales', event.target.value)} />
           </label>
           <label className="field login-field-simple">
             <span>Conversaciones a nuevos</span>
-            <input value={form.conversacionesANuevos} onChange={(event) => updateField('conversacionesANuevos', event.target.value)} />
+            <input type="number" min="0" step="1" placeholder="0" value={form.conversacionesANuevos} onChange={(event) => updateField('conversacionesANuevos', event.target.value)} />
           </label>
           <label className="field login-field-simple">
             <span>Cotizaciones</span>
-            <input value={form.cotizaciones} onChange={(event) => updateField('cotizaciones', event.target.value)} />
+            <input type="number" min="0" step="1" placeholder="0" value={form.cotizaciones} onChange={(event) => updateField('cotizaciones', event.target.value)} />
           </label>
           <label className="field login-field-simple">
             <span>Cierres del mes</span>
-            <input value={form.cierresDelMes} onChange={(event) => updateField('cierresDelMes', event.target.value)} />
+            <input type="number" min="0" step="1" placeholder="0" value={form.cierresDelMes} onChange={(event) => updateField('cierresDelMes', event.target.value)} />
           </label>
           <label className="field login-field-simple">
             <span>Cierres nuevos clientes</span>
-            <input value={form.cierresNuevosClientes} onChange={(event) => updateField('cierresNuevosClientes', event.target.value)} />
+            <input type="number" min="0" step="1" placeholder="0" value={form.cierresNuevosClientes} onChange={(event) => updateField('cierresNuevosClientes', event.target.value)} />
           </label>
           <label className="field login-field-simple">
             <span>Cierres por recomendaciones</span>
-            <input value={form.cierresPorRecomendaciones} onChange={(event) => updateField('cierresPorRecomendaciones', event.target.value)} />
+            <input type="number" min="0" step="1" placeholder="0" value={form.cierresPorRecomendaciones} onChange={(event) => updateField('cierresPorRecomendaciones', event.target.value)} />
           </label>
           <label className="field login-field-simple">
             <span>Cierres recurrentes</span>
-            <input value={form.cierresRecurrentes} onChange={(event) => updateField('cierresRecurrentes', event.target.value)} />
+            <input type="number" min="0" step="1" placeholder="0" value={form.cierresRecurrentes} onChange={(event) => updateField('cierresRecurrentes', event.target.value)} />
           </label>
         </div>
 

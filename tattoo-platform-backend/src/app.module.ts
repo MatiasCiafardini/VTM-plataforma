@@ -16,6 +16,7 @@ import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { MentorsModule } from './modules/mentors/mentors.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { OnboardingModule } from './modules/onboarding/onboarding.module';
 import { RewardsModule } from './modules/rewards/rewards.module';
 import { StudentLinksModule } from './modules/student-links/student-links.module';
 import { StudentDashboardLinksModule } from './modules/student-dashboard-links/student-dashboard-links.module';
@@ -30,6 +31,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PrismaModule,
     AdminSettingsModule,
     NotificationsModule,
+    OnboardingModule,
     AuthModule,
     UsersModule,
     StudentsModule,

@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       role: payload.user.role,
-      nextPath: payload.user.role === 'STUDENT' ? '/student/onboarding' : undefined,
+      nextPath: payload.user.role === 'STUDENT' ? '/student/setup' : undefined,
     });
   } catch (error) {
     return toApiErrorResponse(error, 'No pudimos crear la cuenta.');

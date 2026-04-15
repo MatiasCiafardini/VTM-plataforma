@@ -119,6 +119,50 @@ function Get-ListeningProcessIdForPort {
   return [int]$connection.OwningProcess
 }
 
+function Invoke-NativeCommandCapture {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$FilePath,
+
+    [Parameter(Mandatory = $true)]
+    [string[]]$Arguments
+  )
+
+  $previousNativePreference = $null
+  $hadNativePreference = $false
+  $previousErrorActionPreference = $ErrorActionPreference
+
+  try {
+    $ErrorActionPreference = 'Continue'
+
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+      $hadNativePreference = Test-Path variable:PSNativeCommandUseErrorActionPreference
+      if ($hadNativePreference) {
+        $previousNativePreference = $PSNativeCommandUseErrorActionPreference
+      }
+      $PSNativeCommandUseErrorActionPreference = $false
+    }
+
+    $output = & $FilePath @Arguments 2>&1 | Out-String
+    return @{
+      ExitCode = $LASTEXITCODE
+      Output = $output.Trim()
+    }
+  }
+  finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+
+    if ($PSVersionTable.PSVersion.Major -ge 7) {
+      if ($hadNativePreference) {
+        $PSNativeCommandUseErrorActionPreference = $previousNativePreference
+      }
+      else {
+        Remove-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue
+      }
+    }
+  }
+}
+
 # Kill a PID and its entire child process tree using taskkill /T.
 # Silently ignores errors (process already gone, etc.).
 function Remove-ProcessTree {
@@ -286,22 +330,30 @@ function Start-BackendDatabase {
   }
 
   # pg_ctl status is the authoritative check (exit 0 = running).
-  $null = & $script:PgCtl -D $pgDataDir status 2>&1
-  if ($LASTEXITCODE -eq 0) {
+  $status = Invoke-NativeCommandCapture -FilePath $script:PgCtl -Arguments @('-D', $pgDataDir, 'status')
+  if ($status.ExitCode -eq 0) {
     Write-Host '  Base de datos ya en ejecucion.'
     return
   }
 
   Write-Host -NoNewline '  Iniciando base de datos'
 
-  # -W (uppercase) = no wait, returns immediately. No -l flag to avoid
-  # "Permission denied" on a locked log file from a previous session.
-  $startOut = & $script:PgCtl -D $pgDataDir -o '-p 5433 -h 127.0.0.1' start -W 2>&1 | Out-String
+  # Launch pg_ctl fire-and-forget (no -Wait) so that postgres inheriting the
+  # file handles does not block us. The port poll below is the readiness gate.
+  # ArgumentList as a single string to preserve quoting around the -o value.
+  $tmpStdout = [System.IO.Path]::GetTempFileName()
+  $tmpStderr = [System.IO.Path]::GetTempFileName()
+  $pgCtlArgs = "-D `"$pgDataDir`" -o `"-p 5433 -h 127.0.0.1`" start -W"
+  $null = Start-Process -FilePath $script:PgCtl `
+    -ArgumentList $pgCtlArgs `
+    -NoNewWindow `
+    -RedirectStandardOutput $tmpStdout -RedirectStandardError $tmpStderr
 
   # Poll until the port is listening or we time out.
   while ((Get-Date) -lt $startupDeadline) {
     if (Get-ListeningProcessIdForPort -Port $databasePort) {
       Write-Host ' lista.'
+      Remove-Item $tmpStdout, $tmpStderr -Force -ErrorAction SilentlyContinue
       return
     }
     Start-Sleep -Milliseconds 500
@@ -309,12 +361,17 @@ function Start-BackendDatabase {
   }
 
   # Final authoritative check via pg_ctl status.
-  $null = & $script:PgCtl -D $pgDataDir status 2>&1
-  if ($LASTEXITCODE -eq 0) {
+  $status = Invoke-NativeCommandCapture -FilePath $script:PgCtl -Arguments @('-D', $pgDataDir, 'status')
+  if ($status.ExitCode -eq 0) {
     Write-Host ' lista.'
+    Remove-Item $tmpStdout, $tmpStderr -Force -ErrorAction SilentlyContinue
     return
   }
 
+  $outText = if (Test-Path $tmpStdout) { "$([System.IO.File]::ReadAllText($tmpStdout))" } else { '' }
+  $errText = if (Test-Path $tmpStderr) { "$([System.IO.File]::ReadAllText($tmpStderr))" } else { '' }
+  $startOut = "$outText $errText".Trim()
+  Remove-Item $tmpStdout, $tmpStderr -Force -ErrorAction SilentlyContinue
   throw "No pude iniciar PostgreSQL (el puerto $databasePort no quedo escuchando).`nOutput de inicio: $startOut"
 }
 
@@ -324,8 +381,9 @@ function Stop-BackendDatabase {
   $pgDataDir = Join-Path $backendDir '.postgres\data'
 
   try {
-    $out = & $script:PgCtl -D $pgDataDir stop 2>&1 | Out-String
-    if ($LASTEXITCODE -ne 0) {
+    $result = Invoke-NativeCommandCapture -FilePath $script:PgCtl -Arguments @('-D', $pgDataDir, 'stop')
+    $out = $result.Output
+    if ($result.ExitCode -ne 0) {
       $msg = "$out"
       if ($msg -notmatch 'no se est. ejecutando|is not running|no server running|postmaster\.pid|no existe') {
         throw $msg
