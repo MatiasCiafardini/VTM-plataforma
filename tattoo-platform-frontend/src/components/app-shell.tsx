@@ -24,6 +24,7 @@ type AppShellProps = {
     | 'results'
     | 'challenges'
     | 'analyzer'
+    | 'followups'
     | 'profile'
     | 'settings'
     | 'onboarding';
