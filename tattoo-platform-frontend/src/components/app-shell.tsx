@@ -80,11 +80,6 @@ export function AppShell({
               label: 'On boarding',
               href: '/admin/onboarding',
             },
-            {
-              key: 'settings',
-              label: 'Configuracion',
-              href: `${dashboardPath}?tab=settings`,
-            },
           ]
       : role === 'MENTOR'
         ? [
