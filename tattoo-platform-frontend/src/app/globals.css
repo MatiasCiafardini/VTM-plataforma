@@ -19,6 +19,10 @@
   --focus-ring: 0 0 0 4px rgba(255, 209, 2, 0.16);
 }
 
+html {
+  background: #0a0a0a;
+}
+
 html,
 body {
   min-height: 100%;
@@ -27,6 +31,7 @@ body {
 }
 
 body {
+  min-height: 100vh;
   color: var(--text);
   background:
     radial-gradient(circle at top left, rgba(255, 209, 2, 0.08), transparent 26%),
@@ -34,6 +39,31 @@ body {
   font-family: var(--font-body), 'Futura PT', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  scrollbar-width: thin;
+  scrollbar-color: #9d780f #111111;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #0e0e0e 0%, #141414 100%);
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid #111111;
+  background: linear-gradient(180deg, #6f5710 0%, #f4bf19 100%);
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #8a6b12 0%, #ffd43b 100%);
 }
 
 * {
@@ -211,14 +241,24 @@ h3 {
 
 .topbar-mobile {
   display: none;
+  position: relative;
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.topbar-mobile-controls {
+  display: none;
+  align-items: center;
+  gap: 10px;
   margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .topbar-mobile-trigger {
-  list-style: none;
   display: inline-flex;
   flex-direction: column;
   justify-content: center;
+  align-items: stretch;
   gap: 4px;
   width: 44px;
   height: 44px;
@@ -227,10 +267,6 @@ h3 {
   border-radius: 12px;
   background: #111;
   cursor: pointer;
-}
-
-.topbar-mobile-trigger::-webkit-details-marker {
-  display: none;
 }
 
 .topbar-mobile-trigger span {
@@ -242,17 +278,28 @@ h3 {
 }
 
 .topbar-mobile-panel {
-  display: grid;
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  z-index: 30;
+  display: none;
   gap: 14px;
-  width: 100%;
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid rgba(154, 153, 154, 0.12);
+  width: min(360px, calc(100vw - 24px));
+  padding: 16px;
+  border: 1px solid rgba(154, 153, 154, 0.14);
+  border-radius: 18px;
+  background: rgba(10, 10, 10, 0.98);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+}
+
+.topbar-mobile-panel-open {
+  display: grid;
 }
 
 .topbar-mobile-user {
   display: grid;
   gap: 8px;
+  justify-items: start;
 }
 
 .topbar-mobile-nav {
@@ -263,7 +310,9 @@ h3 {
 .topbar-mobile-nav .nav-item {
   display: flex;
   width: 100%;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .topbar-mobile-actions {
@@ -271,11 +320,13 @@ h3 {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .topbar-mobile-actions .ghost-button {
-  flex: 1 1 180px;
+  flex: 1 1 100%;
   min-height: 42px;
+  justify-content: center;
 }
 
 .topbar-nav,
@@ -1624,7 +1675,8 @@ h3 {
 }
 
 .student-links-card,
-.student-account-card {
+.student-account-card,
+.student-rewards-card {
   padding: 20px;
 }
 
@@ -1632,6 +1684,52 @@ h3 {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+}
+
+.student-rewards-list {
+  display: grid;
+  gap: 12px;
+}
+
+.student-reward-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #171717 0%, #121212 100%);
+}
+
+.student-reward-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.student-reward-kicker {
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.student-reward-copy strong {
+  color: #fff8ea;
+  font-size: 1rem;
+}
+
+.student-reward-copy p,
+.student-reward-no-link {
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.student-reward-link {
+  flex: 0 0 auto;
+  text-decoration: none;
 }
 
 .student-calendar-shell {
@@ -2754,11 +2852,21 @@ h3 {
 }
 
 .student-challenge-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(255, 209, 2, 0.12);
+  border: 1px solid rgba(255, 209, 2, 0.18);
   color: #d4d4d4;
   font-size: 0.95rem;
+  line-height: 1;
 }
 
 .student-challenge-status-completed {
+  background: rgba(74, 222, 128, 0.12);
+  border-color: rgba(74, 222, 128, 0.2);
   color: #8edf8b;
 }
 
@@ -2770,9 +2878,33 @@ h3 {
 
 .student-challenge-footer {
   display: grid;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid #242424;
+  justify-items: start;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.015) 100%);
+}
+
+.student-challenge-footer strong,
+.student-challenge-footer span {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.student-challenge-footer span {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  line-height: 1.45;
+}
+
+.student-challenge-footer strong {
+  border: 1px solid rgba(255, 209, 2, 0.16);
+  background: rgba(255, 209, 2, 0.06);
+  line-height: 1.45;
 }
 
 .student-challenge-modal-backdrop {
@@ -2785,11 +2917,13 @@ h3 {
   background: rgba(0, 0, 0, 0.74);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
+  overflow-y: auto;
 }
 
 .student-challenge-modal {
   position: relative;
   width: min(620px, 100%);
+  max-height: min(92vh, 980px);
   display: grid;
   gap: 18px;
   padding: 18px;
@@ -2797,11 +2931,34 @@ h3 {
   border-radius: 24px;
   background: linear-gradient(180deg, #161616 0%, #101010 100%);
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.46);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #b48a17 #111;
+}
+
+.student-challenge-modal::-webkit-scrollbar {
+  width: 10px;
+}
+
+.student-challenge-modal::-webkit-scrollbar-track {
+  background: #111;
+  border-left: 1px solid #1f1f1f;
+}
+
+.student-challenge-modal::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 2px solid #111;
+  background: linear-gradient(180deg, #6f5710 0%, #f4bf19 100%);
+}
+
+.student-challenge-modal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #8a6b12 0%, #ffd43b 100%);
 }
 
 .student-challenge-modal-close {
-  justify-self: end;
-  min-height: 40px;
+  width: 100%;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 12px;
   border: 1px solid #2a2a2a;
@@ -2812,14 +2969,16 @@ h3 {
 
 .student-challenge-flyer {
   display: grid;
-  gap: 16px;
+  grid-template-rows: auto auto auto auto auto 1fr auto;
+  gap: 14px;
   padding: 26px;
-  width: 100%;
+  width: min(100%, 360px);
   aspect-ratio: 9 / 16;
-  max-width: 360px;
-  max-height: 72vh;
+  min-height: 640px;
+  max-height: 78vh;
   margin: 0 auto;
   align-content: start;
+  overflow: hidden;
   border-radius: 24px;
   border: 1px solid rgba(255, 202, 44, 0.28);
   background:
@@ -2854,8 +3013,10 @@ h3 {
 
 .student-challenge-flyer h4 {
   color: #fff8ea;
-  font-size: clamp(1.7rem, 3vw, 2.6rem);
-  line-height: 0.98;
+  font-size: clamp(1.65rem, 2.8vw, 2.55rem);
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 
 .student-challenge-flyer p,
@@ -2895,50 +3056,34 @@ h3 {
 }
 
 .student-challenge-flyer-footer {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
+  justify-self: start;
   gap: 12px;
   margin-top: auto;
-  padding-top: 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 209, 2, 0.16);
+  background: rgba(255, 209, 2, 0.06);
   color: #f1db92;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 600;
 }
 
-.student-challenge-reward-panel {
-  display: grid;
-  gap: 10px;
-  margin-top: 6px;
-  padding: 16px;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 209, 2, 0.2);
-  background: rgba(255, 209, 2, 0.06);
-}
-
-.student-challenge-reward-kicker {
-  color: var(--accent);
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.student-challenge-reward-panel strong {
-  color: #fff8ea;
-  font-size: 1rem;
-}
-
-.student-challenge-reward-link {
-  width: 100%;
-  text-decoration: none;
+.student-challenge-reward-inline {
+  max-width: 360px;
+  margin: 0 auto;
+  color: #f1db92;
+  font-size: 0.96rem;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .student-challenge-modal-actions {
   display: grid;
   gap: 10px;
-  max-width: 520px;
+  max-width: 360px;
   margin: 0 auto;
   text-align: center;
 }
@@ -4392,6 +4537,49 @@ body {
   color: rgba(10, 10, 10, 0.54);
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(10, 10, 10, 0.74);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.password-toggle:hover {
+  background: rgba(10, 10, 10, 0.08);
+  color: rgba(10, 10, 10, 0.94);
+}
+
+.password-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 209, 2, 0.24);
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
 .field-reference {
   gap: 10px;
 }
@@ -4556,15 +4744,24 @@ body {
 
   .topbar {
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .topbar-brand,
-  .topbar-actions,
   .topbar-nav,
   .topbar-center-nav,
   .topbar-user-cluster {
     width: 100%;
+  }
+
+  .topbar-brand {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .topbar-actions {
+    width: auto;
   }
 
   .topbar-nav,
@@ -4580,12 +4777,12 @@ body {
     display: none !important;
   }
 
-  .topbar-mobile {
-    display: block;
+  .topbar-mobile-controls {
+    display: flex;
   }
 
-  .topbar-mobile[open] {
-    width: 100%;
+  .topbar-mobile {
+    display: block;
   }
 
   .summary-grid,
@@ -4665,9 +4862,21 @@ body {
     flex: 1 1 auto;
   }
 
+  .topbar-mobile-controls {
+    gap: 8px;
+  }
+
+  .topbar-mobile-panel {
+    right: 0;
+  }
+
   .brand-copy strong {
     font-size: 0.9rem;
     overflow-wrap: anywhere;
+  }
+
+  .tools-grid {
+    grid-template-columns: 1fr;
   }
 
   .notification-bell-shell {
@@ -4842,6 +5051,7 @@ body {
   .student-results-modal-backdrop,
   .student-challenge-modal-backdrop {
     padding: 10px;
+    place-items: start center;
   }
 
   .student-results-modal,
@@ -4878,6 +5088,7 @@ body {
 
   .student-challenge-flyer {
     max-width: 100%;
+    min-height: 0;
     max-height: none;
     padding: 20px;
   }
@@ -4914,7 +5125,8 @@ body {
   .student-management-card,
   .student-management-summary,
   .student-history-row,
-  .profile-link-row {
+  .profile-link-row,
+  .student-reward-row {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -5592,10 +5804,20 @@ body {
   box-shadow: var(--shadow);
 }
 
+.onboarding-student-phase-card-locked {
+  border-color: rgba(154, 153, 154, 0.18);
+  background: linear-gradient(180deg, #151515 0%, #111111 100%);
+  opacity: 0.82;
+}
+
 .onboarding-student-phase-summary {
   cursor: pointer;
   padding: 18px;
   list-style: none;
+}
+
+.onboarding-student-phase-card-locked .onboarding-student-phase-summary {
+  cursor: default;
 }
 
 .onboarding-student-phase-summary::-webkit-details-marker,

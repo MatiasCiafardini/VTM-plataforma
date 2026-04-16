@@ -4,7 +4,13 @@ import { AdminProfilePanel } from '@/components/admin-profile-panel';
 import { AdminChallengesPanel } from '@/components/admin-challenges-panel';
 import { AdminOperationsPanel } from '@/components/admin-operations-panel';
 import { AppShell } from '@/components/app-shell';
-import { EMBEDDED_TOOLS, EmbeddedToolEmbed, EmbeddedToolPromo } from '@/components/embedded-tool';
+import {
+  EMBEDDED_TOOLS,
+  EXTERNAL_TOOLS,
+  EmbeddedToolEmbed,
+  EmbeddedToolPromo,
+  ExternalToolPromo,
+} from '@/components/embedded-tool';
 import { formatCompactNumber } from '@/components/dashboard-utils';
 import { backendFetch } from '@/lib/backend';
 import { safeBackendFetch } from '@/lib/server-fetch';
@@ -470,6 +476,11 @@ export default async function AdminPage({
           <section className="tools-grid">
             <EmbeddedToolPromo href="/admin?tab=analyzer" tool={EMBEDDED_TOOLS.analyzer} />
             <EmbeddedToolPromo href="/admin?tab=followups" tool={EMBEDDED_TOOLS.followups} />
+          </section>
+
+          <section className="tools-grid">
+            <ExternalToolPromo tool={EXTERNAL_TOOLS['mentoring-videos']} />
+            <ExternalToolPromo tool={EXTERNAL_TOOLS['sales-simulator']} />
           </section>
         </>
       ) : null}

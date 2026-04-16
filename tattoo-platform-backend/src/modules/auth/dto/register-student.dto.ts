@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDateString, IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class RegisterStudentDto {
   @ApiProperty({ example: 'nuevo@tattoo-platform.local' })
@@ -26,4 +26,9 @@ export class RegisterStudentDto {
   @ApiProperty({ example: 'VMT2026' })
   @IsString()
   accessCode!: string;
+
+  @ApiPropertyOptional({ example: '1995-08-21' })
+  @IsOptional()
+  @IsDateString()
+  birthDate?: string;
 }

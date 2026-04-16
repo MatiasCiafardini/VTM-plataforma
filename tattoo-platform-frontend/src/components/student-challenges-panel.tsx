@@ -217,8 +217,8 @@ export function StudentChallengesPanel({
         : "Vas muy bien. Este desafio ya forma parte de tu progreso.";
     const footer =
       challenge.status === "COMPLETED"
-        ? "Vende Mas Tattoo - Logro desbloqueado"
-        : "Vende Mas Tattoo - Seguimiento activo";
+        ? "Mentoria VMT - Logro desbloqueado"
+        : "Mentoria VMT - Seguimiento activo";
 
     return `
       <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
@@ -404,17 +404,6 @@ export function StudentChallengesPanel({
                 </div>
 
                 <div className="student-challenge-status-row">
-                  <div className="student-challenge-status-copy">
-                    <span
-                      className={
-                        challenge.status === "COMPLETED"
-                          ? "student-challenge-status student-challenge-status-completed"
-                          : "student-challenge-status"
-                      }
-                    >
-                      {challenge.statusCopy}
-                    </span>
-                  </div>
                   <strong>{challenge.progress}%</strong>
                 </div>
 
@@ -441,7 +430,7 @@ export function StudentChallengesPanel({
                       })}
                     </span>
                   ) : (
-                    <span>Seguimiento activo dentro de la academia.</span>
+                    <span>Seguimiento activo dentro de Mentoria VMT.</span>
                   )}
                 </div>
               </button>
@@ -459,20 +448,12 @@ export function StudentChallengesPanel({
             className="student-challenge-modal"
             onClick={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
-              className="student-challenge-modal-close"
-              onClick={() => setSelectedChallengeId(null)}
-            >
-              Cerrar
-            </button>
-
             <div className="student-challenge-flyer">
               <div className="student-challenge-flyer-mark">
                 {getConfiguredChallengeIcon(selectedChallenge.challenge.iconKey)}
               </div>
               <span className="student-challenge-flyer-kicker">
-                Logro de Vende Mas Tattoo
+                Logro de Mentoria VMT
               </span>
               <h4>{selectedChallenge.challenge.title}</h4>
               <p>
@@ -488,35 +469,19 @@ export function StudentChallengesPanel({
                 </div>
               </div>
 
-              <div className="student-challenge-flyer-footer">
-                <span>{selectedChallenge.statusCopy}</span>
-              </div>
-
-              {selectedChallenge.status === "COMPLETED" &&
-              selectedChallenge.challenge.rewardTitle ? (
-                <div className="student-challenge-reward-panel">
-                  <span className="student-challenge-reward-kicker">
-                    Recompensa desbloqueada
-                  </span>
-                  <strong>{selectedChallenge.challenge.rewardTitle}</strong>
-                  <p>
-                    {selectedChallenge.challenge.rewardUrl
-                      ? "Haz click para abrir el video o curso desbloqueado."
-                      : "Este desafio ya tiene una recompensa asignada."}
-                  </p>
-                  {selectedChallenge.challenge.rewardUrl ? (
-                    <a
-                      className="primary-button student-challenge-reward-link"
-                      href={selectedChallenge.challenge.rewardUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Abrir recompensa
-                    </a>
-                  ) : null}
+              {selectedChallenge.status !== "COMPLETED" ? (
+                <div className="student-challenge-flyer-footer">
+                  <span>{selectedChallenge.statusCopy}</span>
                 </div>
               ) : null}
             </div>
+
+            {selectedChallenge.status === "COMPLETED" &&
+            selectedChallenge.challenge.rewardTitle ? (
+              <p className="student-challenge-reward-inline">
+                Recompensa desbloqueada: {selectedChallenge.challenge.rewardTitle}
+              </p>
+            ) : null}
 
             <div className="student-challenge-modal-actions">
               <button
@@ -534,6 +499,14 @@ export function StudentChallengesPanel({
                 imagen lista para subir.
               </p>
             </div>
+
+            <button
+              type="button"
+              className="student-challenge-modal-close"
+              onClick={() => setSelectedChallengeId(null)}
+            >
+              Cerrar
+            </button>
           </div>
         </div>
       ) : null}

@@ -6,7 +6,13 @@ import { StudentResultsPanel } from '@/components/student-results-panel';
 import { StudentChallengesPanel } from '@/components/student-challenges-panel';
 import { StudentProfilePanel } from '@/components/student-profile-panel';
 import { StudentWeekCalendar } from '@/components/student-week-calendar';
-import { EMBEDDED_TOOLS, EmbeddedToolEmbed, EmbeddedToolPromo } from '@/components/embedded-tool';
+import {
+  EMBEDDED_TOOLS,
+  EXTERNAL_TOOLS,
+  EmbeddedToolEmbed,
+  EmbeddedToolPromo,
+  ExternalToolPromo,
+} from '@/components/embedded-tool';
 import { backendFetch } from '@/lib/backend';
 import { safeBackendFetch } from '@/lib/server-fetch';
 import { requireRole } from '@/lib/session';
@@ -190,7 +196,7 @@ export default async function StudentPage({
   const params = searchParams ? await searchParams : undefined;
   const activeTab = resolveTab(params?.tab);
   const [data, metricDefinitions, ownProfile, quickLinks, currencies, notifications] = await Promise.all([
-    activeTab === 'dashboard' || activeTab === 'results' || activeTab === 'challenges'
+    activeTab === 'dashboard' || activeTab === 'results' || activeTab === 'challenges' || activeTab === 'profile'
       ? backendFetch<StudentDashboard>('/dashboard/student', {
           token: session.token,
         })
@@ -350,6 +356,11 @@ export default async function StudentPage({
             <EmbeddedToolPromo href="/student?tab=followups" tool={EMBEDDED_TOOLS.followups} />
           </section>
 
+          <section className="tools-grid">
+            <ExternalToolPromo tool={EXTERNAL_TOOLS['mentoring-videos']} />
+            <ExternalToolPromo tool={EXTERNAL_TOOLS['sales-simulator']} />
+          </section>
+
           <section className="student-calendar-shell">
             <header className="student-calendar-header">
               <div>
@@ -410,6 +421,20 @@ export default async function StudentPage({
             profile={ownProfile}
             initialLinks={quickLinks}
             currencies={currencies}
+            challengeRewards={
+              data?.challenges
+                .filter(
+                  (challenge) =>
+                    challenge.status === 'COMPLETED' &&
+                    Boolean(challenge.challenge.rewardTitle),
+                )
+                .map((challenge) => ({
+                  id: challenge.id,
+                  challengeTitle: challenge.challenge.title,
+                  rewardTitle: challenge.challenge.rewardTitle ?? '',
+                  rewardUrl: challenge.challenge.rewardUrl,
+                })) ?? []
+            }
           />
         ) : null
       ) : null}

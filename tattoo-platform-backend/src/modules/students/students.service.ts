@@ -56,6 +56,7 @@ export class StudentsService {
           userId: createdUser.id,
           country: dto.country,
           instagramHandle: dto.instagramHandle,
+          birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
           timezone: dto.timezone,
           localCurrencyId: resolvedCurrencyId,
           displayCurrencyMode:

@@ -38,6 +38,7 @@ type StudentOnboardingRoadmapData = {
     title: string;
     description: string | null;
     status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+    isLocked: boolean;
     totalSteps: number;
     completedSteps: number;
     pendingSteps: number;

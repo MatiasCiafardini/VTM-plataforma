@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       lastName: string;
       country: string;
       accessCode: string;
+      birthDate?: string;
     };
 
     const payload = await backendFetch<RegisterResponse>('/auth/register', {

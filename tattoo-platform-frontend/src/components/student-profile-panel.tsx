@@ -36,6 +36,13 @@ type StudentProfileData = {
   };
 };
 
+type ChallengeReward = {
+  id: string;
+  challengeTitle: string;
+  rewardTitle: string;
+  rewardUrl: string | null;
+};
+
 function formatDate(date: string | null | undefined) {
   if (!date) {
     return '-';
@@ -91,10 +98,12 @@ export function StudentProfilePanel({
   profile,
   initialLinks,
   currencies,
+  challengeRewards,
 }: {
   profile: StudentProfileData;
   initialLinks: QuickLink[];
   currencies: Currency[];
+  challengeRewards: ChallengeReward[];
 }) {
   const router = useRouter();
   const fallbackName = `${profile.user.firstName} ${profile.user.lastName}`.trim();
@@ -468,6 +477,46 @@ export function StudentProfilePanel({
 
         {linkError ? <p className="student-results-form-error">{linkError}</p> : null}
         {linkMessage ? <p className="student-profile-success">{linkMessage}</p> : null}
+      </article>
+
+      <article className="profile-card student-rewards-card">
+        <div className="profile-card-header">
+          <h4>
+            <span className="profile-card-icon" aria-hidden="true">
+              *
+            </span>
+            Recompensas de desafios
+          </h4>
+          <p>Encuentra aqui todas las recompensas que ya desbloqueaste y de que desafio vienen.</p>
+        </div>
+
+        {challengeRewards.length > 0 ? (
+          <div className="student-rewards-list">
+            {challengeRewards.map((reward) => (
+              <article key={reward.id} className="student-reward-row">
+                <div className="student-reward-copy">
+                  <span className="student-reward-kicker">Desafio ganado</span>
+                  <strong>{reward.challengeTitle}</strong>
+                  <p>Recompensa desbloqueada: {reward.rewardTitle}</p>
+                </div>
+                {reward.rewardUrl ? (
+                  <a
+                    href={reward.rewardUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="ghost-button student-reward-link"
+                  >
+                    Abrir recurso
+                  </a>
+                ) : (
+                  <span className="student-reward-no-link">Sin URL cargada</span>
+                )}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="profile-empty-state">Todavia no desbloqueaste recompensas de desafios.</p>
+        )}
       </article>
 
       <article className="profile-card student-account-card">

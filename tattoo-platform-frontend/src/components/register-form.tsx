@@ -10,9 +10,46 @@ type RegisterPayload = {
   nextPath?: string;
 };
 
+function EyeIcon({ crossed = false }: { crossed?: boolean }) {
+  if (crossed) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path
+          d="M10.58 10.58a2 2 0 0 0 2.84 2.84"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M9.88 5.09A10.94 10.94 0 0 1 12 4.91c5.45 0 9.27 4.65 10 5.59a1 1 0 0 1 0 1.22 17.46 17.46 0 0 1-4.24 3.99M6.61 6.61A17.33 17.33 0 0 0 2 10.5a1 1 0 0 0 0 1.22c.82 1.06 5 6.28 10 6.28a10.8 10.8 0 0 0 4.23-.85"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M2 12s3.64-6 10-6 10 6 10 6-3.64 6-10 6-10-6-10-6Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 export function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -27,9 +64,10 @@ export function RegisterForm() {
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
     const country = String(formData.get("country") ?? "").trim();
     const accessCode = String(formData.get("accessCode") ?? "").trim();
+    const birthDate = String(formData.get("birthDate") ?? "").trim();
 
     if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden.");
+      setError("Las contraseÃ±as no coinciden.");
       return;
     }
 
@@ -46,6 +84,7 @@ export function RegisterForm() {
           password,
           country,
           accessCode,
+          birthDate: birthDate || undefined,
         }),
       });
 
@@ -136,6 +175,11 @@ export function RegisterForm() {
       </label>
 
       <label className="field login-field-simple">
+        <span>Fecha de nacimiento</span>
+        <input name="birthDate" type="date" required />
+      </label>
+
+      <label className="field login-field-simple">
         <span>Codigo</span>
         <input
           name="accessCode"
@@ -147,23 +191,45 @@ export function RegisterForm() {
 
       <div className="register-grid">
         <label className="field login-field-simple">
-          <span>contraseña</span>
-          <input
-            name="password"
-            type="password"
-            placeholder="Minimo 8 caracteres"
-            required
-          />
+          <span>contraseÃ±a</span>
+          <div className="password-field">
+            <input
+              name="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Minimo 8 caracteres"
+              required
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowPassword((current) => !current)}
+              aria-label={showPassword ? "Ocultar contraseÃ±a" : "Mostrar contraseÃ±a"}
+              aria-pressed={showPassword}
+            >
+              <EyeIcon crossed={showPassword} />
+            </button>
+          </div>
         </label>
 
         <label className="field login-field-simple">
-          <span>Confirmar contraseña</span>
-          <input
-            name="confirmPassword"
-            type="password"
-            placeholder="Repite tu contraseña"
-            required
-          />
+          <span>Confirmar contraseÃ±a</span>
+          <div className="password-field">
+            <input
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Repite tu contraseÃ±a"
+              required
+            />
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowConfirmPassword((current) => !current)}
+              aria-label={showConfirmPassword ? "Ocultar contraseÃ±a" : "Mostrar contraseÃ±a"}
+              aria-pressed={showConfirmPassword}
+            >
+              <EyeIcon crossed={showConfirmPassword} />
+            </button>
+          </div>
         </label>
       </div>
 

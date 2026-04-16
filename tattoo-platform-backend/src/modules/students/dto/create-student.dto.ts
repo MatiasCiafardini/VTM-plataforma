@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { DisplayCurrencyMode, UserStatus } from '@prisma/client';
 import {
   IsArray,
+  IsDateString,
   IsEmail,
   IsEnum,
   IsOptional,
@@ -41,6 +42,11 @@ export class CreateStudentDto {
   @IsOptional()
   @IsString()
   instagramHandle?: string;
+
+  @ApiPropertyOptional({ example: '1995-08-21' })
+  @IsOptional()
+  @IsDateString()
+  birthDate?: string;
 
   @ApiPropertyOptional()
   @IsOptional()

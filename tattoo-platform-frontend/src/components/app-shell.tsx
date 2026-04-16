@@ -1,6 +1,8 @@
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { AppRole } from '@/lib/session';
 import { LogoutButton } from './logout-button';
 import { NotificationBell } from './notification-bell';
@@ -49,6 +51,7 @@ export function AppShell({
   notifications = [],
   children,
 }: AppShellProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dashboardPath =
     role === 'ADMIN' ? '/admin' : role === 'MENTOR' ? '/mentor' : '/student';
   const shouldShowHeader = showSectionEyebrow || Boolean(title) || Boolean(subtitle);
@@ -102,6 +105,7 @@ export function AppShell({
       href={item.href}
       prefetch
       scroll={false}
+      onClick={() => setIsMobileMenuOpen(false)}
       className={activeNav === item.key ? 'nav-item nav-item-active' : 'nav-item'}
     >
       {item.label}
@@ -200,42 +204,56 @@ export function AppShell({
           )}
         </div>
 
-        <details className="topbar-mobile">
-          <summary className="topbar-mobile-trigger" aria-label="Abrir menu">
-            <span />
-            <span />
-            <span />
-          </summary>
+        <div className="topbar-mobile-controls">
+          <NotificationBell notifications={notifications} role={role} />
 
-          <div className="topbar-mobile-panel">
-            <div className="topbar-mobile-user">
-              <div className="topbar-user-meta">
-                <span className="role-pill">{roleLabels[role]}</span>
-                <p className="topbar-user">{displayName}</p>
+          <div className="topbar-mobile">
+            <button
+              type="button"
+              className="topbar-mobile-trigger"
+              aria-label={isMobileMenuOpen ? 'Cerrar menu' : 'Abrir menu'}
+              aria-expanded={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen((current) => !current)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+
+            <div
+              className={
+                isMobileMenuOpen ? 'topbar-mobile-panel topbar-mobile-panel-open' : 'topbar-mobile-panel'
+              }
+            >
+              <div className="topbar-mobile-user">
+                <div className="topbar-user-meta">
+                  <span className="role-pill">{roleLabels[role]}</span>
+                  <p className="topbar-user">{displayName}</p>
+                </div>
+                <p className="topbar-copy">Panel operativo</p>
               </div>
-              <p className="topbar-copy">Panel operativo</p>
-            </div>
 
-            <nav className="topbar-mobile-nav">
-              {navLinks}
-              {role === 'ADMIN' ? (
-                <Link
-                  href={`${dashboardPath}?tab=profile`}
-                  prefetch
-                  scroll={false}
-                  className={activeNav === 'profile' ? 'nav-item nav-item-active' : 'nav-item'}
-                >
-                  Mi perfil
-                </Link>
-              ) : null}
-            </nav>
+              <nav className="topbar-mobile-nav">
+                {navLinks}
+                {role === 'ADMIN' ? (
+                  <Link
+                    href={`${dashboardPath}?tab=profile`}
+                    prefetch
+                    scroll={false}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={activeNav === 'profile' ? 'nav-item nav-item-active' : 'nav-item'}
+                  >
+                    Mi perfil
+                  </Link>
+                ) : null}
+              </nav>
 
-            <div className="topbar-mobile-actions">
-              <NotificationBell notifications={notifications} role={role} />
-              <LogoutButton />
+              <div className="topbar-mobile-actions">
+                <LogoutButton />
+              </div>
             </div>
           </div>
-        </details>
+        </div>
       </header>
 
       <main className="main-panel shell-main">

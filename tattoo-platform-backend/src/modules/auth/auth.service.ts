@@ -80,6 +80,7 @@ export class AuthService {
       firstName: dto.firstName,
       lastName: dto.lastName,
       country: dto.country,
+      birthDate: dto.birthDate,
     });
 
     const createdUser = createdStudent.user;

@@ -8,9 +8,45 @@ type LoginPayload = {
   role: "ADMIN" | "MENTOR" | "STUDENT";
 };
 
+function EyeIcon({ crossed = false }: { crossed?: boolean }) {
+  if (crossed) {
+    return (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path
+          d="M10.58 10.58a2 2 0 0 0 2.84 2.84"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M9.88 5.09A10.94 10.94 0 0 1 12 4.91c5.45 0 9.27 4.65 10 5.59a1 1 0 0 1 0 1.22 17.46 17.46 0 0 1-4.24 3.99M6.61 6.61A17.33 17.33 0 0 0 2 10.5a1 1 0 0 0 0 1.22c.82 1.06 5 6.28 10 6.28a10.8 10.8 0 0 0 4.23-.85"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M2 12s3.64-6 10-6 10 6 10 6-3.64 6-10 6-10-6-10-6Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
 export function LoginForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [isPending, startTransition] = useTransition();
   const showTestCredentials =
     process.env.NEXT_PUBLIC_SHOW_TEST_CREDENTIALS === "true";
@@ -80,13 +116,24 @@ export function LoginForm() {
       </label>
 
       <label className="field login-field-simple">
-        <span>contraseña</span>
-        <input
-          name="password"
-          type="password"
-          placeholder="********"
-          required
-        />
+        <span>contraseÃ±a</span>
+        <div className="password-field">
+          <input
+            name="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="********"
+            required
+          />
+          <button
+            type="button"
+            className="password-toggle"
+            onClick={() => setShowPassword((current) => !current)}
+            aria-label={showPassword ? "Ocultar contraseÃ±a" : "Mostrar contraseÃ±a"}
+            aria-pressed={showPassword}
+          >
+            <EyeIcon crossed={showPassword} />
+          </button>
+        </div>
       </label>
 
       {error ? <p className="error-text">{error}</p> : null}

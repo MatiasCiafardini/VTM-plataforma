@@ -282,6 +282,11 @@ export class OnboardingService {
       if (step.completionMode !== OnboardingCompletionMode.SELF_SERVICE) {
         throw new ForbiddenException('This step must be completed by staff or automation');
       }
+
+      const isPhaseLocked = await this.isStepPhaseLockedForStudent(studentId, stepId);
+      if (isPhaseLocked) {
+        throw new ForbiddenException('Debes completar la fase anterior antes de avanzar.');
+      }
     }
 
     const completionSource = this.getCompletionSourceForRole(actor.role);
@@ -361,6 +366,7 @@ export class OnboardingService {
 
     const statusByStepId = new Map(statuses.map((status) => [status.stepId, status]));
     const activePhases = roadmap.phases.filter((phase) => phase.isActive);
+    let previousPhaseCompleted = true;
     const serializedPhases = activePhases.map((phase) => {
       const activeSteps = phase.steps
         .filter((step) => step.isActive)
@@ -380,18 +386,25 @@ export class OnboardingService {
           : activeSteps.length > 0 && completedSteps === activeSteps.length
             ? 100
             : 0;
+      const phaseStatus =
+        completedSteps === 0
+          ? 'NOT_STARTED'
+          : completedSteps === activeSteps.length
+            ? 'COMPLETED'
+            : 'IN_PROGRESS';
+      const isLocked = !previousPhaseCompleted;
+
+      if (phaseStatus !== 'COMPLETED') {
+        previousPhaseCompleted = false;
+      }
 
       return {
         id: phase.id,
         title: phase.title,
         description: phase.description,
         sortOrder: phase.sortOrder,
-        status:
-          completedSteps === 0
-            ? 'NOT_STARTED'
-            : completedSteps === activeSteps.length
-              ? 'COMPLETED'
-              : 'IN_PROGRESS',
+        status: phaseStatus,
+        isLocked,
         totalSteps: activeSteps.length,
         completedSteps,
         pendingSteps: Math.max(0, activeSteps.length - completedSteps),
@@ -423,7 +436,7 @@ export class OnboardingService {
               : null,
             notes: status?.notes ?? null,
             canStudentComplete:
-              step.completionMode === OnboardingCompletionMode.SELF_SERVICE,
+              step.completionMode === OnboardingCompletionMode.SELF_SERVICE && !isLocked,
             resources: step.resources
               .slice()
               .sort((left, right) => left.sortOrder - right.sortOrder)
@@ -461,9 +474,12 @@ export class OnboardingService {
       (step) => step.countsForProgress && !step.isOptional,
     );
     const completedCountableSteps = countableSteps.filter((step) => step.isCompleted).length;
+    const unlockedSteps = flatSteps.filter((step) =>
+      serializedPhases.find((phase) => phase.id === step.phaseId)?.isLocked !== true,
+    );
     const nextRequiredStep =
-      flatSteps.find((step) => !step.isCompleted && !step.isOptional) ??
-      flatSteps.find((step) => !step.isCompleted) ??
+      unlockedSteps.find((step) => !step.isCompleted && !step.isOptional) ??
+      unlockedSteps.find((step) => !step.isCompleted) ??
       null;
     const completedTimestamps = flatSteps
       .map((step) => step.completedAt)
@@ -978,6 +994,7 @@ export class OnboardingService {
       where: { id: stepId },
       include: {
         challenge: true,
+        phase: true,
       },
     });
 
@@ -986,6 +1003,19 @@ export class OnboardingService {
     }
 
     return step;
+  }
+
+  private async isStepPhaseLockedForStudent(studentId: string, stepId: string) {
+    const roadmap = await this.buildStudentRoadmap(studentId);
+    const phaseIndex = roadmap.phases.findIndex((phase) =>
+      phase.steps.some((step) => step.id === stepId),
+    );
+
+    if (phaseIndex <= 0) {
+      return false;
+    }
+
+    return roadmap.phases[phaseIndex]?.isLocked === true;
   }
 
   private async ensureChallengeExists(challengeId: string) {
