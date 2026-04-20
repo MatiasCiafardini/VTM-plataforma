@@ -62,18 +62,23 @@ export class AuthService {
   }
 
   async registerStudent(dto: RegisterStudentDto) {
-    const code = await this.registrationCodesService.findActiveByCode(dto.accessCode);
+    const code = await this.registrationCodesService.findActiveByCode(
+      dto.accessCode,
+    );
 
     if (!code) {
       throw new ForbiddenException('El codigo de registro no es valido.');
     }
 
     if (code.maxUses !== null && code.usageCount >= code.maxUses) {
-      throw new ForbiddenException('Este codigo de registro ya alcanzo el limite de usos.');
+      throw new ForbiddenException(
+        'Este codigo de registro ya alcanzo el limite de usos.',
+      );
     }
 
     let userId: string;
     let safeUser: ReturnType<UsersService['toSafeUser']>;
+    let userStatus: UserStatus;
 
     if (code.role === UserRole.STUDENT) {
       const student = await this.studentsService.createStudent({
@@ -91,6 +96,7 @@ export class AuthService {
 
       userId = student.user.id;
       safeUser = student.user;
+      userStatus = student.user.status;
     } else {
       const user = await this.usersService.createUser({
         email: dto.email,
@@ -102,6 +108,7 @@ export class AuthService {
 
       userId = user.id;
       safeUser = user;
+      userStatus = user.status;
 
       if (code.role === UserRole.MENTOR) {
         await this.prisma.mentorProfile.create({ data: { userId } });
@@ -112,7 +119,7 @@ export class AuthService {
 
     await this.registrationCodesService.incrementUsage(code.id);
 
-    if (safeUser.status !== UserStatus.ACTIVE) {
+    if (userStatus !== UserStatus.ACTIVE) {
       throw new ForbiddenException(
         'Tu cuenta fue creada pero aun no esta activa. Contacta al administrador.',
       );
