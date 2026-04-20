@@ -67,7 +67,7 @@ export function RegisterForm() {
     const birthDate = String(formData.get("birthDate") ?? "").trim();
 
     if (password !== confirmPassword) {
-      setError("Las contraseÃ±as no coinciden.");
+      setError("Las contraseñas no coinciden.");
       return;
     }
 
@@ -191,7 +191,7 @@ export function RegisterForm() {
 
       <div className="register-grid">
         <label className="field login-field-simple">
-          <span>contraseÃ±a</span>
+          <span>contraseña</span>
           <div className="password-field">
             <input
               name="password"
@@ -203,7 +203,7 @@ export function RegisterForm() {
               type="button"
               className="password-toggle"
               onClick={() => setShowPassword((current) => !current)}
-              aria-label={showPassword ? "Ocultar contraseÃ±a" : "Mostrar contraseÃ±a"}
+              aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               aria-pressed={showPassword}
             >
               <EyeIcon crossed={showPassword} />
@@ -212,19 +212,19 @@ export function RegisterForm() {
         </label>
 
         <label className="field login-field-simple">
-          <span>Confirmar contraseÃ±a</span>
+          <span>Confirmar contraseña</span>
           <div className="password-field">
             <input
               name="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
-              placeholder="Repite tu contraseÃ±a"
+              placeholder="Repite tu contraseña"
               required
             />
             <button
               type="button"
               className="password-toggle"
               onClick={() => setShowConfirmPassword((current) => !current)}
-              aria-label={showConfirmPassword ? "Ocultar contraseÃ±a" : "Mostrar contraseÃ±a"}
+              aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
               aria-pressed={showConfirmPassword}
             >
               <EyeIcon crossed={showConfirmPassword} />

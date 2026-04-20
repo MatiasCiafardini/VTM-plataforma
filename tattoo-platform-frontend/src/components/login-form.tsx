@@ -116,7 +116,7 @@ export function LoginForm() {
       </label>
 
       <label className="field login-field-simple">
-        <span>contraseÃ±a</span>
+        <span>contraseña</span>
         <div className="password-field">
           <input
             name="password"
@@ -128,7 +128,7 @@ export function LoginForm() {
             type="button"
             className="password-toggle"
             onClick={() => setShowPassword((current) => !current)}
-            aria-label={showPassword ? "Ocultar contraseÃ±a" : "Mostrar contraseÃ±a"}
+            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             aria-pressed={showPassword}
           >
             <EyeIcon crossed={showPassword} />
