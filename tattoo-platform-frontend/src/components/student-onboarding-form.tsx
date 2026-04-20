@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { FormEvent, useMemo, useState } from 'react';
-import { getCurrencyCodeForCountry, supportedCountries } from '@/lib/countries';
+import { useRouter } from "next/navigation";
+import { FormEvent, useMemo, useState } from "react";
+import { getCurrencyCodeForCountry, supportedCountries } from "@/lib/countries";
 
 type Currency = {
   id: string;
@@ -13,7 +13,7 @@ type Currency = {
 type MetricDefinition = {
   id: string;
   slug: string;
-  valueType: 'INTEGER' | 'DECIMAL' | 'CURRENCY' | 'TEXT' | 'BOOLEAN';
+  valueType: "INTEGER" | "DECIMAL" | "CURRENCY" | "TEXT" | "BOOLEAN";
 };
 
 type StudentProfileData = {
@@ -27,7 +27,6 @@ type OnboardingFormState = {
   year: string;
   country: string;
   instagramHandle: string;
-  balanceGeneral: string;
   ingresosFacturacion: string;
   cantidadTotalTatuajes: string;
   comisionEstudioPorcentaje: string;
@@ -43,24 +42,27 @@ type OnboardingFormState = {
 };
 
 const monthOptions = [
-  { value: 1, label: 'Enero' },
-  { value: 2, label: 'Febrero' },
-  { value: 3, label: 'Marzo' },
-  { value: 4, label: 'Abril' },
-  { value: 5, label: 'Mayo' },
-  { value: 6, label: 'Junio' },
-  { value: 7, label: 'Julio' },
-  { value: 8, label: 'Agosto' },
-  { value: 9, label: 'Septiembre' },
-  { value: 10, label: 'Octubre' },
-  { value: 11, label: 'Noviembre' },
-  { value: 12, label: 'Diciembre' },
+  { value: 1, label: "Enero" },
+  { value: 2, label: "Febrero" },
+  { value: 3, label: "Marzo" },
+  { value: 4, label: "Abril" },
+  { value: 5, label: "Mayo" },
+  { value: 6, label: "Junio" },
+  { value: 7, label: "Julio" },
+  { value: 8, label: "Agosto" },
+  { value: 9, label: "Septiembre" },
+  { value: 10, label: "Octubre" },
+  { value: 11, label: "Noviembre" },
+  { value: 12, label: "Diciembre" },
 ];
 
 const currentYear = new Date().getFullYear();
 const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - 3 + i);
 
-function getPreviousMonthPeriod(month: string, year: string): { month: number; year: number } {
+function getPreviousMonthPeriod(
+  month: string,
+  year: string,
+): { month: number; year: number } {
   const m = Number(month);
   const y = Number(year);
   if (m === 1) {
@@ -75,37 +77,36 @@ function buildInitialState(profile: StudentProfileData): OnboardingFormState {
   return {
     month: String(now.getMonth() + 1),
     year: String(now.getFullYear()),
-    country: profile.country ?? '',
-    instagramHandle: profile.instagramHandle ?? '',
-    balanceGeneral: '',
-    ingresosFacturacion: '',
-    cantidadTotalTatuajes: '',
-    comisionEstudioPorcentaje: '',
-    gastosDelMes: '',
-    seguidoresInstagramActuales: '',
-    consultasMensuales: '',
-    conversacionesANuevos: '',
-    cotizaciones: '',
-    cierresDelMes: '',
-    cierresNuevosClientes: '',
-    cierresPorRecomendaciones: '',
-    cierresRecurrentes: '',
+    country: profile.country ?? "",
+    instagramHandle: profile.instagramHandle ?? "",
+    ingresosFacturacion: "",
+    cantidadTotalTatuajes: "",
+    comisionEstudioPorcentaje: "",
+    gastosDelMes: "",
+    seguidoresInstagramActuales: "",
+    consultasMensuales: "",
+    conversacionesANuevos: "",
+    cotizaciones: "",
+    cierresDelMes: "",
+    cierresNuevosClientes: "",
+    cierresPorRecomendaciones: "",
+    cierresRecurrentes: "",
   };
 }
 
 function toNumber(value: string): number {
   if (!value.trim()) return 0;
-  const normalized = value.replace(',', '.');
+  const normalized = value.replace(",", ".");
   const num = Number(normalized);
   return Number.isNaN(num) ? 0 : num;
 }
 
 function formatCurrencyLabel(currency: Currency | null) {
   if (!currency) {
-    return 'Sin moneda asignada';
+    return "Sin moneda asignada";
   }
 
-  return `${currency.code}${currency.symbol ? ` (${currency.symbol})` : ''}`;
+  return `${currency.code}${currency.symbol ? ` (${currency.symbol})` : ""}`;
 }
 
 export function StudentOnboardingForm({
@@ -118,13 +119,18 @@ export function StudentOnboardingForm({
   metricDefinitions: MetricDefinition[];
 }) {
   const router = useRouter();
-  const [form, setForm] = useState<OnboardingFormState>(buildInitialState(profile));
+  const [form, setForm] = useState<OnboardingFormState>(
+    buildInitialState(profile),
+  );
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   const metricDefinitionMap = useMemo(
-    () => Object.fromEntries(metricDefinitions.map((definition) => [definition.slug, definition])),
+    () =>
+      Object.fromEntries(
+        metricDefinitions.map((definition) => [definition.slug, definition]),
+      ),
     [metricDefinitions],
   );
 
@@ -135,7 +141,10 @@ export function StudentOnboardingForm({
       return profile.localCurrency;
     }
 
-    return currencies.find((currency) => currency.code === currencyCode) ?? profile.localCurrency;
+    return (
+      currencies.find((currency) => currency.code === currencyCode) ??
+      profile.localCurrency
+    );
   }, [currencies, form.country, profile.localCurrency]);
 
   function updateField(field: keyof OnboardingFormState, value: string) {
@@ -150,25 +159,25 @@ export function StudentOnboardingForm({
 
     try {
       if (!form.country) {
-        throw new Error('Selecciona tu pais.');
+        throw new Error("Selecciona tu pais.");
       }
 
       if (!form.instagramHandle.trim()) {
-        throw new Error('Ingresa tu Instagram.');
+        throw new Error("Ingresa tu Instagram.");
       }
 
       if (!selectedCurrency) {
-        throw new Error('No pudimos resolver tu moneda local para ese pais.');
+        throw new Error("No pudimos resolver tu moneda local para ese pais.");
       }
 
       const localCurrencyId = selectedCurrency.id;
 
-      const profileResponse = await fetch('/api/student/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const profileResponse = await fetch("/api/student/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           country: form.country,
-          instagramHandle: form.instagramHandle.trim().replace(/^@/, ''),
+          instagramHandle: form.instagramHandle.trim().replace(/^@/, ""),
           localCurrencyId: localCurrencyId || undefined,
         }),
       });
@@ -176,15 +185,17 @@ export function StudentOnboardingForm({
       const profilePayload = await profileResponse.json();
 
       if (!profileResponse.ok) {
-        throw new Error(profilePayload.message ?? 'No pudimos guardar tu perfil inicial.');
+        throw new Error(
+          profilePayload.message ?? "No pudimos guardar tu perfil inicial.",
+        );
       }
 
       const basePeriod = getPreviousMonthPeriod(form.month, form.year);
 
       let periodId: string | null = null;
-      const periodResponse = await fetch('/api/student/metrics/periods', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const periodResponse = await fetch("/api/student/metrics/periods", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           month: basePeriod.month,
           year: basePeriod.year,
@@ -198,7 +209,7 @@ export function StudentOnboardingForm({
       } else {
         const existingPeriodsResponse = await fetch(
           `/api/student/metrics/periods?month=${basePeriod.month}&year=${basePeriod.year}`,
-          { cache: 'no-store' },
+          { cache: "no-store" },
         );
         const existingPeriodsPayload = await existingPeriodsResponse.json();
 
@@ -207,38 +218,53 @@ export function StudentOnboardingForm({
           !Array.isArray(existingPeriodsPayload) ||
           !existingPeriodsPayload[0]?.id
         ) {
-          throw new Error(periodPayload.message ?? 'No pudimos crear el periodo inicial.');
+          throw new Error(
+            periodPayload.message ?? "No pudimos crear el periodo inicial.",
+          );
         }
 
         periodId = existingPeriodsPayload[0].id;
       }
 
       if (!periodId) {
-        throw new Error('No pudimos identificar el periodo inicial.');
+        throw new Error("No pudimos identificar el periodo inicial.");
       }
 
       const comisionCalculada = Number(
-        ((toNumber(form.ingresosFacturacion) * toNumber(form.comisionEstudioPorcentaje)) / 100).toFixed(2),
+        (
+          (toNumber(form.ingresosFacturacion) *
+            toNumber(form.comisionEstudioPorcentaje)) /
+          100
+        ).toFixed(2),
+      );
+      const balanceGeneralCalculado = Number(
+        Math.max(
+          0,
+          toNumber(form.ingresosFacturacion) -
+            comisionCalculada -
+            toNumber(form.gastosDelMes),
+        ).toFixed(2),
       );
 
       const metricEntries: Array<[string, string]> = [
-        ['balance-general', form.balanceGeneral],
-        ['ingresos-facturacion', form.ingresosFacturacion],
-        ['cantidad-total-tatuajes', form.cantidadTotalTatuajes],
-        ['comision-estudio-porcentaje', form.comisionEstudioPorcentaje],
-        ['comision-estudio', String(comisionCalculada)],
-        ['gastos-del-mes', form.gastosDelMes],
-        ['seguidores-instagram-actuales', form.seguidoresInstagramActuales],
-        ['consultas-mensuales', form.consultasMensuales],
-        ['conversaciones-a-nuevos', form.conversacionesANuevos],
-        ['cotizaciones', form.cotizaciones],
-        ['cierres-del-mes', form.cierresDelMes],
-        ['cierres-nuevos-clientes', form.cierresNuevosClientes],
-        ['cierres-por-recomendaciones', form.cierresPorRecomendaciones],
-        ['cierres-recurrentes', form.cierresRecurrentes],
+        ["balance-general", String(balanceGeneralCalculado)],
+        ["ingresos-facturacion", form.ingresosFacturacion],
+        ["cantidad-total-tatuajes", form.cantidadTotalTatuajes],
+        ["comision-estudio-porcentaje", form.comisionEstudioPorcentaje],
+        ["comision-estudio", String(comisionCalculada)],
+        ["gastos-del-mes", form.gastosDelMes],
+        ["seguidores-instagram-actuales", form.seguidoresInstagramActuales],
+        ["consultas-mensuales", form.consultasMensuales],
+        ["conversaciones-a-nuevos", form.conversacionesANuevos],
+        ["cotizaciones", form.cotizaciones],
+        ["cierres-del-mes", form.cierresDelMes],
+        ["cierres-nuevos-clientes", form.cierresNuevosClientes],
+        ["cierres-por-recomendaciones", form.cierresPorRecomendaciones],
+        ["cierres-recurrentes", form.cierresRecurrentes],
       ];
 
-      const values: Array<Record<string, string | number | null | undefined>> = [];
+      const values: Array<Record<string, string | number | null | undefined>> =
+        [];
 
       for (const [slug, rawValue] of metricEntries) {
         const definition = metricDefinitionMap[slug];
@@ -247,7 +273,7 @@ export function StudentOnboardingForm({
           continue;
         }
 
-        if (definition.valueType === 'CURRENCY') {
+        if (definition.valueType === "CURRENCY") {
           values.push({
             metricDefinitionId: definition.id,
             originalAmount: toNumber(rawValue),
@@ -262,34 +288,44 @@ export function StudentOnboardingForm({
         });
       }
 
-      const valuesResponse = await fetch(`/api/student/metrics/periods/${periodId}/values`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ values }),
-      });
+      const valuesResponse = await fetch(
+        `/api/student/metrics/periods/${periodId}/values`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ values }),
+        },
+      );
       const valuesPayload = await valuesResponse.json();
 
       if (!valuesResponse.ok) {
-        throw new Error(valuesPayload.message ?? 'No pudimos guardar tus metricas iniciales.');
+        throw new Error(
+          valuesPayload.message ?? "No pudimos guardar tus metricas iniciales.",
+        );
       }
 
-      const submitResponse = await fetch(`/api/student/metrics/periods/${periodId}/submit`, {
-        method: 'POST',
-      });
+      const submitResponse = await fetch(
+        `/api/student/metrics/periods/${periodId}/submit`,
+        {
+          method: "POST",
+        },
+      );
       const submitPayload = await submitResponse.json();
 
       if (!submitResponse.ok) {
-        throw new Error(submitPayload.message ?? 'No pudimos enviar tu primer periodo.');
+        throw new Error(
+          submitPayload.message ?? "No pudimos enviar tu primer periodo.",
+        );
       }
 
-      setSuccess('Tu perfil inicial y tu primer mes quedaron cargados.');
-      router.replace('/student?tab=results');
+      setSuccess("Tu perfil inicial y tu primer mes quedaron cargados.");
+      router.replace("/student?tab=results");
       router.refresh();
     } catch (submissionError) {
       setError(
         submissionError instanceof Error
           ? submissionError.message
-          : 'No pudimos completar tu configuracion inicial.',
+          : "No pudimos completar tu configuracion inicial.",
       );
     } finally {
       setIsSaving(false);
@@ -304,8 +340,8 @@ export function StudentOnboardingForm({
             <p className="eyebrow">Paso 2</p>
             <h1>Completa tu configuracion inicial</h1>
             <p>
-              Carga tu pais, tu Instagram y el primer mes de datos desde el que arrancaste la
-              mentoria.
+              Carga tu pais, tu Instagram y el primer mes de datos desde el que
+              arrancaste la mentoria.
             </p>
           </div>
           <div className="student-onboarding-currency">
@@ -319,7 +355,7 @@ export function StudentOnboardingForm({
             <span>Pais</span>
             <select
               value={form.country}
-              onChange={(event) => updateField('country', event.target.value)}
+              onChange={(event) => updateField("country", event.target.value)}
               required
             >
               <option value="">Selecciona tu pais</option>
@@ -336,7 +372,9 @@ export function StudentOnboardingForm({
             <input
               type="text"
               value={form.instagramHandle}
-              onChange={(event) => updateField('instagramHandle', event.target.value)}
+              onChange={(event) =>
+                updateField("instagramHandle", event.target.value)
+              }
               placeholder="@tuusuario"
               required
             />
@@ -344,7 +382,10 @@ export function StudentOnboardingForm({
 
           <label className="field login-field-simple">
             <span>Mes de inicio de mentoria</span>
-            <select value={form.month} onChange={(event) => updateField('month', event.target.value)}>
+            <select
+              value={form.month}
+              onChange={(event) => updateField("month", event.target.value)}
+            >
               {monthOptions.map((month) => (
                 <option key={month.value} value={month.value}>
                   {month.label}
@@ -355,7 +396,10 @@ export function StudentOnboardingForm({
 
           <label className="field login-field-simple">
             <span>Año de inicio</span>
-            <select value={form.year} onChange={(event) => updateField('year', event.target.value)}>
+            <select
+              value={form.year}
+              onChange={(event) => updateField("year", event.target.value)}
+            >
               {yearOptions.map((year) => (
                 <option key={year} value={year}>
                   {year}
@@ -369,7 +413,10 @@ export function StudentOnboardingForm({
       <section className="student-onboarding-card">
         <div className="student-onboarding-section-head">
           <h2>Datos del mes previo a la mentoria</h2>
-          <p>Datos del mes anterior al inicio de la mentoria, para tener una base de comparación.</p>
+          <p>
+            Datos del mes anterior al inicio de la mentoria, para tener una base
+            de comparación.
+          </p>
         </div>
 
         <article className="student-form-card">
@@ -378,28 +425,16 @@ export function StudentOnboardingForm({
             <label>
               <span>Ingresos totales del mes</span>
               <div className="student-form-money-field">
-                <span>{selectedCurrency?.symbol ?? '$'}</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                  value={form.balanceGeneral}
-                  onChange={(event) => updateField('balanceGeneral', event.target.value)}
-                />
-              </div>
-            </label>
-            <label>
-              <span>Facturacion</span>
-              <div className="student-form-money-field">
-                <span>{selectedCurrency?.symbol ?? '$'}</span>
+                <span>{selectedCurrency?.symbol ?? "$"}</span>
                 <input
                   type="number"
                   min="0"
                   step="1"
                   placeholder="0"
                   value={form.ingresosFacturacion}
-                  onChange={(event) => updateField('ingresosFacturacion', event.target.value)}
+                  onChange={(event) =>
+                    updateField("ingresosFacturacion", event.target.value)
+                  }
                 />
               </div>
             </label>
@@ -411,7 +446,9 @@ export function StudentOnboardingForm({
                 step="1"
                 placeholder="0"
                 value={form.cantidadTotalTatuajes}
-                onChange={(event) => updateField('cantidadTotalTatuajes', event.target.value)}
+                onChange={(event) =>
+                  updateField("cantidadTotalTatuajes", event.target.value)
+                }
               />
             </label>
             <label>
@@ -423,20 +460,24 @@ export function StudentOnboardingForm({
                 step="0.1"
                 placeholder="0"
                 value={form.comisionEstudioPorcentaje}
-                onChange={(event) => updateField('comisionEstudioPorcentaje', event.target.value)}
+                onChange={(event) =>
+                  updateField("comisionEstudioPorcentaje", event.target.value)
+                }
               />
             </label>
             <label>
               <span>Gastos del mes</span>
               <div className="student-form-money-field">
-                <span>{selectedCurrency?.symbol ?? '$'}</span>
+                <span>{selectedCurrency?.symbol ?? "$"}</span>
                 <input
                   type="number"
                   min="0"
                   step="1"
                   placeholder="0"
                   value={form.gastosDelMes}
-                  onChange={(event) => updateField('gastosDelMes', event.target.value)}
+                  onChange={(event) =>
+                    updateField("gastosDelMes", event.target.value)
+                  }
                 />
               </div>
             </label>
@@ -454,7 +495,9 @@ export function StudentOnboardingForm({
                 step="1"
                 placeholder="0"
                 value={form.seguidoresInstagramActuales}
-                onChange={(event) => updateField('seguidoresInstagramActuales', event.target.value)}
+                onChange={(event) =>
+                  updateField("seguidoresInstagramActuales", event.target.value)
+                }
               />
             </label>
             <label>
@@ -465,7 +508,9 @@ export function StudentOnboardingForm({
                 step="1"
                 placeholder="0"
                 value={form.consultasMensuales}
-                onChange={(event) => updateField('consultasMensuales', event.target.value)}
+                onChange={(event) =>
+                  updateField("consultasMensuales", event.target.value)
+                }
               />
             </label>
             <label>
@@ -476,7 +521,9 @@ export function StudentOnboardingForm({
                 step="1"
                 placeholder="0"
                 value={form.conversacionesANuevos}
-                onChange={(event) => updateField('conversacionesANuevos', event.target.value)}
+                onChange={(event) =>
+                  updateField("conversacionesANuevos", event.target.value)
+                }
               />
             </label>
             <label>
@@ -487,7 +534,9 @@ export function StudentOnboardingForm({
                 step="1"
                 placeholder="0"
                 value={form.cotizaciones}
-                onChange={(event) => updateField('cotizaciones', event.target.value)}
+                onChange={(event) =>
+                  updateField("cotizaciones", event.target.value)
+                }
               />
             </label>
           </div>
@@ -507,7 +556,9 @@ export function StudentOnboardingForm({
                 step="1"
                 placeholder="0"
                 value={form.cierresDelMes}
-                onChange={(event) => updateField('cierresDelMes', event.target.value)}
+                onChange={(event) =>
+                  updateField("cierresDelMes", event.target.value)
+                }
               />
             </label>
             <label>
@@ -518,7 +569,9 @@ export function StudentOnboardingForm({
                 step="1"
                 placeholder="0"
                 value={form.cierresNuevosClientes}
-                onChange={(event) => updateField('cierresNuevosClientes', event.target.value)}
+                onChange={(event) =>
+                  updateField("cierresNuevosClientes", event.target.value)
+                }
               />
             </label>
             <label>
@@ -529,7 +582,9 @@ export function StudentOnboardingForm({
                 step="1"
                 placeholder="0"
                 value={form.cierresPorRecomendaciones}
-                onChange={(event) => updateField('cierresPorRecomendaciones', event.target.value)}
+                onChange={(event) =>
+                  updateField("cierresPorRecomendaciones", event.target.value)
+                }
               />
             </label>
             <label>
@@ -540,7 +595,9 @@ export function StudentOnboardingForm({
                 step="1"
                 placeholder="0"
                 value={form.cierresRecurrentes}
-                onChange={(event) => updateField('cierresRecurrentes', event.target.value)}
+                onChange={(event) =>
+                  updateField("cierresRecurrentes", event.target.value)
+                }
               />
             </label>
           </div>
@@ -551,7 +608,7 @@ export function StudentOnboardingForm({
 
         <div className="student-onboarding-actions">
           <button className="primary-button" type="submit" disabled={isSaving}>
-            {isSaving ? 'Guardando configuracion...' : 'Guardar y continuar'}
+            {isSaving ? "Guardando configuracion..." : "Guardar y continuar"}
           </button>
         </div>
       </section>

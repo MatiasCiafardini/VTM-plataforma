@@ -187,6 +187,29 @@ type AdminSettings = {
   };
 };
 
+type GroupMeeting = {
+  id: string;
+  title: string;
+  description: string | null;
+  timezone: string;
+  isRecurring: boolean;
+  weekDay: number | null;
+  startsAt: string;
+  endsAt: string | null;
+  linkUrl: string | null;
+};
+
+type RegistrationCode = {
+  id: string;
+  code: string;
+  label: string | null;
+  role: 'ADMIN' | 'MENTOR' | 'STUDENT';
+  isActive: boolean;
+  usageCount: number;
+  maxUses: number | null;
+  createdAt: string;
+};
+
 type NotificationItem = {
   id: string;
   type: string;
@@ -259,7 +282,7 @@ export default async function AdminPage({
   const params = searchParams ? await searchParams : undefined;
   const activeTab = resolveTab(params?.tab);
   const challengesView = params?.view === 'manage' ? 'manage' : 'wall';
-  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, adminSettings, notifications, adminProfile, currencies] = await Promise.all([
+  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, adminSettings, groupMeetings, registrationCodes, notifications, adminProfile, currencies] = await Promise.all([
     activeTab === 'dashboard' ||
     activeTab === 'results' ||
     (activeTab === 'challenges' && challengesView === 'wall')
@@ -292,6 +315,26 @@ export default async function AdminPage({
           'admin settings',
         )
       : Promise.resolve(null),
+    activeTab === 'settings'
+      ? safeBackendFetch<GroupMeeting[]>(
+          '/group-meetings',
+          [],
+          {
+            token: session.token,
+          },
+          'group meetings',
+        )
+      : Promise.resolve([]),
+    activeTab === 'settings'
+      ? safeBackendFetch<RegistrationCode[]>(
+          '/registration-codes',
+          [],
+          {
+            token: session.token,
+          },
+          'registration codes',
+        )
+      : Promise.resolve([]),
     safeBackendFetch<NotificationItem[]>(
       '/notifications',
       [],
@@ -532,6 +575,8 @@ export default async function AdminPage({
       {activeTab === 'settings' && adminSettings ? (
         <AdminOperationsPanel
           initialSettings={adminSettings}
+          initialMeetings={groupMeetings}
+          initialCodes={registrationCodes}
         />
       ) : activeTab === 'settings' ? (
         <article className="list-card">

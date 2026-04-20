@@ -594,6 +594,34 @@ model Event {
   @@index([studentId, startsAt])
 }
 
+model GroupMeeting {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  timezone    String
+  isRecurring Boolean  @default(false)
+  weekDay     Int?
+  startsAt    DateTime
+  endsAt      DateTime?
+  linkUrl     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([startsAt])
+}
+
+model RegistrationCode {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  label      String?
+  role       UserRole
+  isActive   Boolean  @default(true)
+  usageCount Int      @default(0)
+  maxUses    Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
 model AuditLog {
   id         String      @id @default(cuid())
   userId     String?

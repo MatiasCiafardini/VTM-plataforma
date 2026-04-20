@@ -19,9 +19,10 @@ export class RegisterStudentDto {
   @IsString()
   lastName!: string;
 
-  @ApiProperty({ example: 'Argentina' })
+  @ApiPropertyOptional({ example: 'Argentina' })
+  @IsOptional()
   @IsString()
-  country!: string;
+  country?: string;
 
   @ApiProperty({ example: 'VMT2026' })
   @IsString()

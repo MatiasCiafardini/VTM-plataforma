@@ -746,7 +746,7 @@ async function seedMetricCatalog() {
           sortOrder: 1,
         },
         {
-          name: 'Ingresos facturacion',
+          name: 'Ingresos totales',
           slug: 'ingresos-facturacion',
           valueType: MetricValueType.CURRENCY,
           isRequired: true,

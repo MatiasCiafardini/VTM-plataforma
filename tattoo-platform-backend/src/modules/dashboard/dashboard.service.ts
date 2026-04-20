@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import {
   ChallengeStatus,
   MonthlyMetricPeriodStatus,
+  Prisma,
   UserRole,
   UserStatus,
 } from '@prisma/client';
@@ -97,16 +98,7 @@ export class DashboardService {
         orderBy: [{ updatedAt: 'desc' }],
         take: 5,
       }),
-      this.prisma.event.findMany({
-        where: {
-          studentId: student.id,
-          startsAt: {
-            gte: new Date(),
-          },
-        },
-        orderBy: [{ startsAt: 'asc' }],
-        take: 5,
-      }),
+      this.listUpcomingGroupMeetings(),
     ]);
 
     const latestPeriod = periods[0] ?? null;
@@ -206,6 +198,7 @@ export class DashboardService {
         lastName: student.user.lastName,
         email: student.user.email,
         country: student.country,
+        timezone: student.timezone,
         localCurrency: student.localCurrency,
         displayCurrencyMode: student.displayCurrencyMode,
       },
@@ -220,6 +213,16 @@ export class DashboardService {
       },
       metricLabels: trackedMetrics.labels,
       latestMetrics: {
+        balanceGeneral:
+          this.getMetricOriginalNumericValue(
+            latestPeriod?.values ?? [],
+            'balance-general',
+          ),
+        balanceGeneralUsd:
+          this.getMetricUsdValue(
+            latestPeriod?.values ?? [],
+            'balance-general',
+          ),
         ingresosFacturacion:
           this.getMetricOriginalNumericValue(
             latestPeriod?.values ?? [],
@@ -229,6 +232,26 @@ export class DashboardService {
           this.getMetricUsdValue(
             latestPeriod?.values ?? [],
             trackedMetrics.revenueMetricSlug,
+          ),
+        comisionEstudio:
+          this.getMetricOriginalNumericValue(
+            latestPeriod?.values ?? [],
+            'comision-estudio',
+          ),
+        comisionEstudioUsd:
+          this.getMetricUsdValue(
+            latestPeriod?.values ?? [],
+            'comision-estudio',
+          ),
+        gastosDelMes:
+          this.getMetricOriginalNumericValue(
+            latestPeriod?.values ?? [],
+            'gastos-del-mes',
+          ),
+        gastosDelMesUsd:
+          this.getMetricUsdValue(
+            latestPeriod?.values ?? [],
+            'gastos-del-mes',
           ),
         consultasMensuales: metricsBySlug[trackedMetrics.leadsMetricSlug]?.value ?? null,
         cierresDelMes: metricsBySlug[trackedMetrics.closuresMetricSlug]?.value ?? null,
@@ -511,13 +534,7 @@ export class DashboardService {
         orderBy: [{ createdAt: 'desc' }],
       }),
       this.prisma.reward.count({ where: { isActive: true } }),
-      this.prisma.event.count({
-        where: {
-          startsAt: {
-            gte: new Date(),
-          },
-        },
-      }),
+      this.countUpcomingGroupMeetings(),
     ]);
 
     await Promise.all(
@@ -1063,10 +1080,57 @@ export class DashboardService {
       leadsMetricSlug,
       closuresMetricSlug,
       labels: {
-        revenue: definitionBySlug.get(revenueMetricSlug) ?? 'Ingresos',
+        revenue:
+          revenueMetricSlug === 'ingresos-facturacion'
+            ? 'Ingresos totales'
+            : definitionBySlug.get(revenueMetricSlug) ?? 'Ingresos totales',
         leads: definitionBySlug.get(leadsMetricSlug) ?? 'Consultas',
         closures: definitionBySlug.get(closuresMetricSlug) ?? 'Cierres',
       },
     };
+  }
+
+  private async listUpcomingGroupMeetings() {
+    try {
+      return await this.prisma.groupMeeting.findMany({
+        where: {
+          startsAt: {
+            gte: new Date(),
+          },
+        },
+        orderBy: [{ startsAt: 'asc' }, { createdAt: 'asc' }],
+        take: 5,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2021'
+      ) {
+        return [];
+      }
+
+      throw error;
+    }
+  }
+
+  private async countUpcomingGroupMeetings() {
+    try {
+      return await this.prisma.groupMeeting.count({
+        where: {
+          startsAt: {
+            gte: new Date(),
+          },
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2021'
+      ) {
+        return 0;
+      }
+
+      throw error;
+    }
   }
 }

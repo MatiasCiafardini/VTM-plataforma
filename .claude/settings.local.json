@@ -19,7 +19,8 @@
       "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\pg_ctl.exe\" -D \"c:/Users/mat_i/OneDrive/Documentos/trabajos/Plataforma VMT/tattoo-platform-backend/.postgres/data\" -o \"-p 5433 -h 127.0.0.1\" start -W)",
       "Bash(\"C:\\\\Program Files\\\\PostgreSQL\\\\18\\\\bin\\\\pg_ctl.exe\" -D \"c:/Users/mat_i/OneDrive/Documentos/trabajos/Plataforma VMT/tattoo-platform-backend/.postgres/data\" stop)",
       "Bash(powershell -ExecutionPolicy Bypass -Command \". scripts/dev-common.ps1; Start-BackendDatabase\")",
-      "Bash(powershell -ExecutionPolicy Bypass -Command \". scripts/dev-common.ps1; Start-BackendDatabase; Write-Host 'DONE'\")"
+      "Bash(powershell -ExecutionPolicy Bypass -Command \". scripts/dev-common.ps1; Start-BackendDatabase; Write-Host 'DONE'\")",
+      "Bash(xargs -I {} sh -c 'echo \"--- {} ---\" && ls -1 \"/c/Users/mat_i/OneDrive/Documentos/trabajos/Plataforma VMT/tattoo-platform-backend/src/modules/{}\" 2>/dev/null | head -5')"
     ]
   }
 }

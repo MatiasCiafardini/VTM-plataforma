@@ -138,6 +138,8 @@ h3 {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .brand-copy {
@@ -236,7 +238,8 @@ h3 {
 .topbar-actions {
   align-items: center;
   justify-content: flex-end;
-  margin-left: auto;
+  margin-left: 0;
+  flex: 0 0 auto;
 }
 
 .topbar-mobile {
@@ -385,13 +388,13 @@ h3 {
 }
 
 .topbar-center-nav {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
   display: flex;
   align-items: center;
   justify-content: center;
-  max-width: calc(100% - 240px);
+  flex: 1 1 auto;
+  max-width: none;
+  padding-inline: 10px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -403,6 +406,16 @@ h3 {
 
 .topbar-nav-centered {
   justify-content: center;
+}
+
+.topbar-admin-nav {
+  gap: 8px;
+}
+
+.topbar-admin-nav .nav-item,
+.topbar-admin-nav.topbar-nav a {
+  padding: 9px 12px;
+  font-size: 0.84rem;
 }
 
 .profile-circle {
@@ -1733,8 +1746,39 @@ h3 {
 }
 
 .student-calendar-shell {
+  position: relative;
   display: grid;
   gap: 14px;
+  padding: 18px;
+  border-radius: 26px !important;
+  overflow: hidden;
+  box-shadow:
+    0 22px 44px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
+}
+
+.student-calendar-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(244, 191, 25, 0.12) 38%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
 .student-calendar-header {
@@ -1775,6 +1819,82 @@ h3 {
 
 .student-calendar-card {
   padding: 20px;
+  border-radius: 22px !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background:
+    linear-gradient(180deg, rgba(34, 34, 35, 0.96) 0%, rgba(14, 14, 15, 0.96) 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 10px 24px rgba(0, 0, 0, 0.18);
+}
+
+.student-group-meeting-list {
+  display: grid;
+  gap: 12px;
+}
+
+.student-group-meeting-card {
+  position: relative;
+  display: grid;
+  gap: 12px;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.student-group-meeting-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(244, 191, 25, 0.08);
+}
+
+.student-group-meeting-link {
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.student-group-meeting-link:hover {
+  transform: translateY(-2px);
+  border-color: rgba(244, 191, 25, 0.3) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 16px 34px rgba(0, 0, 0, 0.22);
+}
+
+.student-group-meeting-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.student-group-meeting-head strong {
+  color: #f5f1e8;
+  font-size: 1rem;
+}
+
+.student-group-meeting-head p {
+  margin-top: 6px;
+  color: var(--text-soft);
+  text-transform: capitalize;
+}
+
+.student-group-meeting-description,
+.student-group-meeting-meta {
+  color: var(--text-soft);
+}
+
+.student-group-meeting-description {
+  line-height: 1.5;
+}
+
+.student-group-meeting-meta {
+  font-size: 0.82rem;
+  letter-spacing: 0.03em;
 }
 
 .student-calendar-empty-card {
@@ -1782,6 +1902,7 @@ h3 {
   display: grid;
   place-items: center;
   text-align: center;
+  border-style: solid;
 }
 
 .student-calendar-row {
@@ -3425,8 +3546,46 @@ h3 {
   gap: 8px;
 }
 
+.admin-group-meetings-shell {
+  gap: 18px;
+}
+
+.admin-group-meetings-timezone-chip {
+  max-width: 280px;
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 202, 44, 0.2);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top right, rgba(244, 191, 25, 0.12), transparent 58%),
+    #101010;
+}
+
+.admin-group-meetings-timezone-chip span,
+.admin-group-meetings-field small {
+  color: var(--text-dim);
+}
+
+.admin-group-meetings-timezone-chip strong {
+  color: #fff8ea;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-group-meetings-field {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-group-meetings-field small {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
 .admin-settings-grid input,
-.admin-settings-grid select {
+.admin-settings-grid select,
+.admin-group-meetings-description textarea {
   width: 100%;
   min-height: 46px;
   padding: 0 14px;
@@ -3437,10 +3596,165 @@ h3 {
   outline: none;
 }
 
+.admin-group-meetings-field-date input,
+.admin-group-meetings-field-date select,
+.admin-group-meetings-field-time input {
+  min-height: 52px;
+  padding-inline: 16px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(20, 20, 20, 0.98) 0%, rgba(12, 12, 12, 0.98) 100%);
+  color-scheme: dark;
+}
+
+.admin-group-meetings-field-type {
+  grid-column: 1 / -1;
+}
+
+.admin-group-meetings-type-toggle {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  gap: 2px;
+}
+
+.admin-group-meetings-type-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  transition: background 0.15s, color 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.admin-group-meetings-type-option:has(input:checked) {
+  background: rgba(255, 202, 44, 0.12);
+  color: #ffca2c;
+}
+
+.admin-group-meetings-type-option input[type='radio'] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.admin-group-meetings-field-date input::-webkit-calendar-picker-indicator,
+.admin-group-meetings-field-time input::-webkit-calendar-picker-indicator {
+  opacity: 0.72;
+  cursor: pointer;
+}
+
 .admin-settings-grid input:focus,
-.admin-settings-grid select:focus {
+.admin-settings-grid select:focus,
+.admin-group-meetings-description textarea:focus {
   border-color: rgba(255, 202, 44, 0.28);
   box-shadow: 0 0 0 3px rgba(244, 191, 25, 0.08);
+}
+
+.admin-group-meetings-form,
+.admin-group-meeting-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  background: #111;
+}
+
+.admin-group-meetings-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-group-meetings-description {
+  grid-column: 1 / -1;
+}
+
+.admin-group-meetings-description textarea {
+  min-height: 128px;
+  padding: 14px;
+  resize: vertical;
+}
+
+.admin-reg-codes-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-reg-codes-form {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #2a2a2a;
+  border-radius: 16px;
+  background: #111;
+}
+
+.admin-reg-codes-toggle {
+  grid-column: 1 / -1;
+}
+
+.admin-reg-codes-disabled-input {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-reg-code-card {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-reg-code-value {
+  font-family: monospace;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+}
+
+.admin-reg-code-usage {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.admin-group-meeting-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-group-meeting-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-group-meeting-copy strong {
+  color: #f5f1e8;
+  font-size: 1rem;
+}
+
+.admin-group-meeting-copy p,
+.admin-group-meeting-copy a {
+  color: var(--text-soft);
+}
+
+.admin-group-meeting-copy a {
+  overflow-wrap: anywhere;
+}
+
+.admin-group-meeting-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .admin-settings-toggle-list {
@@ -4136,6 +4450,7 @@ body {
 .student-results-growth-strip,
 .student-calendar-shell,
 .student-calendar-card,
+.student-group-meeting-card,
 .student-profile-card,
 .profile-link-row,
 .student-challenge-card,
@@ -4825,6 +5140,11 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .admin-group-meetings-timezone-chip {
+    max-width: none;
+    width: 100%;
+  }
+
   .admin-achievements-list {
     grid-template-columns: 1fr;
   }
@@ -4958,6 +5278,7 @@ body {
   .onboarding-board-header,
   .onboarding-board-summary,
   .admin-onboarding-phase-head,
+  .admin-settings-panel-header,
   .student-onboarding-actions {
     align-items: flex-start;
     flex-direction: column;

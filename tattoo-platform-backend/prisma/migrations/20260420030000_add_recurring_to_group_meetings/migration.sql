@@ -1,0 +1,2 @@
+ALTER TABLE "GroupMeeting" ADD COLUMN "isRecurring" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "GroupMeeting" ADD COLUMN "weekDay" INTEGER;

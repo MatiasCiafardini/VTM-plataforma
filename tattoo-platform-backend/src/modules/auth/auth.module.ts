@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AdminSettingsModule } from '../admin-settings/admin-settings.module';
+import { PrismaModule } from '../../prisma/prisma.module';
+import { RegistrationCodesModule } from '../registration-codes/registration-codes.module';
 import { StudentsModule } from '../students/students.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
@@ -13,7 +14,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   imports: [
     ConfigModule,
     PassportModule,
-    AdminSettingsModule,
+    PrismaModule,
+    RegistrationCodesModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

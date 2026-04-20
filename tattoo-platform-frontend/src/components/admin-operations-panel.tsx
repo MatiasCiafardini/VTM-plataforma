@@ -1,6 +1,14 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import {
+  AdminGroupMeetingsPanel,
+  type GroupMeeting,
+} from './admin-group-meetings-panel';
+import {
+  AdminRegistrationCodesPanel,
+  type RegistrationCode,
+} from './admin-registration-codes-panel';
 
 type AdminSettings = {
   userOperations: {
@@ -36,7 +44,7 @@ type AdminSettings = {
   };
 };
 
-type TabKey = 'users' | 'metrics' | 'notifications';
+type TabKey = 'users' | 'metrics' | 'notifications' | 'meetings' | 'codes';
 
 const tabMeta: Array<{
   key: TabKey;
@@ -65,12 +73,30 @@ const tabMeta: Array<{
     description:
       'Decide cuando avisar por carga mensual, logros completados y cambios de riesgo.',
   },
+  {
+    key: 'meetings',
+    title: 'Reuniones grupales',
+    eyebrow: 'Agenda compartida',
+    description:
+      'Carga reuniones del grupo usando tu horario local y comparte enlaces o descripciones.',
+  },
+  {
+    key: 'codes',
+    title: 'Codigos de registro',
+    eyebrow: 'Acceso al sistema',
+    description:
+      'Crea y administra los codigos que permiten registrarse con cada rol de la plataforma.',
+  },
 ];
 
 export function AdminOperationsPanel({
   initialSettings,
+  initialMeetings,
+  initialCodes,
 }: {
   initialSettings: AdminSettings;
+  initialMeetings: GroupMeeting[];
+  initialCodes: RegistrationCode[];
 }) {
   const [settings, setSettings] = useState(initialSettings);
   const [activeTab, setActiveTab] = useState<TabKey>('users');
@@ -167,7 +193,10 @@ export function AdminOperationsPanel({
           </div>
         </aside>
 
-        <form className="admin-settings-panel" onSubmit={handleSubmit}>
+        <form
+          className="admin-settings-panel"
+          onSubmit={activeTab === 'meetings' || activeTab === 'codes' ? (event) => event.preventDefault() : handleSubmit}
+        >
           <div className="admin-settings-panel-header">
             <div>
               <p className="eyebrow">{currentTab.eyebrow}</p>
@@ -181,7 +210,11 @@ export function AdminOperationsPanel({
                   ? 'Altas, defaults y lectura de estado.'
                   : activeTab === 'metrics'
                     ? 'Slugs, puntos de riesgo y umbrales del score.'
-                    : 'Alertas del header y automatizaciones.'}
+                    : activeTab === 'notifications'
+                      ? 'Alertas del header y automatizaciones.'
+                      : activeTab === 'codes'
+                    ? 'Codigos activos, roles y conteo de usos.'
+                    : 'Agenda del grupo visible para todos los alumnos.'}
               </span>
             </div>
           </div>
@@ -418,14 +451,26 @@ export function AdminOperationsPanel({
             </div>
           ) : null}
 
-          {message ? <p className="student-results-form-success">{message}</p> : null}
-          {error ? <p className="student-results-form-error">{error}</p> : null}
+          {activeTab === 'meetings' ? (
+            <AdminGroupMeetingsPanel initialMeetings={initialMeetings} />
+          ) : null}
 
-          <div className="student-results-form-actions">
-            <button type="submit" className="primary-button" disabled={isSaving}>
-              {isSaving ? 'Guardando...' : 'Guardar configuracion'}
-            </button>
-          </div>
+          {activeTab === 'codes' ? (
+            <AdminRegistrationCodesPanel initialCodes={initialCodes} />
+          ) : null}
+
+          {activeTab !== 'meetings' && activeTab !== 'codes' ? (
+            <>
+              {message ? <p className="student-results-form-success">{message}</p> : null}
+              {error ? <p className="student-results-form-error">{error}</p> : null}
+
+              <div className="student-results-form-actions">
+                <button type="submit" className="primary-button" disabled={isSaving}>
+                  {isSaving ? 'Guardando...' : 'Guardar configuracion'}
+                </button>
+              </div>
+            </>
+          ) : null}
         </form>
       </div>
     </section>

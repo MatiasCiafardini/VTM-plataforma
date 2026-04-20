@@ -2,7 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as PrismaClientPackage from '@prisma/client';
-import type { PrismaClient as GeneratedPrismaClient } from '../../node_modules/.prisma/client/default';
+import type { PrismaClient as GeneratedPrismaClient } from '@prisma/client';
 
 type PrismaClientCtor = new (options?: {
   adapter?: PrismaPg;

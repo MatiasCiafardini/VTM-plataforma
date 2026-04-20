@@ -7,8 +7,9 @@ import {
 import { UserRole, UserStatus } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcrypt';
+import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
-import { AdminSettingsService } from '../admin-settings/admin-settings.service';
+import { RegistrationCodesService } from '../registration-codes/registration-codes.service';
 import { StudentsService } from '../students/students.service';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -17,9 +18,10 @@ import { RegisterStudentDto } from './dto/register-student.dto';
 @Injectable()
 export class AuthService {
   constructor(
+    private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
     private readonly studentsService: StudentsService,
-    private readonly adminSettingsService: AdminSettingsService,
+    private readonly registrationCodesService: RegistrationCodesService,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -60,56 +62,73 @@ export class AuthService {
   }
 
   async registerStudent(dto: RegisterStudentDto) {
-    const settings = await this.adminSettingsService.getSettings();
-    const configuredCode = this.normalizeAccessCode(
-      settings.userOperations.studentRegistrationCode,
-    );
-    const incomingCode = this.normalizeAccessCode(dto.accessCode);
+    const code = await this.registrationCodesService.findActiveByCode(dto.accessCode);
 
-    if (!configuredCode) {
-      throw new ForbiddenException('El registro esta deshabilitado temporalmente.');
-    }
-
-    if (incomingCode !== configuredCode) {
+    if (!code) {
       throw new ForbiddenException('El codigo de registro no es valido.');
     }
 
-    const createdStudent = await this.studentsService.createStudent({
-      email: dto.email,
-      password: dto.password,
-      firstName: dto.firstName,
-      lastName: dto.lastName,
-      country: dto.country,
-      birthDate: dto.birthDate,
-    });
-
-    const createdUser = createdStudent.user;
-
-    if (!createdUser) {
-      throw new ConflictException('No pudimos crear la cuenta del alumno.');
+    if (code.maxUses !== null && code.usageCount >= code.maxUses) {
+      throw new ForbiddenException('Este codigo de registro ya alcanzo el limite de usos.');
     }
 
-    if (createdUser.status !== UserStatus.ACTIVE) {
+    let userId: string;
+    let safeUser: ReturnType<UsersService['toSafeUser']>;
+
+    if (code.role === UserRole.STUDENT) {
+      const student = await this.studentsService.createStudent({
+        email: dto.email,
+        password: dto.password,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        country: dto.country ?? '',
+        birthDate: dto.birthDate,
+      });
+
+      if (!student.user) {
+        throw new ConflictException('No pudimos crear la cuenta.');
+      }
+
+      userId = student.user.id;
+      safeUser = student.user;
+    } else {
+      const user = await this.usersService.createUser({
+        email: dto.email,
+        password: dto.password,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        role: code.role,
+      });
+
+      userId = user.id;
+      safeUser = user;
+
+      if (code.role === UserRole.MENTOR) {
+        await this.prisma.mentorProfile.create({ data: { userId } });
+      } else if (code.role === UserRole.ADMIN) {
+        await this.prisma.adminProfile.create({ data: { userId } });
+      }
+    }
+
+    await this.registrationCodesService.incrementUsage(code.id);
+
+    if (safeUser.status !== UserStatus.ACTIVE) {
       throw new ForbiddenException(
         'Tu cuenta fue creada pero aun no esta activa. Contacta al administrador.',
       );
     }
 
-    await this.usersService.updateLastLogin(createdUser.id);
+    await this.usersService.updateLastLogin(userId);
 
     const payload: AuthenticatedUser = {
-      sub: createdUser.id,
-      email: createdUser.email,
-      role: UserRole.STUDENT,
+      sub: userId,
+      email: dto.email,
+      role: code.role,
     };
 
     return {
       accessToken: await this.jwtService.signAsync(payload),
-      user: createdUser,
+      user: safeUser,
     };
-  }
-
-  private normalizeAccessCode(value: string) {
-    return value.trim().toUpperCase();
   }
 }

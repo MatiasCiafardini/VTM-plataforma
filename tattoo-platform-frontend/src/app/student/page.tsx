@@ -5,7 +5,6 @@ import {
 import { StudentResultsPanel } from '@/components/student-results-panel';
 import { StudentChallengesPanel } from '@/components/student-challenges-panel';
 import { StudentProfilePanel } from '@/components/student-profile-panel';
-import { StudentWeekCalendar } from '@/components/student-week-calendar';
 import {
   EMBEDDED_TOOLS,
   EXTERNAL_TOOLS,
@@ -32,6 +31,7 @@ type StudentDashboard = {
     lastName: string;
     email: string;
     country: string | null;
+    timezone: string | null;
     displayCurrencyMode: 'LOCAL' | 'USD' | 'BOTH';
     localCurrency: {
       id: string;
@@ -49,8 +49,14 @@ type StudentDashboard = {
     attentionScore: number | null;
   };
   latestMetrics: {
+    balanceGeneral: number | null;
+    balanceGeneralUsd: number | null;
     ingresosFacturacion: number | null;
     ingresosFacturacionUsd: number | null;
+    comisionEstudio: number | null;
+    comisionEstudioUsd: number | null;
+    gastosDelMes: number | null;
+    gastosDelMesUsd: number | null;
     consultasMensuales: number | null;
     cierresDelMes: number | null;
   };
@@ -98,9 +104,11 @@ type StudentDashboard = {
   upcomingEvents: Array<{
     id: string;
     title: string;
+    description: string | null;
+    timezone: string;
     startsAt: string;
     endsAt: string | null;
-    externalSource: string | null;
+    linkUrl: string | null;
   }>;
 };
 
@@ -187,6 +195,35 @@ function formatMoneyWithUsd(localValue: number, currencyCode: string, usdValue?:
   return `${local} (${usd})`;
 }
 
+function formatMeetingDate(value: string, timezone: string) {
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: timezone,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date(value));
+}
+
+function formatMeetingTimeRange(
+  startsAt: string,
+  endsAt: string | null,
+  timezone: string,
+) {
+  const formatter = new Intl.DateTimeFormat('es-AR', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  });
+
+  const startLabel = formatter.format(new Date(startsAt));
+  if (!endsAt) {
+    return startLabel;
+  }
+
+  return `${startLabel} a ${formatter.format(new Date(endsAt))}`;
+}
+
 export default async function StudentPage({
   searchParams,
 }: {
@@ -231,15 +268,26 @@ export default async function StudentPage({
     ),
   ]);
 
-  const latestIncome = data?.latestMetrics.ingresosFacturacion ?? 0;
-  const latestIncomeUsd = data?.latestMetrics.ingresosFacturacionUsd ?? null;
-  const estimatedCosts = Math.max(0, latestIncome - Math.round(latestIncome * 0.6));
+  const latestRevenue = data?.latestMetrics.ingresosFacturacion ?? 0;
+  const latestRevenueUsd = data?.latestMetrics.ingresosFacturacionUsd ?? null;
+  const latestOwnIncome = data?.latestMetrics.balanceGeneral ?? 0;
+  const latestOwnIncomeUsd = data?.latestMetrics.balanceGeneralUsd ?? null;
+  const latestCosts = data?.latestMetrics.gastosDelMes ?? 0;
+  const latestCostsUsd = data?.latestMetrics.gastosDelMesUsd ?? null;
   const estimatedMargin =
-    latestIncome > 0 ? Math.round(((latestIncome - estimatedCosts) / latestIncome) * 100) : 0;
+    latestRevenue > 0 ? Math.round((latestOwnIncome / latestRevenue) * 100) : 0;
   const localCurrencyCode = data?.student.localCurrency?.code ?? 'USD';
-  const facturacionAmount = formatMoneyWithUsd(latestIncome, localCurrencyCode, latestIncomeUsd);
-  const localIncomeAmount = formatMoneyWithUsd(latestIncome, localCurrencyCode, latestIncomeUsd);
-  const localCostsAmount = formatCurrencyAmount(estimatedCosts, localCurrencyCode);
+  const facturacionAmount = formatMoneyWithUsd(latestRevenue, localCurrencyCode, latestRevenueUsd);
+  const localIncomeAmount = formatMoneyWithUsd(
+    latestOwnIncome,
+    localCurrencyCode,
+    latestOwnIncomeUsd,
+  );
+  const localCostsAmount = formatMoneyWithUsd(
+    latestCosts,
+    localCurrencyCode,
+    latestCostsUsd,
+  );
 
   return (
     <AppShell
@@ -290,7 +338,7 @@ export default async function StudentPage({
           <section className="summary-grid summary-grid-student">
             <article className="summary-card metric-card">
               <div className="metric-card-top">
-                <span>{data?.metricLabels.revenue ?? 'Ingresos'}</span>
+                <span>Ingresos totales</span>
                 <span className="metric-card-icon">$</span>
               </div>
               <strong>{facturacionAmount}</strong>
@@ -298,19 +346,19 @@ export default async function StudentPage({
             </article>
             <article className="summary-card metric-card">
               <div className="metric-card-top">
-                <span>Ingresos</span>
+                <span>Ingresos propios</span>
                 <span className="metric-card-icon">+</span>
               </div>
               <strong>{localIncomeAmount}</strong>
-              <p>Moneda local ({localCurrencyCode})</p>
+              <p>Luego de comision y gastos ({localCurrencyCode})</p>
             </article>
             <article className="summary-card metric-card">
               <div className="metric-card-top">
-                <span>Gastos estimados</span>
+                <span>Gastos</span>
                 <span className="metric-card-icon">[]</span>
               </div>
               <strong>{localCostsAmount}</strong>
-              <p>Referencia operativa ({localCurrencyCode})</p>
+              <p>Suma total cargada ({localCurrencyCode})</p>
             </article>
             <article className="summary-card metric-card">
               <div className="metric-card-top">
@@ -318,7 +366,7 @@ export default async function StudentPage({
                 <span className="metric-card-icon">%</span>
               </div>
               <strong>{estimatedMargin}%</strong>
-              <p>Ingreso neto sobre facturacion</p>
+              <p>Ingreso neto sobre ingresos totales</p>
             </article>
           </section>
 
@@ -364,8 +412,8 @@ export default async function StudentPage({
           <section className="student-calendar-shell">
             <header className="student-calendar-header">
               <div>
-                <h3>Google Calendar</h3>
-                <p>Proximas reuniones, seguimientos y revisiones ya agendadas.</p>
+                <h3>Proximas reuniones grupales</h3>
+                <p>Horarios convertidos automaticamente a tu zona local.</p>
               </div>
               <div className="student-calendar-badge">
                 <span>Atencion</span>
@@ -380,7 +428,53 @@ export default async function StudentPage({
                 <p>Sin reuniones proximas cargadas.</p>
               </article>
             ) : (
-              <StudentWeekCalendar events={data.upcomingEvents} />
+              <div className="student-group-meeting-list">
+                {data.upcomingEvents.map((meeting) => {
+                  const studentTimezone = data.student.timezone ?? meeting.timezone ?? 'UTC';
+                  const content = (
+                    <>
+                      <div className="student-group-meeting-head">
+                        <div>
+                          <strong>{meeting.title}</strong>
+                          <p>{formatMeetingDate(meeting.startsAt, studentTimezone)}</p>
+                        </div>
+                        <span className="status-chip status-neutral">
+                          {formatMeetingTimeRange(
+                            meeting.startsAt,
+                            meeting.endsAt,
+                            studentTimezone,
+                          )}
+                        </span>
+                      </div>
+                      {meeting.description ? (
+                        <p className="student-group-meeting-description">{meeting.description}</p>
+                      ) : null}
+                      <p className="student-group-meeting-meta">
+                        Se muestra en tu zona horaria: {studentTimezone}
+                      </p>
+                    </>
+                  );
+
+                  return meeting.linkUrl ? (
+                    <a
+                      key={meeting.id}
+                      href={meeting.linkUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="student-calendar-card student-group-meeting-card student-group-meeting-link"
+                    >
+                      {content}
+                    </a>
+                  ) : (
+                    <article
+                      key={meeting.id}
+                      className="student-calendar-card student-group-meeting-card"
+                    >
+                      {content}
+                    </article>
+                  );
+                })}
+              </div>
             )}
           </section>
         </>

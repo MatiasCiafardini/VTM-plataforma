@@ -11,6 +11,8 @@ import { ChallengesModule } from './modules/challenges/challenges.module';
 import { CurrencyModule } from './modules/currency/currency.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { EventsModule } from './modules/events/events.module';
+import { GroupMeetingsModule } from './modules/group-meetings/group-meetings.module';
+import { RegistrationCodesModule } from './modules/registration-codes/registration-codes.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { MentorsModule } from './modules/mentors/mentors.module';
@@ -46,6 +48,8 @@ import { PrismaModule } from './prisma/prisma.module';
     AttentionScoreModule,
     DashboardModule,
     EventsModule,
+    GroupMeetingsModule,
+    RegistrationCodesModule,
     AuditModule,
     IntegrationsModule,
   ],

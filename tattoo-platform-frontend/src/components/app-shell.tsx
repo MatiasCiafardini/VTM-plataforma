@@ -70,18 +70,23 @@ export function AppShell({
             { key: 'dashboard', label: 'Dashboard', href: `${dashboardPath}?tab=dashboard` },
             {
               key: 'results',
-              label: 'Gestion de Alumnos',
+              label: 'Alumnos',
               href: `${dashboardPath}?tab=results`,
             },
             {
               key: 'challenges',
-              label: 'Muro de Logros',
+              label: 'Logros',
               href: `${dashboardPath}?tab=challenges`,
             },
             {
               key: 'onboarding',
-              label: 'On boarding',
+              label: 'Onboarding',
               href: '/admin/onboarding',
+            },
+            {
+              key: 'settings',
+              label: 'Config',
+              href: `${dashboardPath}?tab=settings`,
             },
           ]
       : role === 'MENTOR'
@@ -131,7 +136,13 @@ export function AppShell({
         </div>
 
         {role === 'ADMIN' || role === 'STUDENT' ? (
-          <nav className="topbar-center-nav topbar-nav topbar-nav-centered topbar-desktop-nav">
+          <nav
+            className={
+              role === 'ADMIN'
+                ? 'topbar-center-nav topbar-nav topbar-nav-centered topbar-desktop-nav topbar-admin-nav'
+                : 'topbar-center-nav topbar-nav topbar-nav-centered topbar-desktop-nav'
+            }
+          >
             {navLinks}
           </nav>
         ) : null}
