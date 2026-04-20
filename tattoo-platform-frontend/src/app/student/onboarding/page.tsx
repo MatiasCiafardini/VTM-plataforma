@@ -1,6 +1,5 @@
 import { AppShell } from '@/components/app-shell';
 import { StudentOnboardingRoadmap } from '@/components/student-onboarding-roadmap';
-import { backendFetch } from '@/lib/backend';
 import { safeBackendFetch } from '@/lib/server-fetch';
 import { requireRole } from '@/lib/session';
 
@@ -92,9 +91,14 @@ type NotificationItem = {
 export default async function StudentOnboardingPage() {
   const session = await requireRole('STUDENT');
   const [roadmap, notifications] = await Promise.all([
-    backendFetch<StudentOnboardingRoadmapData>('/onboarding/me', {
-      token: session.token,
-    }),
+    safeBackendFetch<StudentOnboardingRoadmapData | null>(
+      '/onboarding/me',
+      null,
+      {
+        token: session.token,
+      },
+      'student onboarding roadmap',
+    ),
     safeBackendFetch<NotificationItem[]>(
       '/notifications',
       [],
@@ -115,7 +119,28 @@ export default async function StudentOnboardingPage() {
       showSectionEyebrow={false}
       notifications={notifications}
     >
-      <StudentOnboardingRoadmap initialData={roadmap} />
+      {roadmap ? (
+        <StudentOnboardingRoadmap initialData={roadmap} />
+      ) : (
+        <section className="onboarding-student-shell">
+          <header className="onboarding-student-hero">
+            <div className="onboarding-student-hero-copy">
+              <p className="eyebrow">Roadmap de mentoria</p>
+              <h1>On boarding</h1>
+              <p>
+                No pudimos cargar tu roadmap en este momento. Puede pasar si el onboarding
+                todavia no esta configurado o si hubo un problema temporal con el backend.
+              </p>
+            </div>
+          </header>
+
+          <article className="summary-card onboarding-student-summary-card onboarding-student-summary-card-accent">
+            <span>Estado</span>
+            <strong>Roadmap no disponible</strong>
+            <p>Prueba recargando en unos minutos o revisa el setup inicial mientras tanto.</p>
+          </article>
+        </section>
+      )}
     </AppShell>
   );
 }
