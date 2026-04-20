@@ -137,7 +137,24 @@ La app queda disponible en:
 - `http://plataformavmt.com/`
 - `http://plataformavmt.com/docs`
 
-## 7. Seed inicial opcional
+## 7. Cargar roadmap de onboarding en produccion
+
+Si solo necesitas publicar el roadmap de onboarding actual, sin usuarios demo ni progreso ficticio:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend npm run db:seed:onboarding
+```
+
+Ese script:
+
+- crea o actualiza el roadmap principal de onboarding
+- crea o actualiza sus fases, pasos y recursos
+- no crea alumnos demo
+- no toca progreso de onboarding existente
+
+Puedes correrlo varias veces sin duplicar registros porque usa `upsert`.
+
+## 8. Seed inicial opcional
 
 Si queres cargar datos demo:
 
@@ -145,7 +162,7 @@ Si queres cargar datos demo:
 docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend node prisma/seed.mjs
 ```
 
-## 8. Verificar que quedo arriba
+## 9. Verificar que quedo arriba
 
 ```bash
 docker ps
@@ -154,7 +171,7 @@ curl -I http://plataformavmt.com
 curl http://plataformavmt.com/docs
 ```
 
-## 9. HTTPS con Certbot y Nginx Docker
+## 10. HTTPS con Certbot y Nginx Docker
 
 Cuando el dominio ya resuelva a la IP correcta:
 
@@ -195,7 +212,7 @@ docker compose --env-file .env.prod \
   up -d nginx
 ```
 
-## 10. Corregir el email admin legado
+## 11. Corregir el email admin legado
 
 Si el seed dejo el admin con el dominio viejo, puedes corregirlo sin tocar SQL:
 
@@ -213,7 +230,7 @@ Despues puedes volver a correr el seed:
 docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend node prisma/seed.mjs
 ```
 
-## 11. Comandos utiles
+## 12. Comandos utiles
 
 Ver logs:
 
@@ -240,6 +257,12 @@ cd /root/plataforma-vmt
 ./scripts/prod-deploy.sh
 ```
 
+Sincronizar solo onboarding:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend npm run db:seed:onboarding
+```
+
 Verificar HTTP y HTTPS:
 
 ```bash
@@ -251,13 +274,13 @@ curl -I https://www.plataformavmt.com
 
 Si `http` responde y `https` no, la app esta viva pero falta SSL en `443`.
 
-## 12. Siguiente paso recomendado
+## 13. Siguiente paso recomendado
 
 Cuando ya responda por dominio, conviene agregar:
 
 - backups del volumen de Postgres
 
-## 13. Automatizar backups y SSL
+## 14. Automatizar backups y SSL
 
 Scripts disponibles en el repo:
 
