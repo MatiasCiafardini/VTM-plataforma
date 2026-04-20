@@ -21,6 +21,25 @@ fail() {
   exit 1
 }
 
+wait_for_url() {
+  local url="$1"
+  local label="$2"
+  local attempts="${3:-20}"
+  local sleep_seconds="${4:-2}"
+
+  for ((i = 1; i <= attempts; i++)); do
+    if curl -fsSI "$url" >/dev/null; then
+      return 0
+    fi
+
+    if (( i < attempts )); then
+      sleep "$sleep_seconds"
+    fi
+  done
+
+  fail "$label no responde en $url"
+}
+
 usage() {
   cat <<'EOF'
 Uso:
@@ -114,15 +133,15 @@ log "Estado de contenedores"
 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
 log "Chequeos locales"
-curl -fsSI http://127.0.0.1 >/dev/null || fail "Nginx no responde en http://127.0.0.1"
-curl -fsSI http://127.0.0.1:3005 >/dev/null || fail "Frontend no responde en http://127.0.0.1:3005"
-curl -fsSI http://127.0.0.1:3004/api/health >/dev/null || fail "Backend no responde en http://127.0.0.1:3004/api/health"
+wait_for_url http://127.0.0.1 "Nginx"
+wait_for_url http://127.0.0.1:3005 "Frontend"
+wait_for_url http://127.0.0.1:3004/api/health "Backend"
 
 log "Chequeos por dominio"
-curl -fsSI "http://$DOMAIN" >/dev/null || fail "El dominio http://$DOMAIN no responde"
+wait_for_url "http://$DOMAIN" "El dominio"
 
 if [[ "$WITH_SSL" == "true" ]]; then
-  curl -fsSI "https://$DOMAIN" >/dev/null || fail "El dominio https://$DOMAIN no responde"
+  wait_for_url "https://$DOMAIN" "El dominio HTTPS"
 fi
 
 log "Deploy terminado correctamente"
