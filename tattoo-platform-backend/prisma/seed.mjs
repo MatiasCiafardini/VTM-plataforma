@@ -3,7 +3,6 @@ import bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
   AttentionLevel,
-  ChallengeStatus,
   DisplayCurrencyMode,
   GoalStatus,
   MetricValueType,
@@ -169,81 +168,6 @@ const studentSeeds = [
     cierres: [8, 8, 7, 9, 9, 11],
     status: UserStatus.INACTIVE,
     lastLoginAt: new Date('2025-12-10T13:00:00.000Z'),
-  },
-];
-
-const challengeSeeds = [
-  {
-    id: 'seed-challenge-1000',
-    metricSlug: 'ingresos-facturacion',
-    title: 'Primeros $1,000 USD',
-    description: 'Alcanza $1,000 USD de facturacion en un solo mes.',
-    iconKey: 'dollar',
-    rewardTitle: 'Clase: Como cerrar tus primeros $1,000 USD',
-    rewardUrl: 'https://chatgpt.com',
-    targetValue: 1000,
-    difficultyStars: 1,
-    isActive: true,
-  },
-  {
-    id: 'seed-challenge-3000',
-    metricSlug: 'ingresos-facturacion',
-    title: 'Primeros $3,000 USD',
-    description: 'Alcanza $3,000 USD de facturacion en un solo mes.',
-    iconKey: 'trophy',
-    rewardTitle: 'Curso: Oferta premium para tatuadores',
-    rewardUrl: 'https://chatgpt.com',
-    targetValue: 3000,
-    difficultyStars: 3,
-    isActive: true,
-  },
-  {
-    id: 'seed-challenge-7000',
-    metricSlug: 'ingresos-facturacion',
-    title: 'Primeros $7,000 USD',
-    description: 'Alcanza $7,000 USD de facturacion en un solo mes.',
-    iconKey: 'rocket',
-    rewardTitle: 'Masterclass: Escalar a tickets altos',
-    rewardUrl: 'https://chatgpt.com',
-    targetValue: 7000,
-    difficultyStars: 5,
-    isActive: true,
-  },
-  {
-    id: 'seed-challenge-10-cierres',
-    metricSlug: 'cierres-del-mes',
-    title: '10 cierres en un mes',
-    description: 'Cierra diez ventas dentro del mismo periodo mensual.',
-    iconKey: 'ribbon',
-    rewardTitle: 'Video: Script de cierres para DM y WhatsApp',
-    rewardUrl: 'https://chatgpt.com',
-    targetValue: 10,
-    difficultyStars: 2,
-    isActive: true,
-  },
-  {
-    id: 'seed-challenge-50-consultas',
-    metricSlug: 'consultas-mensuales',
-    title: '50 consultas mensuales',
-    description: 'Lleva tu flujo de consultas a un volumen sostenido de cincuenta al mes.',
-    iconKey: 'spark',
-    rewardTitle: 'Curso: Sistema de contenido para generar consultas',
-    rewardUrl: 'https://chatgpt.com',
-    targetValue: 50,
-    difficultyStars: 4,
-    isActive: true,
-  },
-  {
-    id: 'seed-challenge-1500-seguidores',
-    metricSlug: 'seguidores-instagram-actuales',
-    title: '1,500 seguidores nuevos',
-    description: 'Haz crecer tu visibilidad y suma comunidad real alrededor de tu trabajo.',
-    iconKey: 'flame',
-    rewardTitle: 'Clase: Instagram para tatuadores que venden',
-    rewardUrl: 'https://chatgpt.com',
-    targetValue: 1500,
-    difficultyStars: 3,
-    isActive: true,
   },
 ];
 
@@ -935,42 +859,6 @@ async function seedStudentDashboardLinks() {
   }
 }
 
-async function seedChallengesCatalog() {
-  const definitions = await prisma.metricDefinition.findMany();
-  const definitionsBySlug = Object.fromEntries(
-    definitions.map((definition) => [definition.slug, definition]),
-  );
-
-  for (const challenge of challengeSeeds) {
-    await prisma.challenge.upsert({
-      where: { id: challenge.id },
-      update: {
-        title: challenge.title,
-        description: challenge.description,
-        iconKey: challenge.iconKey,
-        rewardTitle: challenge.rewardTitle,
-        rewardUrl: challenge.rewardUrl,
-        metricDefinitionId: definitionsBySlug[challenge.metricSlug]?.id,
-        targetValue: challenge.targetValue,
-        difficultyStars: challenge.difficultyStars,
-        isActive: challenge.isActive,
-      },
-      create: {
-        id: challenge.id,
-        title: challenge.title,
-        description: challenge.description,
-        iconKey: challenge.iconKey,
-        rewardTitle: challenge.rewardTitle,
-        rewardUrl: challenge.rewardUrl,
-        metricDefinitionId: definitionsBySlug[challenge.metricSlug]?.id,
-        targetValue: challenge.targetValue,
-        difficultyStars: challenge.difficultyStars,
-        isActive: challenge.isActive,
-      },
-    });
-  }
-}
-
 async function seedOnboardingRoadmap() {
   await prisma.onboardingRoadmap.upsert({
     where: { slug: onboardingRoadmapSeed.slug },
@@ -1475,63 +1363,6 @@ async function seedDemoStudents() {
       });
     }
 
-    const seededAssignments =
-      seed.email === 'student@tattoo-platform.local'
-        ? [
-            {
-              challengeId: 'seed-challenge-1000',
-              status: ChallengeStatus.COMPLETED,
-              dueDate: new Date('2026-01-31T00:00:00.000Z'),
-            },
-            {
-              challengeId: 'seed-challenge-3000',
-              status: ChallengeStatus.COMPLETED,
-              dueDate: new Date('2026-02-28T00:00:00.000Z'),
-            },
-            {
-              challengeId: 'seed-challenge-7000',
-              status: ChallengeStatus.IN_PROGRESS,
-              dueDate: new Date('2026-06-30T00:00:00.000Z'),
-            },
-          ]
-        : [
-            {
-              challengeId: 'seed-challenge-10-cierres',
-              status:
-                (seed.cierres.at(-1) ?? 0) >= 10
-                  ? ChallengeStatus.COMPLETED
-                  : ChallengeStatus.IN_PROGRESS,
-              dueDate: new Date('2026-04-30T00:00:00.000Z'),
-            },
-            {
-              challengeId: 'seed-challenge-50-consultas',
-              status:
-                (seed.consultas.at(-1) ?? 0) >= 50
-                  ? ChallengeStatus.COMPLETED
-                  : ChallengeStatus.ASSIGNED,
-              dueDate: new Date('2026-05-31T00:00:00.000Z'),
-            },
-          ];
-
-    for (const assignment of seededAssignments) {
-      await prisma.studentChallenge.upsert({
-        where: {
-          id: `${student.id}-${assignment.challengeId}`,
-        },
-        update: {
-          challengeId: assignment.challengeId,
-          status: assignment.status,
-          dueDate: assignment.dueDate,
-        },
-        create: {
-          id: `${student.id}-${assignment.challengeId}`,
-          studentId: student.id,
-          challengeId: assignment.challengeId,
-          status: assignment.status,
-          dueDate: assignment.dueDate,
-        },
-      });
-    }
   }
 }
 
@@ -1540,7 +1371,6 @@ async function main() {
   await seedAdmin();
   await seedMetricCatalog();
   await seedStudentDashboardLinks();
-  await seedChallengesCatalog();
   await seedOnboardingRoadmap();
   await seedDemoStudents();
   await seedOnboardingProgress();
