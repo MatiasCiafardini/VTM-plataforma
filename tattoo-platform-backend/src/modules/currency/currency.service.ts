@@ -11,6 +11,7 @@ import { CreateExchangeRateDto } from './dto/create-exchange-rate.dto';
 @Injectable()
 export class CurrencyService {
   private static readonly USD_CODE = 'USD';
+  private static readonly SEED_SOURCE = 'seed';
   private static readonly FRANKFURTER_API_BASE_URL =
     process.env.FRANKFURTER_API_BASE_URL ?? 'https://api.frankfurter.dev/v2';
 
@@ -162,6 +163,11 @@ export class CurrencyService {
 
   listExchangeRates() {
     return this.prisma.exchangeRate.findMany({
+      where: {
+        source: {
+          not: CurrencyService.SEED_SOURCE,
+        },
+      },
       include: {
         fromCurrency: true,
         toCurrency: true,
@@ -236,6 +242,24 @@ export class CurrencyService {
       };
     }
 
+    const exactExchangeRate = await this.prisma.exchangeRate.findFirst({
+      where: {
+        fromCurrencyId: params.fromCurrencyId,
+        toCurrencyId: usd.id,
+        effectiveDate: params.effectiveDate,
+      },
+      orderBy: [{ effectiveDate: 'desc' }],
+    });
+
+    if (
+      !exactExchangeRate ||
+      exactExchangeRate.source === CurrencyService.SEED_SOURCE
+    ) {
+      await this.syncUsdRates({
+        effectiveDate: params.effectiveDate,
+      });
+    }
+
     let exchangeRate = await this.prisma.exchangeRate.findFirst({
       where: {
         fromCurrencyId: params.fromCurrencyId,
@@ -243,15 +267,14 @@ export class CurrencyService {
         effectiveDate: {
           lte: params.effectiveDate,
         },
+        source: {
+          not: CurrencyService.SEED_SOURCE,
+        },
       },
       orderBy: [{ effectiveDate: 'desc' }],
     });
 
     if (!exchangeRate) {
-      await this.syncUsdRates({
-        effectiveDate: params.effectiveDate,
-      });
-
       exchangeRate = await this.prisma.exchangeRate.findFirst({
         where: {
           fromCurrencyId: params.fromCurrencyId,

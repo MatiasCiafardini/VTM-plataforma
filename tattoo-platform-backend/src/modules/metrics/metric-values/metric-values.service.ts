@@ -214,6 +214,8 @@ export class MetricValuesService {
   }
 
   private getPeriodEffectiveDate(year: number, month: number) {
-    return new Date(Date.UTC(year, month - 1, 1, 0, 0, 0));
+    // Use the end of the reported month so monthly totals convert with the
+    // latest available rate for that period instead of the month's opening rate.
+    return new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
   }
 }

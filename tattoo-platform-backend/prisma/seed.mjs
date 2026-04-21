@@ -654,46 +654,6 @@ async function seedCurrencies() {
   }
 }
 
-async function seedExchangeRates() {
-  const ars = await prisma.currency.findUniqueOrThrow({
-    where: { code: 'ARS' },
-  });
-  const usd = await prisma.currency.findUniqueOrThrow({
-    where: { code: 'USD' },
-  });
-
-  for (const date of [
-    '2025-09-01T00:00:00.000Z',
-    '2025-10-01T00:00:00.000Z',
-    '2025-11-01T00:00:00.000Z',
-    '2025-12-01T00:00:00.000Z',
-    '2026-01-01T00:00:00.000Z',
-    '2026-02-01T00:00:00.000Z',
-    '2026-03-01T00:00:00.000Z',
-  ]) {
-    await prisma.exchangeRate.upsert({
-      where: {
-        fromCurrencyId_toCurrencyId_effectiveDate: {
-          fromCurrencyId: ars.id,
-          toCurrencyId: usd.id,
-          effectiveDate: new Date(date),
-        },
-      },
-      update: {
-        rate: 0.00095,
-        source: 'seed',
-      },
-      create: {
-        fromCurrencyId: ars.id,
-        toCurrencyId: usd.id,
-        rate: 0.00095,
-        effectiveDate: new Date(date),
-        source: 'seed',
-      },
-    });
-  }
-}
-
 async function seedAdmin() {
   const adminEmail =
     process.env.SEED_ADMIN_EMAIL ?? 'admin@tattoo-platform.local';
@@ -1577,7 +1537,6 @@ async function seedDemoStudents() {
 
 async function main() {
   await seedCurrencies();
-  await seedExchangeRates();
   await seedAdmin();
   await seedMetricCatalog();
   await seedStudentDashboardLinks();
