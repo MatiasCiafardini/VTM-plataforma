@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { getCurrencyCodeForCountry, supportedCountries } from "@/lib/countries";
 
 type Currency = {
@@ -22,11 +22,7 @@ type StudentProfileData = {
   localCurrency: Currency | null;
 };
 
-type OnboardingFormState = {
-  month: string;
-  year: string;
-  country: string;
-  instagramHandle: string;
+type MetricFieldsState = {
   ingresosFacturacion: string;
   cantidadTotalTatuajes: string;
   comisionEstudioPorcentaje: string;
@@ -39,6 +35,20 @@ type OnboardingFormState = {
   cierresNuevosClientes: string;
   cierresPorRecomendaciones: string;
   cierresRecurrentes: string;
+};
+
+type OnboardingFormState = {
+  month: string;
+  year: string;
+  country: string;
+  instagramHandle: string;
+  previousMonth: MetricFieldsState;
+  latestBillingMonth: MetricFieldsState;
+};
+
+type PeriodRef = {
+  month: number;
+  year: number;
 };
 
 const monthOptions = [
@@ -56,29 +66,63 @@ const monthOptions = [
   { value: 12, label: "Diciembre" },
 ];
 
+const metricFieldKeys: Array<keyof MetricFieldsState> = [
+  "ingresosFacturacion",
+  "cantidadTotalTatuajes",
+  "comisionEstudioPorcentaje",
+  "gastosDelMes",
+  "seguidoresInstagramActuales",
+  "consultasMensuales",
+  "conversacionesANuevos",
+  "cotizaciones",
+  "cierresDelMes",
+  "cierresNuevosClientes",
+  "cierresPorRecomendaciones",
+  "cierresRecurrentes",
+];
+
 const currentYear = new Date().getFullYear();
 const yearOptions = Array.from({ length: 8 }, (_, i) => currentYear - 3 + i);
 
 function getPreviousMonthPeriod(
-  month: string,
-  year: string,
-): { month: number; year: number } {
+  month: string | number,
+  year: string | number,
+): PeriodRef {
   const m = Number(month);
   const y = Number(year);
+
   if (m === 1) {
     return { month: 12, year: y - 1 };
   }
+
   return { month: m - 1, year: y };
 }
 
-function buildInitialState(profile: StudentProfileData): OnboardingFormState {
-  const now = new Date();
+function periodToIndex(period: PeriodRef) {
+  return period.year * 12 + (period.month - 1);
+}
 
+function getMonthDistance(start: PeriodRef, end: PeriodRef) {
+  return periodToIndex(end) - periodToIndex(start);
+}
+
+function listPeriodsBetween(start: PeriodRef, end: PeriodRef) {
+  const periods: PeriodRef[] = [];
+  let cursor = { ...start };
+
+  while (periodToIndex(cursor) <= periodToIndex(end)) {
+    periods.push(cursor);
+    cursor =
+      cursor.month === 12
+        ? { month: 1, year: cursor.year + 1 }
+        : { month: cursor.month + 1, year: cursor.year };
+  }
+
+  return periods;
+}
+
+function createEmptyMetricsState(): MetricFieldsState {
   return {
-    month: String(now.getMonth() + 1),
-    year: String(now.getFullYear()),
-    country: profile.country ?? "",
-    instagramHandle: profile.instagramHandle ?? "",
     ingresosFacturacion: "",
     cantidadTotalTatuajes: "",
     comisionEstudioPorcentaje: "",
@@ -94,11 +138,29 @@ function buildInitialState(profile: StudentProfileData): OnboardingFormState {
   };
 }
 
+function buildInitialState(profile: StudentProfileData): OnboardingFormState {
+  const now = new Date();
+
+  return {
+    month: String(now.getMonth() + 1),
+    year: String(now.getFullYear()),
+    country: profile.country ?? "",
+    instagramHandle: profile.instagramHandle ?? "",
+    previousMonth: createEmptyMetricsState(),
+    latestBillingMonth: createEmptyMetricsState(),
+  };
+}
+
 function toNumber(value: string): number {
   if (!value.trim()) return 0;
   const normalized = value.replace(",", ".");
   const num = Number(normalized);
   return Number.isNaN(num) ? 0 : num;
+}
+
+function roundTo(value: number, decimals: number) {
+  const factor = 10 ** decimals;
+  return Math.round(value * factor) / factor;
 }
 
 function formatCurrencyLabel(currency: Currency | null) {
@@ -107,6 +169,373 @@ function formatCurrencyLabel(currency: Currency | null) {
   }
 
   return `${currency.code}${currency.symbol ? ` (${currency.symbol})` : ""}`;
+}
+
+function formatPeriodLabel(period: PeriodRef) {
+  const label =
+    monthOptions.find((month) => month.value === period.month)?.label ??
+    `Mes ${period.month}`;
+
+  return `${label} ${period.year}`;
+}
+
+function buildMetricNumberMap(section: MetricFieldsState) {
+  const ingresosFacturacion = toNumber(section.ingresosFacturacion);
+  const comisionEstudioPorcentaje = toNumber(section.comisionEstudioPorcentaje);
+  const comisionCalculada = roundTo(
+    (ingresosFacturacion * comisionEstudioPorcentaje) / 100,
+    2,
+  );
+  const balanceGeneralCalculado = roundTo(
+    Math.max(
+      0,
+      ingresosFacturacion - comisionCalculada - toNumber(section.gastosDelMes),
+    ),
+    2,
+  );
+
+  return {
+    "balance-general": balanceGeneralCalculado,
+    "ingresos-facturacion": ingresosFacturacion,
+    "cantidad-total-tatuajes": toNumber(section.cantidadTotalTatuajes),
+    "comision-estudio-porcentaje": comisionEstudioPorcentaje,
+    "comision-estudio": comisionCalculada,
+    "gastos-del-mes": toNumber(section.gastosDelMes),
+    "seguidores-instagram-actuales": toNumber(section.seguidoresInstagramActuales),
+    "consultas-mensuales": toNumber(section.consultasMensuales),
+    "conversaciones-a-nuevos": toNumber(section.conversacionesANuevos),
+    cotizaciones: toNumber(section.cotizaciones),
+    "cierres-del-mes": toNumber(section.cierresDelMes),
+    "cierres-nuevos-clientes": toNumber(section.cierresNuevosClientes),
+    "cierres-por-recomendaciones": toNumber(section.cierresPorRecomendaciones),
+    "cierres-recurrentes": toNumber(section.cierresRecurrentes),
+  };
+}
+
+function interpolateMetricSection(
+  start: MetricFieldsState,
+  end: MetricFieldsState,
+  step: number,
+  totalSteps: number,
+  metricDefinitionMap: Record<string, MetricDefinition>,
+): MetricFieldsState {
+  if (step <= 0) {
+    return start;
+  }
+
+  if (step >= totalSteps) {
+    return end;
+  }
+
+  const ratio = totalSteps === 0 ? 1 : step / totalSteps;
+  const nextState = createEmptyMetricsState();
+
+  for (const field of metricFieldKeys) {
+    const startValue = toNumber(start[field]);
+    const endValue = toNumber(end[field]);
+    const interpolated = startValue + (endValue - startValue) * ratio;
+
+    const slugByField: Partial<Record<keyof MetricFieldsState, string>> = {
+      ingresosFacturacion: "ingresos-facturacion",
+      cantidadTotalTatuajes: "cantidad-total-tatuajes",
+      comisionEstudioPorcentaje: "comision-estudio-porcentaje",
+      gastosDelMes: "gastos-del-mes",
+      seguidoresInstagramActuales: "seguidores-instagram-actuales",
+      consultasMensuales: "consultas-mensuales",
+      conversacionesANuevos: "conversaciones-a-nuevos",
+      cotizaciones: "cotizaciones",
+      cierresDelMes: "cierres-del-mes",
+      cierresNuevosClientes: "cierres-nuevos-clientes",
+      cierresPorRecomendaciones: "cierres-por-recomendaciones",
+      cierresRecurrentes: "cierres-recurrentes",
+    };
+
+    const definition = metricDefinitionMap[slugByField[field] ?? ""];
+    const rounded =
+      definition?.valueType === "INTEGER"
+        ? Math.round(interpolated)
+        : roundTo(interpolated, 2);
+
+    nextState[field] = String(Math.max(0, rounded));
+  }
+
+  return nextState;
+}
+
+function buildMetricPayload(
+  section: MetricFieldsState,
+  metricDefinitionMap: Record<string, MetricDefinition>,
+  localCurrencyId: string,
+) {
+  const values: Array<Record<string, string | number | null | undefined>> = [];
+  const metricMap = buildMetricNumberMap(section);
+
+  for (const [slug, rawValue] of Object.entries(metricMap)) {
+    const definition = metricDefinitionMap[slug];
+
+    if (!definition) {
+      continue;
+    }
+
+    if (definition.valueType === "CURRENCY") {
+      values.push({
+        metricDefinitionId: definition.id,
+        originalAmount: rawValue,
+        originalCurrencyId: localCurrencyId,
+      });
+      continue;
+    }
+
+    values.push({
+      metricDefinitionId: definition.id,
+      numberValue: rawValue,
+    });
+  }
+
+  return values;
+}
+
+async function ensurePeriod(
+  period: PeriodRef,
+  createMessage: string,
+): Promise<{ id: string; status: string }> {
+  const periodResponse = await fetch("/api/student/metrics/periods", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      month: period.month,
+      year: period.year,
+    }),
+  });
+
+  const periodPayload = await periodResponse.json();
+
+  if (periodResponse.ok && periodPayload?.id) {
+    return {
+      id: periodPayload.id,
+      status: periodPayload.status ?? "DRAFT",
+    };
+  }
+
+  const existingPeriodsResponse = await fetch(
+    `/api/student/metrics/periods?month=${period.month}&year=${period.year}`,
+    { cache: "no-store" },
+  );
+  const existingPeriodsPayload = await existingPeriodsResponse.json();
+
+  if (
+    !existingPeriodsResponse.ok ||
+    !Array.isArray(existingPeriodsPayload) ||
+    !existingPeriodsPayload[0]?.id
+  ) {
+    throw new Error(periodPayload.message ?? createMessage);
+  }
+
+  return {
+    id: existingPeriodsPayload[0].id,
+    status: existingPeriodsPayload[0].status ?? "DRAFT",
+  };
+}
+
+function MetricSection({
+  title,
+  description,
+  data,
+  currencySymbol,
+  onChange,
+}: {
+  title: string;
+  description: string;
+  data: MetricFieldsState;
+  currencySymbol: string;
+  onChange: (field: keyof MetricFieldsState, value: string) => void;
+}) {
+  return (
+    <>
+      <div className="student-onboarding-section-head">
+        <h2>{title}</h2>
+        <p>{description}</p>
+      </div>
+
+      <article className="student-form-card">
+        <h4>Balance General</h4>
+        <div className="student-form-grid">
+          <label>
+            <span>Ingresos totales del mes</span>
+            <div className="student-form-money-field">
+              <span>{currencySymbol}</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={data.ingresosFacturacion}
+                onChange={(event) =>
+                  onChange("ingresosFacturacion", event.target.value)
+                }
+              />
+            </div>
+          </label>
+          <label>
+            <span>Cantidad total de tatuajes</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.cantidadTotalTatuajes}
+              onChange={(event) =>
+                onChange("cantidadTotalTatuajes", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            <span>Comision del estudio %</span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="0"
+              value={data.comisionEstudioPorcentaje}
+              onChange={(event) =>
+                onChange("comisionEstudioPorcentaje", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            <span>Gastos del mes</span>
+            <div className="student-form-money-field">
+              <span>{currencySymbol}</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={data.gastosDelMes}
+                onChange={(event) => onChange("gastosDelMes", event.target.value)}
+              />
+            </div>
+          </label>
+        </div>
+      </article>
+
+      <article className="student-form-card">
+        <h4>Metricas</h4>
+        <div className="student-form-grid">
+          <label>
+            <span>Seguidores en IG</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.seguidoresInstagramActuales}
+              onChange={(event) =>
+                onChange("seguidoresInstagramActuales", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            <span>Consultas mensuales</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.consultasMensuales}
+              onChange={(event) =>
+                onChange("consultasMensuales", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            <span>Conversaciones a nuevos</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.conversacionesANuevos}
+              onChange={(event) =>
+                onChange("conversacionesANuevos", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            <span>Cotizaciones</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.cotizaciones}
+              onChange={(event) => onChange("cotizaciones", event.target.value)}
+            />
+          </label>
+        </div>
+      </article>
+
+      <article className="student-form-card">
+        <h4>Cierres Mensuales</h4>
+        <p className="student-form-card-copy">
+          Esta card muestra de donde salen los nuevos clientes del mes.
+        </p>
+        <div className="student-form-grid">
+          <label>
+            <span>Total cierres del mes</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.cierresDelMes}
+              onChange={(event) => onChange("cierresDelMes", event.target.value)}
+            />
+          </label>
+          <label>
+            <span>Nuevos clientes</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.cierresNuevosClientes}
+              onChange={(event) =>
+                onChange("cierresNuevosClientes", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            <span>Por recomendacion</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.cierresPorRecomendaciones}
+              onChange={(event) =>
+                onChange("cierresPorRecomendaciones", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            <span>Clientes habituales</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.cierresRecurrentes}
+              onChange={(event) =>
+                onChange("cierresRecurrentes", event.target.value)
+              }
+            />
+          </label>
+        </div>
+      </article>
+    </>
+  );
 }
 
 export function StudentOnboardingForm({
@@ -122,6 +551,9 @@ export function StudentOnboardingForm({
   const [form, setForm] = useState<OnboardingFormState>(
     buildInitialState(profile),
   );
+  const [activeMetricsTab, setActiveMetricsTab] = useState<
+    "previousMonth" | "latestBillingMonth"
+  >("previousMonth");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -147,8 +579,68 @@ export function StudentOnboardingForm({
     );
   }, [currencies, form.country, profile.localCurrency]);
 
-  function updateField(field: keyof OnboardingFormState, value: string) {
+  const mentorshipStartPeriod = useMemo(
+    () => ({
+      month: Number(form.month),
+      year: Number(form.year),
+    }),
+    [form.month, form.year],
+  );
+
+  const previousMonthPeriod = useMemo(
+    () => getPreviousMonthPeriod(form.month, form.year),
+    [form.month, form.year],
+  );
+
+  const currentRegistrationPeriod = useMemo(() => {
+    const now = new Date();
+    return {
+      month: now.getMonth() + 1,
+      year: now.getFullYear(),
+    };
+  }, []);
+
+  const latestBillingPeriod = useMemo(
+    () =>
+      getPreviousMonthPeriod(
+        currentRegistrationPeriod.month,
+        currentRegistrationPeriod.year,
+      ),
+    [currentRegistrationPeriod.month, currentRegistrationPeriod.year],
+  );
+
+  const shouldCollectLatestBillingMonth = useMemo(() => {
+    if (!mentorshipStartPeriod.month || !mentorshipStartPeriod.year) {
+      return false;
+    }
+
+    return (
+      getMonthDistance(mentorshipStartPeriod, currentRegistrationPeriod) >= 3
+    );
+  }, [currentRegistrationPeriod, mentorshipStartPeriod]);
+
+  useEffect(() => {
+    if (!shouldCollectLatestBillingMonth) {
+      setActiveMetricsTab("previousMonth");
+    }
+  }, [shouldCollectLatestBillingMonth]);
+
+  function updateField(field: "month" | "year" | "country" | "instagramHandle", value: string) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateMetricsField(
+    section: "previousMonth" | "latestBillingMonth",
+    field: keyof MetricFieldsState,
+    value: string,
+  ) {
+    setForm((current) => ({
+      ...current,
+      [section]: {
+        ...current[section],
+        [field]: value,
+      },
+    }));
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -168,6 +660,20 @@ export function StudentOnboardingForm({
 
       if (!selectedCurrency) {
         throw new Error("No pudimos resolver tu moneda local para ese pais.");
+      }
+
+      if (
+        getMonthDistance(currentRegistrationPeriod, mentorshipStartPeriod) > 0
+      ) {
+        throw new Error("El inicio de la mentoria no puede ser posterior al mes actual.");
+      }
+
+      if (
+        periodToIndex(previousMonthPeriod) > periodToIndex(latestBillingPeriod)
+      ) {
+        throw new Error(
+          "El mes previo al inicio no puede quedar despues del ultimo mes de facturacion.",
+        );
       }
 
       const localCurrencyId = selectedCurrency.id;
@@ -190,135 +696,76 @@ export function StudentOnboardingForm({
         );
       }
 
-      const basePeriod = getPreviousMonthPeriod(form.month, form.year);
+      const periodsToPersist = shouldCollectLatestBillingMonth
+        ? listPeriodsBetween(previousMonthPeriod, latestBillingPeriod)
+        : [previousMonthPeriod];
+      const totalSteps = Math.max(0, periodsToPersist.length - 1);
 
-      let periodId: string | null = null;
-      const periodResponse = await fetch("/api/student/metrics/periods", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          month: basePeriod.month,
-          year: basePeriod.year,
-        }),
-      });
+      for (const [index, period] of periodsToPersist.entries()) {
+        const section =
+          shouldCollectLatestBillingMonth && periodsToPersist.length > 1
+            ? interpolateMetricSection(
+                form.previousMonth,
+                form.latestBillingMonth,
+                index,
+                totalSteps,
+                metricDefinitionMap,
+              )
+            : form.previousMonth;
 
-      const periodPayload = await periodResponse.json();
-
-      if (periodResponse.ok) {
-        periodId = periodPayload.id ?? null;
-      } else {
-        const existingPeriodsResponse = await fetch(
-          `/api/student/metrics/periods?month=${basePeriod.month}&year=${basePeriod.year}`,
-          { cache: "no-store" },
+        const ensuredPeriod = await ensurePeriod(
+          period,
+          "No pudimos crear uno de los periodos historicos.",
         );
-        const existingPeriodsPayload = await existingPeriodsResponse.json();
 
-        if (
-          !existingPeriodsResponse.ok ||
-          !Array.isArray(existingPeriodsPayload) ||
-          !existingPeriodsPayload[0]?.id
-        ) {
+        if (ensuredPeriod.status !== "DRAFT") {
           throw new Error(
-            periodPayload.message ?? "No pudimos crear el periodo inicial.",
+            `El periodo ${formatPeriodLabel(period)} ya existe y no esta en borrador.`,
           );
         }
 
-        periodId = existingPeriodsPayload[0].id;
-      }
+        const values = buildMetricPayload(
+          section,
+          metricDefinitionMap,
+          localCurrencyId,
+        );
 
-      if (!periodId) {
-        throw new Error("No pudimos identificar el periodo inicial.");
-      }
+        const valuesResponse = await fetch(
+          `/api/student/metrics/periods/${ensuredPeriod.id}/values`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ values }),
+          },
+        );
+        const valuesPayload = await valuesResponse.json();
 
-      const comisionCalculada = Number(
-        (
-          (toNumber(form.ingresosFacturacion) *
-            toNumber(form.comisionEstudioPorcentaje)) /
-          100
-        ).toFixed(2),
-      );
-      const balanceGeneralCalculado = Number(
-        Math.max(
-          0,
-          toNumber(form.ingresosFacturacion) -
-            comisionCalculada -
-            toNumber(form.gastosDelMes),
-        ).toFixed(2),
-      );
-
-      const metricEntries: Array<[string, string]> = [
-        ["balance-general", String(balanceGeneralCalculado)],
-        ["ingresos-facturacion", form.ingresosFacturacion],
-        ["cantidad-total-tatuajes", form.cantidadTotalTatuajes],
-        ["comision-estudio-porcentaje", form.comisionEstudioPorcentaje],
-        ["comision-estudio", String(comisionCalculada)],
-        ["gastos-del-mes", form.gastosDelMes],
-        ["seguidores-instagram-actuales", form.seguidoresInstagramActuales],
-        ["consultas-mensuales", form.consultasMensuales],
-        ["conversaciones-a-nuevos", form.conversacionesANuevos],
-        ["cotizaciones", form.cotizaciones],
-        ["cierres-del-mes", form.cierresDelMes],
-        ["cierres-nuevos-clientes", form.cierresNuevosClientes],
-        ["cierres-por-recomendaciones", form.cierresPorRecomendaciones],
-        ["cierres-recurrentes", form.cierresRecurrentes],
-      ];
-
-      const values: Array<Record<string, string | number | null | undefined>> =
-        [];
-
-      for (const [slug, rawValue] of metricEntries) {
-        const definition = metricDefinitionMap[slug];
-
-        if (!definition) {
-          continue;
+        if (!valuesResponse.ok) {
+          throw new Error(
+            valuesPayload.message ?? "No pudimos guardar las metricas iniciales.",
+          );
         }
 
-        if (definition.valueType === "CURRENCY") {
-          values.push({
-            metricDefinitionId: definition.id,
-            originalAmount: toNumber(rawValue),
-            originalCurrencyId: localCurrencyId || undefined,
-          });
-          continue;
+        const submitResponse = await fetch(
+          `/api/student/metrics/periods/${ensuredPeriod.id}/submit`,
+          {
+            method: "POST",
+          },
+        );
+        const submitPayload = await submitResponse.json();
+
+        if (!submitResponse.ok) {
+          throw new Error(
+            submitPayload.message ?? "No pudimos enviar uno de los meses historicos.",
+          );
         }
-
-        values.push({
-          metricDefinitionId: definition.id,
-          numberValue: toNumber(rawValue),
-        });
       }
 
-      const valuesResponse = await fetch(
-        `/api/student/metrics/periods/${periodId}/values`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ values }),
-        },
+      setSuccess(
+        shouldCollectLatestBillingMonth
+          ? "Tu perfil y el historial entre ambos meses quedaron cargados."
+          : "Tu perfil inicial y tu primer mes quedaron cargados.",
       );
-      const valuesPayload = await valuesResponse.json();
-
-      if (!valuesResponse.ok) {
-        throw new Error(
-          valuesPayload.message ?? "No pudimos guardar tus metricas iniciales.",
-        );
-      }
-
-      const submitResponse = await fetch(
-        `/api/student/metrics/periods/${periodId}/submit`,
-        {
-          method: "POST",
-        },
-      );
-      const submitPayload = await submitResponse.json();
-
-      if (!submitResponse.ok) {
-        throw new Error(
-          submitPayload.message ?? "No pudimos enviar tu primer periodo.",
-        );
-      }
-
-      setSuccess("Tu perfil inicial y tu primer mes quedaron cargados.");
       router.replace("/student?tab=results");
       router.refresh();
     } catch (submissionError) {
@@ -331,6 +778,16 @@ export function StudentOnboardingForm({
       setIsSaving(false);
     }
   }
+
+  const activeSection =
+    activeMetricsTab === "previousMonth"
+      ? form.previousMonth
+      : form.latestBillingMonth;
+
+  const activePeriodLabel =
+    activeMetricsTab === "previousMonth"
+      ? formatPeriodLabel(previousMonthPeriod)
+      : formatPeriodLabel(latestBillingPeriod);
 
   return (
     <form className="student-onboarding-shell" onSubmit={handleSubmit}>
@@ -395,7 +852,7 @@ export function StudentOnboardingForm({
           </label>
 
           <label className="field login-field-simple">
-            <span>Año de inicio</span>
+            <span>Ano de inicio</span>
             <select
               value={form.year}
               onChange={(event) => updateField("year", event.target.value)}
@@ -411,197 +868,67 @@ export function StudentOnboardingForm({
       </section>
 
       <section className="student-onboarding-card">
-        <div className="student-onboarding-section-head">
-          <h2>Datos del mes previo a la mentoria</h2>
-          <p>
-            Datos del mes anterior al inicio de la mentoria, para tener una base
-            de comparación.
-          </p>
+        {shouldCollectLatestBillingMonth ? (
+          <div className="student-onboarding-tabs">
+            <button
+              className={
+                activeMetricsTab === "previousMonth"
+                  ? "student-onboarding-tab is-active"
+                  : "student-onboarding-tab"
+              }
+              type="button"
+              onClick={() => setActiveMetricsTab("previousMonth")}
+            >
+              Mes previo
+              <strong>{formatPeriodLabel(previousMonthPeriod)}</strong>
+            </button>
+            <button
+              className={
+                activeMetricsTab === "latestBillingMonth"
+                  ? "student-onboarding-tab is-active"
+                  : "student-onboarding-tab"
+              }
+              type="button"
+              onClick={() => setActiveMetricsTab("latestBillingMonth")}
+            >
+              Ultimo mes de facturacion
+              <strong>{formatPeriodLabel(latestBillingPeriod)}</strong>
+            </button>
+          </div>
+        ) : null}
+
+        <div className="student-onboarding-period-badge">
+          <span>Periodo activo</span>
+          <strong>{activePeriodLabel}</strong>
         </div>
 
-        <article className="student-form-card">
-          <h4>Balance General</h4>
-          <div className="student-form-grid">
-            <label>
-              <span>Ingresos totales del mes</span>
-              <div className="student-form-money-field">
-                <span>{selectedCurrency?.symbol ?? "$"}</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                  value={form.ingresosFacturacion}
-                  onChange={(event) =>
-                    updateField("ingresosFacturacion", event.target.value)
-                  }
-                />
-              </div>
-            </label>
-            <label>
-              <span>Cantidad total de tatuajes</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.cantidadTotalTatuajes}
-                onChange={(event) =>
-                  updateField("cantidadTotalTatuajes", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>Comision del estudio %</span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.1"
-                placeholder="0"
-                value={form.comisionEstudioPorcentaje}
-                onChange={(event) =>
-                  updateField("comisionEstudioPorcentaje", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>Gastos del mes</span>
-              <div className="student-form-money-field">
-                <span>{selectedCurrency?.symbol ?? "$"}</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                  value={form.gastosDelMes}
-                  onChange={(event) =>
-                    updateField("gastosDelMes", event.target.value)
-                  }
-                />
-              </div>
-            </label>
-          </div>
-        </article>
+        <MetricSection
+          title={
+            activeMetricsTab === "previousMonth"
+              ? "Datos del mes previo a la mentoria"
+              : "Datos del ultimo mes de facturacion"
+          }
+          description={
+            activeMetricsTab === "previousMonth"
+              ? "Datos del mes anterior al inicio de la mentoria, para tener una base de comparacion."
+              : "Usaremos este ultimo corte real para reconstruir los meses intermedios y dejar una evolucion mas natural."
+          }
+          data={activeSection}
+          currencySymbol={selectedCurrency?.symbol ?? "$"}
+          onChange={(field, value) =>
+            updateMetricsField(activeMetricsTab, field, value)
+          }
+        />
 
-        <article className="student-form-card">
-          <h4>Metricas</h4>
-          <div className="student-form-grid">
-            <label>
-              <span>Seguidores en IG</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.seguidoresInstagramActuales}
-                onChange={(event) =>
-                  updateField("seguidoresInstagramActuales", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>Consultas mensuales</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.consultasMensuales}
-                onChange={(event) =>
-                  updateField("consultasMensuales", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>Conversaciones a nuevos</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.conversacionesANuevos}
-                onChange={(event) =>
-                  updateField("conversacionesANuevos", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>Cotizaciones</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.cotizaciones}
-                onChange={(event) =>
-                  updateField("cotizaciones", event.target.value)
-                }
-              />
-            </label>
-          </div>
-        </article>
-
-        <article className="student-form-card">
-          <h4>Cierres Mensuales</h4>
-          <p className="student-form-card-copy">
-            Esta card muestra de donde salen los nuevos clientes del mes.
+        {shouldCollectLatestBillingMonth ? (
+          <p className="student-onboarding-helper">
+            Al guardar, el sistema va a registrar desde{" "}
+            <strong>{formatPeriodLabel(previousMonthPeriod)}</strong> hasta{" "}
+            <strong>{formatPeriodLabel(latestBillingPeriod)}</strong>, generando
+            los meses intermedios con una progresion acumulativa entre ambos
+            valores.
           </p>
-          <div className="student-form-grid">
-            <label>
-              <span>Total cierres del mes</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.cierresDelMes}
-                onChange={(event) =>
-                  updateField("cierresDelMes", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>Nuevos clientes</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.cierresNuevosClientes}
-                onChange={(event) =>
-                  updateField("cierresNuevosClientes", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>Por recomendacion</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.cierresPorRecomendaciones}
-                onChange={(event) =>
-                  updateField("cierresPorRecomendaciones", event.target.value)
-                }
-              />
-            </label>
-            <label>
-              <span>Clientes habituales</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                placeholder="0"
-                value={form.cierresRecurrentes}
-                onChange={(event) =>
-                  updateField("cierresRecurrentes", event.target.value)
-                }
-              />
-            </label>
-          </div>
-        </article>
+        ) : null}
 
         {error ? <p className="error-text">{error}</p> : null}
         {success ? <p className="student-profile-success">{success}</p> : null}

@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   AttentionLevel,
   ChallengeStatus,
@@ -187,7 +191,8 @@ export class NotificationsService {
     for (const student of students) {
       const currentPeriod = student.monthlyPeriods[0] ?? null;
       const isPending =
-        !currentPeriod || currentPeriod.status === MonthlyMetricPeriodStatus.DRAFT;
+        !currentPeriod ||
+        currentPeriod.status === MonthlyMetricPeriodStatus.DRAFT;
 
       if (!isPending) {
         continue;
@@ -272,7 +277,8 @@ export class NotificationsService {
     for (const period of closedPeriods) {
       for (const challenge of challenges) {
         const metricValue = period.values.find(
-          (value) => value.metricDefinition.slug === challenge.metricDefinition?.slug,
+          (value) =>
+            value.metricDefinition.slug === challenge.metricDefinition?.slug,
         );
         const currentValue = metricValue
           ? Number(
@@ -282,7 +288,9 @@ export class NotificationsService {
                 0,
             )
           : null;
-        const targetValue = challenge.targetValue ? Number(challenge.targetValue) : null;
+        const targetValue = challenge.targetValue
+          ? Number(challenge.targetValue)
+          : null;
 
         if (
           currentValue === null ||
@@ -293,14 +301,18 @@ export class NotificationsService {
           continue;
         }
 
-        const challengeAssignment = await this.prisma.studentChallenge.findFirst({
-          where: {
-            studentId: period.studentId,
-            challengeId: challenge.id,
-          },
-        });
+        const challengeAssignment =
+          await this.prisma.studentChallenge.findFirst({
+            where: {
+              studentId: period.studentId,
+              challengeId: challenge.id,
+            },
+          });
 
-        if (challengeAssignment && challengeAssignment.status !== ChallengeStatus.COMPLETED) {
+        if (
+          challengeAssignment &&
+          challengeAssignment.status !== ChallengeStatus.COMPLETED
+        ) {
           await this.prisma.studentChallenge.update({
             where: { id: challengeAssignment.id },
             data: { status: ChallengeStatus.COMPLETED },

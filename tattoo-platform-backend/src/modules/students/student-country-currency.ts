@@ -3,9 +3,9 @@ export const STUDENT_COUNTRY_CURRENCY_BY_NAME: Record<string, string> = {
   chile: 'CLP',
   colombia: 'COP',
   mexico: 'MXN',
-  'méxico': 'MXN',
+  méxico: 'MXN',
   peru: 'PEN',
-  'perú': 'PEN',
+  perú: 'PEN',
   uruguay: 'UYU',
   brasil: 'BRL',
   brazil: 'BRL',
@@ -30,5 +30,7 @@ export function getCurrencyCodeForCountry(country: string | null | undefined) {
     return null;
   }
 
-  return STUDENT_COUNTRY_CURRENCY_BY_NAME[normalizeCountryName(country)] ?? null;
+  return (
+    STUDENT_COUNTRY_CURRENCY_BY_NAME[normalizeCountryName(country)] ?? null
+  );
 }

@@ -73,7 +73,9 @@ const DEFAULT_SETTINGS: AdminPlatformSettings = {
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  return value !== null && typeof value === 'object'
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 function readNumber(value: unknown, fallback: number) {

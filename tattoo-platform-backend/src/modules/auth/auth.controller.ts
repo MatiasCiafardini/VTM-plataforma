@@ -26,7 +26,9 @@ export class AuthController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: 'Register a student using the configured access code' })
+  @ApiOperation({
+    summary: 'Register a student using the configured access code',
+  })
   @ApiOkResponse({ type: AuthResponseDto })
   register(@Body() dto: RegisterStudentDto) {
     return this.authService.registerStudent(dto);

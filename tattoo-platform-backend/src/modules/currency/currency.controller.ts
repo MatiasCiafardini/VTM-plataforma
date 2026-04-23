@@ -49,11 +49,14 @@ export class CurrencyController {
   @Post('exchange-rates/sync')
   @Roles(UserRole.ADMIN)
   @ApiOperation({
-    summary: 'Sync active currency rates against USD from the configured provider',
+    summary:
+      'Sync active currency rates against USD from the configured provider',
   })
   syncExchangeRates(@Body() dto: SyncExchangeRatesDto) {
     return this.currencyService.syncUsdRates({
-      effectiveDate: dto.effectiveDate ? new Date(dto.effectiveDate) : new Date(),
+      effectiveDate: dto.effectiveDate
+        ? new Date(dto.effectiveDate)
+        : new Date(),
     });
   }
 

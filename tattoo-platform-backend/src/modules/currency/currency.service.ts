@@ -67,7 +67,9 @@ export class CurrencyService {
       return [];
     }
 
-    const requestedCodes = activeCurrencies.map((currency) => currency.code).join(',');
+    const requestedCodes = activeCurrencies
+      .map((currency) => currency.code)
+      .join(',');
     const requestDate = effectiveDate.toISOString().slice(0, 10);
     const response = await fetch(
       `${CurrencyService.FRANKFURTER_API_BASE_URL}/rates?base=USD&quotes=${requestedCodes}&date=${requestDate}`,
@@ -79,7 +81,9 @@ export class CurrencyService {
     );
 
     if (!response.ok) {
-      throw new NotFoundException('No pudimos sincronizar las tasas de cambio externas');
+      throw new NotFoundException(
+        'No pudimos sincronizar las tasas de cambio externas',
+      );
     }
 
     const payload = (await response.json()) as Array<{
@@ -90,7 +94,9 @@ export class CurrencyService {
     }>;
 
     const ratesByQuote = new Map(payload.map((item) => [item.quote, item]));
-    const syncedRates: Awaited<ReturnType<CurrencyService['listExchangeRates']>> = [];
+    const syncedRates: Awaited<
+      ReturnType<CurrencyService['listExchangeRates']>
+    > = [];
 
     for (const currency of activeCurrencies) {
       const externalRate = ratesByQuote.get(currency.code);

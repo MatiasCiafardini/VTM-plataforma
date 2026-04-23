@@ -249,7 +249,7 @@ const onboardingRoadmapSeed = {
             'Reserva tu encuentro con el mentor para trabajar mentalidad y despejar bloqueos de arranque.',
           locationHint: 'Calendario o agenda compartida por el equipo VMT.',
           stepKind: OnboardingStepKind.MEETING,
-          completionMode: OnboardingCompletionMode.STAFF_ONLY,
+          completionMode: OnboardingCompletionMode.SELF_SERVICE,
           sortOrder: 5,
           resources: [
             {
@@ -429,7 +429,7 @@ const onboardingRoadmapSeed = {
           description: 'Coordina una primera llamada o reunion con un prospecto real.',
           locationHint: 'Agenda de seguimiento y calendario compartido.',
           stepKind: OnboardingStepKind.MEETING,
-          completionMode: OnboardingCompletionMode.STAFF_ONLY,
+          completionMode: OnboardingCompletionMode.SELF_SERVICE,
           sortOrder: 2,
         },
         {
@@ -438,7 +438,7 @@ const onboardingRoadmapSeed = {
           description: 'Realiza la conversacion completa aplicando el guion y estructura sugeridos.',
           locationHint: 'Reunion con prospecto o llamada comercial.',
           stepKind: OnboardingStepKind.MEETING,
-          completionMode: OnboardingCompletionMode.STAFF_ONLY,
+          completionMode: OnboardingCompletionMode.SELF_SERVICE,
           sortOrder: 3,
         },
         {
@@ -447,7 +447,7 @@ const onboardingRoadmapSeed = {
           description: 'Revisa feedback del mentor y ajusta tu proceso comercial para la siguiente oportunidad.',
           locationHint: 'Feedback de mentoria y modulo de ventas.',
           stepKind: OnboardingStepKind.ACTION_MANUAL,
-          completionMode: OnboardingCompletionMode.STAFF_ONLY,
+          completionMode: OnboardingCompletionMode.SELF_SERVICE,
           sortOrder: 4,
         },
         {
@@ -527,7 +527,7 @@ const onboardingRoadmapSeed = {
           description: 'Coordina la asesoria de diseno para mejorar presentacion, anuncios o piezas visuales.',
           locationHint: 'Agenda del equipo VMT.',
           stepKind: OnboardingStepKind.MEETING,
-          completionMode: OnboardingCompletionMode.STAFF_ONLY,
+          completionMode: OnboardingCompletionMode.SELF_SERVICE,
           sortOrder: 6,
         },
       ],
@@ -546,7 +546,7 @@ const onboardingRoadmapSeed = {
             'Marca este paso si el alumno decide continuar en el proceso posterior a la mentoria principal.',
           locationHint: 'Confirmacion administrativa o comercial con el equipo.',
           stepKind: OnboardingStepKind.ACTION_MANUAL,
-          completionMode: OnboardingCompletionMode.STAFF_ONLY,
+          completionMode: OnboardingCompletionMode.SELF_SERVICE,
           sortOrder: 1,
           isOptional: true,
           countsForProgress: false,

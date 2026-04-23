@@ -5,9 +5,7 @@ describe('CurrencyService', () => {
   it('prefers synced non-seed rates over newer seed rows', async () => {
     const prisma = {
       currency: {
-        findUnique: jest
-          .fn()
-          .mockResolvedValue({ id: 'usd-id', code: 'USD' }),
+        findUnique: jest.fn().mockResolvedValue({ id: 'usd-id', code: 'USD' }),
       },
       exchangeRate: {
         findFirst: jest
@@ -30,15 +28,11 @@ describe('CurrencyService', () => {
           }),
       },
       conversionSnapshot: {
-        create: jest
-          .fn()
-          .mockResolvedValue({ id: 'snapshot-id' }),
+        create: jest.fn().mockResolvedValue({ id: 'snapshot-id' }),
       },
     };
     const service = new CurrencyService(prisma as never);
-    const syncSpy = jest
-      .spyOn(service, 'syncUsdRates')
-      .mockResolvedValue([]);
+    const syncSpy = jest.spyOn(service, 'syncUsdRates').mockResolvedValue([]);
 
     const result = await service.convertToUsd({
       fromCurrencyId: 'ars-id',

@@ -21,9 +21,14 @@ export class AttentionScoreService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  async recalculate(dto: RecalculateAttentionScoreDto, actor: AuthenticatedUser) {
+  async recalculate(
+    dto: RecalculateAttentionScoreDto,
+    actor: AuthenticatedUser,
+  ) {
     if (actor.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Only admins can recalculate attention scores');
+      throw new ForbiddenException(
+        'Only admins can recalculate attention scores',
+      );
     }
 
     const targetStudents = dto.studentId
@@ -59,7 +64,11 @@ export class AttentionScoreService {
       filters?.year,
     );
     const previousPeriod = latestPeriod
-      ? await this.findPreviousPeriod(student.id, latestPeriod.month, latestPeriod.year)
+      ? await this.findPreviousPeriod(
+          student.id,
+          latestPeriod.month,
+          latestPeriod.year,
+        )
       : null;
     const studentGoals = await this.prisma.studentGoal.findMany({
       where: { studentId: student.id },
@@ -147,7 +156,9 @@ export class AttentionScoreService {
 
   async getScoresForMentor(actor: AuthenticatedUser) {
     if (actor.role !== UserRole.MENTOR) {
-      throw new ForbiddenException('Only mentors can access mentor attention scores');
+      throw new ForbiddenException(
+        'Only mentors can access mentor attention scores',
+      );
     }
 
     return this.prisma.attentionScore.findMany({
@@ -174,7 +185,11 @@ export class AttentionScoreService {
     });
   }
 
-  private async findLatestPeriod(studentId: string, month?: number, year?: number) {
+  private async findLatestPeriod(
+    studentId: string,
+    month?: number,
+    year?: number,
+  ) {
     return this.prisma.monthlyMetricPeriod.findFirst({
       where: {
         studentId,
@@ -192,7 +207,11 @@ export class AttentionScoreService {
     });
   }
 
-  private async findPreviousPeriod(studentId: string, month: number, year: number) {
+  private async findPreviousPeriod(
+    studentId: string,
+    month: number,
+    year: number,
+  ) {
     return this.prisma.monthlyMetricPeriod.findFirst({
       where: {
         studentId,
@@ -215,7 +234,9 @@ export class AttentionScoreService {
         lastLoginAt: Date | null;
       };
     };
-    latestPeriod: Awaited<ReturnType<AttentionScoreService['findLatestPeriod']>> | null;
+    latestPeriod: Awaited<
+      ReturnType<AttentionScoreService['findLatestPeriod']>
+    > | null;
     previousPeriod: Awaited<
       ReturnType<AttentionScoreService['findPreviousPeriod']>
     > | null;
@@ -238,22 +259,40 @@ export class AttentionScoreService {
         this.daysSince(latestPeriod.updatedAt) > metricConfig.staleDraftDays);
 
     const currentIncome = latestPeriod
-      ? this.getMetricNumericValue(latestPeriod.values, metricConfig.revenueMetricSlug)
+      ? this.getMetricNumericValue(
+          latestPeriod.values,
+          metricConfig.revenueMetricSlug,
+        )
       : null;
     const previousIncome = previousPeriod
-      ? this.getMetricNumericValue(previousPeriod.values, metricConfig.revenueMetricSlug)
+      ? this.getMetricNumericValue(
+          previousPeriod.values,
+          metricConfig.revenueMetricSlug,
+        )
       : null;
     const currentLeads = latestPeriod
-      ? this.getMetricNumericValue(latestPeriod.values, metricConfig.leadsMetricSlug)
+      ? this.getMetricNumericValue(
+          latestPeriod.values,
+          metricConfig.leadsMetricSlug,
+        )
       : null;
     const previousLeads = previousPeriod
-      ? this.getMetricNumericValue(previousPeriod.values, metricConfig.leadsMetricSlug)
+      ? this.getMetricNumericValue(
+          previousPeriod.values,
+          metricConfig.leadsMetricSlug,
+        )
       : null;
     const currentClosures = latestPeriod
-      ? this.getMetricNumericValue(latestPeriod.values, metricConfig.closuresMetricSlug)
+      ? this.getMetricNumericValue(
+          latestPeriod.values,
+          metricConfig.closuresMetricSlug,
+        )
       : null;
     const previousClosures = previousPeriod
-      ? this.getMetricNumericValue(previousPeriod.values, metricConfig.closuresMetricSlug)
+      ? this.getMetricNumericValue(
+          previousPeriod.values,
+          metricConfig.closuresMetricSlug,
+        )
       : null;
 
     const reasonIncomeDrop =
@@ -336,13 +375,18 @@ export class AttentionScoreService {
       return null;
     }
 
-    const candidate = metric.usdAmount ?? metric.originalAmount ?? metric.numberValue;
+    const candidate =
+      metric.usdAmount ?? metric.originalAmount ?? metric.numberValue;
 
-    return candidate === null || candidate === undefined ? null : Number(candidate);
+    return candidate === null || candidate === undefined
+      ? null
+      : Number(candidate);
   }
 
   private daysSince(date: Date) {
     const millisecondsPerDay = 1000 * 60 * 60 * 24;
-    return Math.floor((Date.now() - new Date(date).getTime()) / millisecondsPerDay);
+    return Math.floor(
+      (Date.now() - new Date(date).getTime()) / millisecondsPerDay,
+    );
   }
 }

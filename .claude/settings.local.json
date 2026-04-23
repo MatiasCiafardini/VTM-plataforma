@@ -23,7 +23,8 @@
       "Bash(xargs -I {} sh -c 'echo \"--- {} ---\" && ls -1 \"/c/Users/mat_i/OneDrive/Documentos/trabajos/Plataforma VMT/tattoo-platform-backend/src/modules/{}\" 2>/dev/null | head -5')",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")"
     ]
   }
 }

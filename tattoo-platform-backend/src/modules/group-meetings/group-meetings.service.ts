@@ -26,7 +26,11 @@ export class GroupMeetingsService {
         timezone: dto.timezone,
         isRecurring,
         weekDay: isRecurring ? dto.weekDay : null,
-        startsAt: this.zonedTimeToUtc(scheduledDate, dto.startTime, dto.timezone),
+        startsAt: this.zonedTimeToUtc(
+          scheduledDate,
+          dto.startTime,
+          dto.timezone,
+        ),
         endsAt: dto.endTime
           ? this.zonedTimeToUtc(scheduledDate, dto.endTime, dto.timezone)
           : undefined,
@@ -39,21 +43,25 @@ export class GroupMeetingsService {
     const meeting = await this.findByIdOrThrow(meetingId);
 
     const timezone = dto.timezone ?? meeting.timezone;
-    const isRecurring = dto.isRecurring !== undefined ? dto.isRecurring : meeting.isRecurring;
+    const isRecurring =
+      dto.isRecurring !== undefined ? dto.isRecurring : meeting.isRecurring;
     const weekDay = isRecurring
-      ? (dto.weekDay !== undefined ? dto.weekDay : meeting.weekDay ?? 1)
+      ? dto.weekDay !== undefined
+        ? dto.weekDay
+        : (meeting.weekDay ?? 1)
       : null;
 
     let scheduledDate: string;
     if (isRecurring) {
-      scheduledDate = this.nextWeekdayDate(weekDay!, timezone);
+      scheduledDate = this.nextWeekdayDate(weekDay, timezone);
     } else if (dto.scheduledDate) {
       scheduledDate = dto.scheduledDate;
     } else {
       scheduledDate = this.formatDateInTimezone(meeting.startsAt, timezone);
     }
 
-    const startTime = dto.startTime ?? this.formatTimeInTimezone(meeting.startsAt, timezone);
+    const startTime =
+      dto.startTime ?? this.formatTimeInTimezone(meeting.startsAt, timezone);
     const nextEndTime =
       dto.endTime !== undefined
         ? dto.endTime
@@ -66,7 +74,9 @@ export class GroupMeetingsService {
       data: {
         title: dto.title,
         description:
-          dto.description === undefined ? undefined : dto.description.trim() || null,
+          dto.description === undefined
+            ? undefined
+            : dto.description.trim() || null,
         timezone,
         isRecurring,
         weekDay,
@@ -74,7 +84,8 @@ export class GroupMeetingsService {
         endsAt: nextEndTime
           ? this.zonedTimeToUtc(scheduledDate, nextEndTime, timezone)
           : null,
-        linkUrl: dto.linkUrl === undefined ? undefined : dto.linkUrl.trim() || null,
+        linkUrl:
+          dto.linkUrl === undefined ? undefined : dto.linkUrl.trim() || null,
       },
     });
   }
@@ -103,7 +114,10 @@ export class GroupMeetingsService {
   private nextWeekdayDate(weekDay: number, timezone: string): string {
     const now = new Date();
     const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const shortFormatter = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' });
+    const shortFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      weekday: 'short',
+    });
     const dateFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: timezone,
       year: 'numeric',
@@ -121,7 +135,11 @@ export class GroupMeetingsService {
     return dateFormatter.format(now);
   }
 
-  private zonedTimeToUtc(dateValue: string, timeValue: string, timezone: string) {
+  private zonedTimeToUtc(
+    dateValue: string,
+    timeValue: string,
+    timezone: string,
+  ) {
     const [year, month, day] = dateValue.split('-').map(Number);
     const [hour, minute] = timeValue.split(':').map(Number);
     const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
@@ -151,7 +169,10 @@ export class GroupMeetingsService {
         .formatToParts(date)
         .filter((part) => part.type !== 'literal')
         .map((part) => [part.type, Number(part.value)]),
-    ) as Record<'year' | 'month' | 'day' | 'hour' | 'minute' | 'second', number>;
+    ) as Record<
+      'year' | 'month' | 'day' | 'hour' | 'minute' | 'second',
+      number
+    >;
 
     const asUtc = Date.UTC(
       parts.year,

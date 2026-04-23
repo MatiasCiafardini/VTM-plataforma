@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsInt, IsOptional, IsString, Matches, Max, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  IsString,
+  Matches,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class CreateGroupMeetingDto {
   @ApiProperty()
@@ -20,7 +28,10 @@ export class CreateGroupMeetingDto {
   @IsBoolean()
   isRecurring?: boolean;
 
-  @ApiPropertyOptional({ example: 1, description: '0=Dom, 1=Lun, 2=Mar, 3=Mie, 4=Jue, 5=Vie, 6=Sab' })
+  @ApiPropertyOptional({
+    example: 1,
+    description: '0=Dom, 1=Lun, 2=Mar, 3=Mie, 4=Jue, 5=Vie, 6=Sab',
+  })
   @IsOptional()
   @IsInt()
   @Min(0)

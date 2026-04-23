@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateRegistrationCodeDto } from './dto/create-registration-code.dto';
 import { UpdateRegistrationCodeDto } from './dto/update-registration-code.dto';
@@ -69,7 +73,9 @@ export class RegistrationCodesService {
   }
 
   private async findByIdOrThrow(id: string) {
-    const code = await this.prisma.registrationCode.findUnique({ where: { id } });
+    const code = await this.prisma.registrationCode.findUnique({
+      where: { id },
+    });
 
     if (!code) {
       throw new NotFoundException('Registration code not found');

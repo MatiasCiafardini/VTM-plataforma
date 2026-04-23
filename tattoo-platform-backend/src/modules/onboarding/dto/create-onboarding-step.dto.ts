@@ -41,7 +41,10 @@ export class CreateOnboardingStepDto {
   @IsString()
   notesInternal?: string;
 
-  @ApiPropertyOptional({ enum: OnboardingStepKind, default: OnboardingStepKind.ACTION_MANUAL })
+  @ApiPropertyOptional({
+    enum: OnboardingStepKind,
+    default: OnboardingStepKind.ACTION_MANUAL,
+  })
   @IsOptional()
   @IsEnum(OnboardingStepKind)
   stepKind?: OnboardingStepKind;

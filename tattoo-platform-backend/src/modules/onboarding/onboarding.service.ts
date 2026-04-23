@@ -61,7 +61,9 @@ export class OnboardingService {
 
   async getMentorStudentSummaries(actor: AuthenticatedUser) {
     if (actor.role !== UserRole.MENTOR) {
-      throw new ForbiddenException('Only mentors can access onboarding students');
+      throw new ForbiddenException(
+        'Only mentors can access onboarding students',
+      );
     }
 
     const mentor = await this.prisma.mentorProfile.findUnique({
@@ -84,13 +86,16 @@ export class OnboardingService {
     const students = mentor.studentAssignments.map((a) => a.student);
     const summaries = await this.buildBatchStudentSummaries(students);
     return summaries.sort(
-      (left, right) => left.summary.progressPercentage - right.summary.progressPercentage,
+      (left, right) =>
+        left.summary.progressPercentage - right.summary.progressPercentage,
     );
   }
 
   async getAdminStudentSummaries(actor: AuthenticatedUser) {
     if (actor.role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Only admins can access onboarding students');
+      throw new ForbiddenException(
+        'Only admins can access onboarding students',
+      );
     }
 
     const students = await this.prisma.studentProfile.findMany({
@@ -101,8 +106,12 @@ export class OnboardingService {
     const summaries = await this.buildBatchStudentSummaries(students);
 
     return summaries.sort((left, right) => {
-      if (left.summary.progressPercentage !== right.summary.progressPercentage) {
-        return left.summary.progressPercentage - right.summary.progressPercentage;
+      if (
+        left.summary.progressPercentage !== right.summary.progressPercentage
+      ) {
+        return (
+          left.summary.progressPercentage - right.summary.progressPercentage
+        );
       }
 
       const leftTime = left.summary.lastProgressAt
@@ -125,7 +134,10 @@ export class OnboardingService {
     const roadmap = await this.getActiveRoadmapOrThrow(true);
     const sortOrder =
       dto.sortOrder ??
-      roadmap.phases.reduce((max, phase) => Math.max(max, phase.sortOrder), -1) + 1;
+      roadmap.phases.reduce(
+        (max, phase) => Math.max(max, phase.sortOrder),
+        -1,
+      ) + 1;
 
     await this.prisma.onboardingPhase.create({
       data: {
@@ -228,14 +240,12 @@ export class OnboardingService {
           notesInternal: dto.notesInternal,
           stepKind: dto.stepKind,
           completionMode: dto.completionMode,
-          automationKey:
-            dto.automationKey === null ? null : dto.automationKey,
+          automationKey: dto.automationKey === null ? null : dto.automationKey,
           sortOrder: dto.sortOrder,
           isActive: dto.isActive,
           isOptional: dto.isOptional,
           countsForProgress: dto.countsForProgress,
-          challengeId:
-            dto.challengeId === null ? null : dto.challengeId,
+          challengeId: dto.challengeId === null ? null : dto.challengeId,
         },
       });
 
@@ -276,16 +286,24 @@ export class OnboardingService {
   ) {
     const step = await this.findStepByIdOrThrow(stepId);
     const isCompleted = dto.isCompleted ?? true;
-    const studentId = await this.resolveStepStatusStudentId(dto.studentId, actor);
+    const studentId = await this.resolveStepStatusStudentId(
+      dto.studentId,
+      actor,
+    );
 
     if (actor.role === UserRole.STUDENT) {
-      if (step.completionMode !== OnboardingCompletionMode.SELF_SERVICE) {
-        throw new ForbiddenException('This step must be completed by staff or automation');
+      if (step.completionMode === OnboardingCompletionMode.AUTOMATIC) {
+        throw new ForbiddenException('Este paso se completa automaticamente.');
       }
 
-      const isPhaseLocked = await this.isStepPhaseLockedForStudent(studentId, stepId);
+      const isPhaseLocked = await this.isStepPhaseLockedForStudent(
+        studentId,
+        stepId,
+      );
       if (isPhaseLocked) {
-        throw new ForbiddenException('Debes completar la fase anterior antes de avanzar.');
+        throw new ForbiddenException(
+          'Debes completar la fase anterior antes de avanzar.',
+        );
       }
     }
 
@@ -308,7 +326,9 @@ export class OnboardingService {
       },
       update: {
         isCompleted,
-        completedAt: isCompleted ? currentStatus?.completedAt ?? new Date() : null,
+        completedAt: isCompleted
+          ? (currentStatus?.completedAt ?? new Date())
+          : null,
         completionSource: isCompleted ? completionSource : null,
         completedByUserId: isCompleted ? actor.sub : null,
         notes: dto.notes ?? null,
@@ -364,7 +384,9 @@ export class OnboardingService {
       }),
     ]);
 
-    const statusByStepId = new Map(statuses.map((status) => [status.stepId, status]));
+    const statusByStepId = new Map(
+      statuses.map((status) => [status.stepId, status]),
+    );
     const activePhases = roadmap.phases.filter((phase) => phase.isActive);
     let previousPhaseCompleted = true;
     const serializedPhases = activePhases.map((phase) => {
@@ -411,6 +433,11 @@ export class OnboardingService {
         progressPercentage: percentage,
         steps: activeSteps.map((step) => {
           const status = statusByStepId.get(step.id);
+          const studentFacingCompletionMode =
+            step.completionMode === OnboardingCompletionMode.AUTOMATIC
+              ? OnboardingCompletionMode.AUTOMATIC
+              : OnboardingCompletionMode.SELF_SERVICE;
+
           return {
             id: step.id,
             title: step.title,
@@ -419,7 +446,7 @@ export class OnboardingService {
             notesInternal: step.notesInternal,
             sortOrder: step.sortOrder,
             stepKind: step.stepKind,
-            completionMode: step.completionMode,
+            completionMode: studentFacingCompletionMode,
             automationKey: step.automationKey,
             isActive: step.isActive,
             isOptional: step.isOptional,
@@ -436,7 +463,8 @@ export class OnboardingService {
               : null,
             notes: status?.notes ?? null,
             canStudentComplete:
-              step.completionMode === OnboardingCompletionMode.SELF_SERVICE && !isLocked,
+              studentFacingCompletionMode ===
+                OnboardingCompletionMode.SELF_SERVICE && !isLocked,
             resources: step.resources
               .slice()
               .sort((left, right) => left.sortOrder - right.sortOrder)
@@ -468,14 +496,22 @@ export class OnboardingService {
     });
 
     const flatSteps = serializedPhases.flatMap((phase) =>
-      phase.steps.map((step) => ({ ...step, phaseId: phase.id, phaseTitle: phase.title })),
+      phase.steps.map((step) => ({
+        ...step,
+        phaseId: phase.id,
+        phaseTitle: phase.title,
+      })),
     );
     const countableSteps = flatSteps.filter(
       (step) => step.countsForProgress && !step.isOptional,
     );
-    const completedCountableSteps = countableSteps.filter((step) => step.isCompleted).length;
-    const unlockedSteps = flatSteps.filter((step) =>
-      serializedPhases.find((phase) => phase.id === step.phaseId)?.isLocked !== true,
+    const completedCountableSteps = countableSteps.filter(
+      (step) => step.isCompleted,
+    ).length;
+    const unlockedSteps = flatSteps.filter(
+      (step) =>
+        serializedPhases.find((phase) => phase.id === step.phaseId)
+          ?.isLocked !== true,
     );
     const nextRequiredStep =
       unlockedSteps.find((step) => !step.isCompleted && !step.isOptional) ??
@@ -522,7 +558,9 @@ export class OnboardingService {
         completedCountableSteps,
         progressPercentage:
           countableSteps.length > 0
-            ? Math.round((completedCountableSteps / countableSteps.length) * 100)
+            ? Math.round(
+                (completedCountableSteps / countableSteps.length) * 100,
+              )
             : totalSteps > 0 && completedSteps === totalSteps
               ? 100
               : 0,
@@ -627,7 +665,9 @@ export class OnboardingService {
             : 0;
 
       const nextStep =
-        activeStepsFlat.find((s) => !completedStepIds.has(s.id) && !s.isOptional) ??
+        activeStepsFlat.find(
+          (s) => !completedStepIds.has(s.id) && !s.isOptional,
+        ) ??
         activeStepsFlat.find((s) => !completedStepIds.has(s.id)) ??
         null;
 
@@ -652,7 +692,9 @@ export class OnboardingService {
         ).length;
         const phasePercentage =
           phaseCountable.length > 0
-            ? Math.round((phaseCompletedCountable / phaseCountable.length) * 100)
+            ? Math.round(
+                (phaseCompletedCountable / phaseCountable.length) * 100,
+              )
             : phaseSteps.length > 0 && phaseCompleted === phaseSteps.length
               ? 100
               : 0;
@@ -660,13 +702,12 @@ export class OnboardingService {
         return {
           id: phase.id,
           title: phase.title,
-          status: (
+          status:
             phaseCompleted === 0
               ? 'NOT_STARTED'
               : phaseCompleted === phaseSteps.length
                 ? 'COMPLETED'
-                : 'IN_PROGRESS'
-          ) as 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED',
+                : 'IN_PROGRESS',
           progressPercentage: phasePercentage,
           completedSteps: phaseCompleted,
           pendingSteps: Math.max(0, phaseSteps.length - phaseCompleted),
@@ -810,7 +851,7 @@ export class OnboardingService {
         update: {
           isCompleted: shouldBeCompleted,
           completedAt: shouldBeCompleted
-            ? existingStatus?.completedAt ?? new Date()
+            ? (existingStatus?.completedAt ?? new Date())
             : null,
           completionSource: shouldBeCompleted
             ? OnboardingCompletionSource.SYSTEM
@@ -848,7 +889,9 @@ export class OnboardingService {
       return Boolean(student.country && student.localCurrencyId);
     }
 
-    if (automationKey === OnboardingAutomationKey.FIRST_METRIC_PERIOD_SUBMITTED) {
+    if (
+      automationKey === OnboardingAutomationKey.FIRST_METRIC_PERIOD_SUBMITTED
+    ) {
       return student.monthlyPeriods.some(
         (period) =>
           period.status === MonthlyMetricPeriodStatus.SUBMITTED ||
@@ -868,7 +911,10 @@ export class OnboardingService {
       return;
     }
 
-    if (step.challenge.metricDefinitionId || step.challenge.targetValue !== null) {
+    if (
+      step.challenge.metricDefinitionId ||
+      step.challenge.targetValue !== null
+    ) {
       return;
     }
 
@@ -906,7 +952,9 @@ export class OnboardingService {
     }
 
     if (!requestedStudentId) {
-      throw new ConflictException('studentId is required for mentor and admin actions');
+      throw new ConflictException(
+        'studentId is required for mentor and admin actions',
+      );
     }
 
     await this.ensureAccessibleStudent(requestedStudentId, actor);
@@ -927,7 +975,9 @@ export class OnboardingService {
 
     const student = await this.studentsService.getOwnProfile(actor.sub);
     if (student.id !== studentId) {
-      throw new ForbiddenException('You can only access your own onboarding roadmap');
+      throw new ForbiddenException(
+        'You can only access your own onboarding roadmap',
+      );
     }
 
     return student;

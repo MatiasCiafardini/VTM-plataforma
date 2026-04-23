@@ -1,6 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class CreateRegistrationCodeDto {
   @ApiProperty({ example: 'VMT2026ADMIN' })
@@ -21,7 +28,10 @@ export class CreateRegistrationCodeDto {
   @IsBoolean()
   isActive?: boolean;
 
-  @ApiPropertyOptional({ example: 5, description: 'Maximo de usos permitidos. Null = ilimitado.' })
+  @ApiPropertyOptional({
+    example: 5,
+    description: 'Maximo de usos permitidos. Null = ilimitado.',
+  })
   @IsOptional()
   @IsInt()
   @Min(1)

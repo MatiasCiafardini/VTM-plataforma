@@ -31,7 +31,9 @@ export class OnboardingController {
 
   @Get('me')
   @Roles(UserRole.STUDENT)
-  @ApiOperation({ summary: 'Get onboarding roadmap for the authenticated student' })
+  @ApiOperation({
+    summary: 'Get onboarding roadmap for the authenticated student',
+  })
   getOwnRoadmap(@CurrentUser() user: AuthenticatedUser) {
     return this.onboardingService.getOwnRoadmap(user);
   }
@@ -62,7 +64,9 @@ export class OnboardingController {
 
   @Get('admin/roadmap')
   @Roles(UserRole.ADMIN)
-  @ApiOperation({ summary: 'Get the active onboarding roadmap for administration' })
+  @ApiOperation({
+    summary: 'Get the active onboarding roadmap for administration',
+  })
   getAdminRoadmap() {
     return this.onboardingService.getAdminRoadmap();
   }
@@ -117,7 +121,9 @@ export class OnboardingController {
 
   @Patch('steps/:stepId/status')
   @Roles(UserRole.ADMIN, UserRole.MENTOR, UserRole.STUDENT)
-  @ApiOperation({ summary: 'Update onboarding step completion for an accessible student' })
+  @ApiOperation({
+    summary: 'Update onboarding step completion for an accessible student',
+  })
   updateStepStatus(
     @Param('stepId') stepId: string,
     @CurrentUser() user: AuthenticatedUser,

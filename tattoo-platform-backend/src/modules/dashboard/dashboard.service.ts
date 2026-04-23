@@ -147,7 +147,8 @@ export class DashboardService {
             iconKey: studentChallenge.challenge.iconKey,
             rewardTitle: studentChallenge.challenge.rewardTitle,
             rewardUrl: studentChallenge.challenge.rewardUrl,
-            metricSlug: studentChallenge.challenge.metricDefinition?.slug ?? null,
+            metricSlug:
+              studentChallenge.challenge.metricDefinition?.slug ?? null,
           },
         };
       }),
@@ -167,7 +168,9 @@ export class DashboardService {
             dueDate: null,
             progress: progress.progress,
             currentValue: progress.currentValue,
-            targetValue: challenge.targetValue ? Number(challenge.targetValue) : null,
+            targetValue: challenge.targetValue
+              ? Number(challenge.targetValue)
+              : null,
             difficultyStars: challenge.difficultyStars,
             challenge: {
               title: challenge.title,
@@ -213,48 +216,42 @@ export class DashboardService {
       },
       metricLabels: trackedMetrics.labels,
       latestMetrics: {
-        balanceGeneral:
-          this.getMetricOriginalNumericValue(
-            latestPeriod?.values ?? [],
-            'balance-general',
-          ),
-        balanceGeneralUsd:
-          this.getMetricUsdValue(
-            latestPeriod?.values ?? [],
-            'balance-general',
-          ),
-        ingresosFacturacion:
-          this.getMetricOriginalNumericValue(
-            latestPeriod?.values ?? [],
-            trackedMetrics.revenueMetricSlug,
-          ),
-        ingresosFacturacionUsd:
-          this.getMetricUsdValue(
-            latestPeriod?.values ?? [],
-            trackedMetrics.revenueMetricSlug,
-          ),
-        comisionEstudio:
-          this.getMetricOriginalNumericValue(
-            latestPeriod?.values ?? [],
-            'comision-estudio',
-          ),
-        comisionEstudioUsd:
-          this.getMetricUsdValue(
-            latestPeriod?.values ?? [],
-            'comision-estudio',
-          ),
-        gastosDelMes:
-          this.getMetricOriginalNumericValue(
-            latestPeriod?.values ?? [],
-            'gastos-del-mes',
-          ),
-        gastosDelMesUsd:
-          this.getMetricUsdValue(
-            latestPeriod?.values ?? [],
-            'gastos-del-mes',
-          ),
-        consultasMensuales: metricsBySlug[trackedMetrics.leadsMetricSlug]?.value ?? null,
-        cierresDelMes: metricsBySlug[trackedMetrics.closuresMetricSlug]?.value ?? null,
+        balanceGeneral: this.getMetricOriginalNumericValue(
+          latestPeriod?.values ?? [],
+          'balance-general',
+        ),
+        balanceGeneralUsd: this.getMetricUsdValue(
+          latestPeriod?.values ?? [],
+          'balance-general',
+        ),
+        ingresosFacturacion: this.getMetricOriginalNumericValue(
+          latestPeriod?.values ?? [],
+          trackedMetrics.revenueMetricSlug,
+        ),
+        ingresosFacturacionUsd: this.getMetricUsdValue(
+          latestPeriod?.values ?? [],
+          trackedMetrics.revenueMetricSlug,
+        ),
+        comisionEstudio: this.getMetricOriginalNumericValue(
+          latestPeriod?.values ?? [],
+          'comision-estudio',
+        ),
+        comisionEstudioUsd: this.getMetricUsdValue(
+          latestPeriod?.values ?? [],
+          'comision-estudio',
+        ),
+        gastosDelMes: this.getMetricOriginalNumericValue(
+          latestPeriod?.values ?? [],
+          'gastos-del-mes',
+        ),
+        gastosDelMesUsd: this.getMetricUsdValue(
+          latestPeriod?.values ?? [],
+          'gastos-del-mes',
+        ),
+        consultasMensuales:
+          metricsBySlug[trackedMetrics.leadsMetricSlug]?.value ?? null,
+        cierresDelMes:
+          metricsBySlug[trackedMetrics.closuresMetricSlug]?.value ?? null,
       },
       evolution: periods
         .slice()
@@ -543,7 +540,8 @@ export class DashboardService {
       ),
     );
 
-    const attentionScores = await this.attentionScoreService.getScoresForAdmin(actor);
+    const attentionScores =
+      await this.attentionScoreService.getScoresForAdmin(actor);
 
     const latestPeriodByStudent = new Map<string, (typeof periods)[number]>();
     for (const period of periods) {
@@ -556,7 +554,8 @@ export class DashboardService {
     const latestYear = periods[0]?.year ?? null;
     const totalRevenueHistorical = periods.reduce(
       (sum, period) =>
-        sum + (this.getMetricNumericValue(period.values, revenueMetricSlug) ?? 0),
+        sum +
+        (this.getMetricNumericValue(period.values, revenueMetricSlug) ?? 0),
       0,
     );
     const totalRevenueLatestMonth = periods.reduce((sum, period) => {
@@ -571,20 +570,21 @@ export class DashboardService {
       }
 
       return (
-        sum + (this.getMetricNumericValue(period.values, revenueMetricSlug) ?? 0)
+        sum +
+        (this.getMetricNumericValue(period.values, revenueMetricSlug) ?? 0)
       );
     }, 0);
     const averageProgress =
       students.length === 0
         ? 0
         : Math.round(
-            ((periods.filter(
+            (periods.filter(
               (period) =>
                 period.status === MonthlyMetricPeriodStatus.SUBMITTED ||
                 period.status === MonthlyMetricPeriodStatus.CLOSED,
             ).length /
               students.length) *
-              100),
+              100,
           );
 
     const studentStatusOverview = students.map((student) => {
@@ -596,7 +596,8 @@ export class DashboardService {
           period.studentId === student.id &&
           latestPeriod &&
           (period.year < latestPeriod.year ||
-            (period.year === latestPeriod.year && period.month < latestPeriod.month)),
+            (period.year === latestPeriod.year &&
+              period.month < latestPeriod.month)),
       );
 
       return {
@@ -659,7 +660,10 @@ export class DashboardService {
                   challenge.metricDefinition!.slug,
                 );
 
-                if (currentValue === null || currentValue < Number(challenge.targetValue)) {
+                if (
+                  currentValue === null ||
+                  currentValue < Number(challenge.targetValue)
+                ) {
                   return null;
                 }
 
@@ -747,8 +751,8 @@ export class DashboardService {
         periodsClosed: periods.filter(
           (period) => period.status === MonthlyMetricPeriodStatus.CLOSED,
         ).length,
-        studentsNeedingAttention: studentStatusOverview.filter(
-          (student) => this.studentNeedsAttention(student),
+        studentsNeedingAttention: studentStatusOverview.filter((student) =>
+          this.studentNeedsAttention(student),
         ).length,
         activeGoals: goals,
         activeChallenges: challenges.length,
@@ -800,7 +804,9 @@ export class DashboardService {
     }
 
     const candidate = metric.originalAmount ?? metric.numberValue;
-    return candidate === null || candidate === undefined ? null : Number(candidate);
+    return candidate === null || candidate === undefined
+      ? null
+      : Number(candidate);
   }
 
   private getMetricUsdValue(
@@ -812,7 +818,11 @@ export class DashboardService {
   ) {
     const metric = values.find((value) => value.metricDefinition.slug === slug);
 
-    if (!metric || metric.usdAmount === null || metric.usdAmount === undefined) {
+    if (
+      !metric ||
+      metric.usdAmount === null ||
+      metric.usdAmount === undefined
+    ) {
       return null;
     }
 
@@ -838,7 +848,12 @@ export class DashboardService {
         ? null
         : Number(currentCandidate);
 
-    if (!target || target <= 0 || currentValue === null || Number.isNaN(currentValue)) {
+    if (
+      !target ||
+      target <= 0 ||
+      currentValue === null ||
+      Number.isNaN(currentValue)
+    ) {
       return {
         currentValue,
         progress: baseStatus === ChallengeStatus.COMPLETED ? 100 : 0,
@@ -846,7 +861,10 @@ export class DashboardService {
       };
     }
 
-    const progress = Math.max(0, Math.min(100, Math.round((currentValue / target) * 100)));
+    const progress = Math.max(
+      0,
+      Math.min(100, Math.round((currentValue / target) * 100)),
+    );
 
     if (progress >= 100) {
       return {
@@ -928,13 +946,20 @@ export class DashboardService {
       closures: string;
     };
   }) {
-    const { latestScore, latestPeriod, previousPeriod, metricLabels, trackedMetricSlugs } =
-      params;
+    const {
+      latestScore,
+      latestPeriod,
+      previousPeriod,
+      metricLabels,
+      trackedMetricSlugs,
+    } = params;
 
     if (!latestScore) {
       return {
         headline: 'Sin analisis reciente',
-        items: ['Todavia no hay score de seguimiento calculado para este alumno.'],
+        items: [
+          'Todavia no hay score de seguimiento calculado para este alumno.',
+        ],
       };
     }
 
@@ -978,11 +1003,15 @@ export class DashboardService {
     }
 
     if (latestScore.reasonGoalsMissed) {
-      items.push('Tiene objetivos vencidos o incumplidos que requieren seguimiento.');
+      items.push(
+        'Tiene objetivos vencidos o incumplidos que requieren seguimiento.',
+      );
     }
 
     if (latestScore.reasonInactivity) {
-      items.push('Detectamos inactividad o un periodo en borrador sin actualizar.');
+      items.push(
+        'Detectamos inactividad o un periodo en borrador sin actualizar.',
+      );
     }
 
     if (items.length === 0) {
@@ -1059,7 +1088,9 @@ export class DashboardService {
     const revenueMetricSlug = settings.metrics.revenueMetricSlug;
     const leadsMetricSlug = settings.metrics.leadsMetricSlug;
     const closuresMetricSlug = settings.metrics.closuresMetricSlug;
-    const slugs = [...new Set([revenueMetricSlug, leadsMetricSlug, closuresMetricSlug])];
+    const slugs = [
+      ...new Set([revenueMetricSlug, leadsMetricSlug, closuresMetricSlug]),
+    ];
     const definitions = await this.prisma.metricDefinition.findMany({
       where: {
         slug: {
@@ -1083,7 +1114,7 @@ export class DashboardService {
         revenue:
           revenueMetricSlug === 'ingresos-facturacion'
             ? 'Ingresos totales'
-            : definitionBySlug.get(revenueMetricSlug) ?? 'Ingresos totales',
+            : (definitionBySlug.get(revenueMetricSlug) ?? 'Ingresos totales'),
         leads: definitionBySlug.get(leadsMetricSlug) ?? 'Consultas',
         closures: definitionBySlug.get(closuresMetricSlug) ?? 'Cierres',
       },

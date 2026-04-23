@@ -1,4 +1,8 @@
-import { MetricValueType, MonthlyMetricPeriodStatus, UserRole } from '@prisma/client';
+import {
+  MetricValueType,
+  MonthlyMetricPeriodStatus,
+  UserRole,
+} from '@prisma/client';
 import { MetricValuesService } from './metric-values.service';
 
 describe('MetricValuesService', () => {
@@ -12,25 +16,21 @@ describe('MetricValuesService', () => {
       },
     };
     const metricPeriodsService = {
-      findAccessiblePeriodByIdOrThrow: jest
-        .fn()
-        .mockResolvedValue({
-          id: 'period-1',
-          studentId: 'student-1',
-          month: 3,
-          year: 2026,
-          status: MonthlyMetricPeriodStatus.DRAFT,
-        }),
+      findAccessiblePeriodByIdOrThrow: jest.fn().mockResolvedValue({
+        id: 'period-1',
+        studentId: 'student-1',
+        month: 3,
+        year: 2026,
+        status: MonthlyMetricPeriodStatus.DRAFT,
+      }),
     };
     const metricDefinitionsService = {
-      findByIdOrThrow: jest
-        .fn()
-        .mockResolvedValue({
-          id: 'metric-1',
-          name: 'Ingresos',
-          valueType: MetricValueType.CURRENCY,
-          isMonetary: true,
-        }),
+      findByIdOrThrow: jest.fn().mockResolvedValue({
+        id: 'metric-1',
+        name: 'Ingresos',
+        valueType: MetricValueType.CURRENCY,
+        isMonetary: true,
+      }),
     };
     const currencyService = {
       ensureCurrencyExists: jest.fn().mockResolvedValue(undefined),
