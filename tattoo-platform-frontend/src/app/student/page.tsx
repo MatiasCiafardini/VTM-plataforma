@@ -92,6 +92,7 @@ type StudentDashboard = {
     id: string;
     status: string;
     dueDate: string | null;
+    progress: number;
     challenge: {
       title: string;
       description: string | null;
