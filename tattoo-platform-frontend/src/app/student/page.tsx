@@ -93,12 +93,16 @@ type StudentDashboard = {
     status: string;
     dueDate: string | null;
     progress: number;
+    currentValue: number | null;
+    targetValue: number | null;
+    achievedAt: string | null;
     challenge: {
       title: string;
       description: string | null;
       iconKey: string | null;
       rewardTitle: string | null;
       rewardUrl: string | null;
+      metricSlug?: string | null;
     };
   }>;
   rewards: Array<{ id: string; status: string; reward: { title: string } }>;

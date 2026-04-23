@@ -8,12 +8,16 @@ type StudentChallengeItem = {
   status: string;
   dueDate: string | null;
   progress: number;
+  currentValue: number | null;
+  targetValue: number | null;
+  achievedAt: string | null;
   challenge: {
     title: string;
     description: string | null;
     iconKey?: string | null;
     rewardTitle?: string | null;
     rewardUrl?: string | null;
+    metricSlug?: string | null;
   };
 };
 
@@ -102,6 +106,64 @@ function getEncouragement(progress: number, status: string) {
   }
 
   return "Todavia no hay avances registrados en este desafio.";
+}
+
+function formatMetricValue(
+  value: number | null,
+  metricSlug?: string | null,
+) {
+  if (value === null || Number.isNaN(value)) {
+    return "0";
+  }
+
+  if (
+    metricSlug?.includes("ingresos") ||
+    metricSlug?.includes("crecimiento-ingresos")
+  ) {
+    return new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  if (
+    metricSlug?.includes("tasa") ||
+    metricSlug?.includes("porcentaje") ||
+    metricSlug?.includes("meta-mensual")
+  ) {
+    return `${Math.round(value)}%`;
+  }
+
+  const hasDecimals = !Number.isInteger(value);
+  return new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: hasDecimals ? 0 : 0,
+    maximumFractionDigits: hasDecimals ? 2 : 0,
+  }).format(value);
+}
+
+function getExactProgressCopy(challenge: StudentChallengeItem) {
+  const current = formatMetricValue(
+    challenge.currentValue,
+    challenge.challenge.metricSlug,
+  );
+  const target = formatMetricValue(
+    challenge.targetValue,
+    challenge.challenge.metricSlug,
+  );
+
+  return `${current} / ${target}`;
+}
+
+function formatAchievedAt(value: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("es-AR", {
+    dateStyle: "medium",
+  }).format(new Date(value));
 }
 
 function getProgressTone(status: string, progress: number) {
@@ -390,6 +452,7 @@ export function StudentChallengesPanel({
 
                 <div className="student-challenge-status-row">
                   <strong>{challenge.progress}%</strong>
+                  <span>{getExactProgressCopy(challenge)}</span>
                 </div>
 
                 <div className="student-challenge-track">
@@ -449,10 +512,21 @@ export function StudentChallengesPanel({
 
               <div className="student-challenge-flyer-progress">
                 <strong>{selectedChallenge.progress}% completado</strong>
+                <span>{getExactProgressCopy(selectedChallenge)}</span>
                 <div className="student-challenge-flyer-track">
                   <span style={{ width: `${selectedChallenge.progress}%` }} />
                 </div>
               </div>
+
+              {selectedChallenge.achievedAt ? (
+                <div className="student-challenge-flyer-footer">
+                  <span>
+                    {selectedChallenge.status === "COMPLETED"
+                      ? `Superado el ${formatAchievedAt(selectedChallenge.achievedAt)}`
+                      : `Ultimo avance registrado el ${formatAchievedAt(selectedChallenge.achievedAt)}`}
+                  </span>
+                </div>
+              ) : null}
 
               {selectedChallenge.status !== "COMPLETED" ? (
                 <div className="student-challenge-flyer-footer">

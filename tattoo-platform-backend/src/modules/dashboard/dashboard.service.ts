@@ -137,6 +137,10 @@ export class DashboardService {
           dueDate: studentChallenge.dueDate,
           progress: progress.progress,
           currentValue: progress.currentValue,
+          achievedAt:
+            progress.status === ChallengeStatus.COMPLETED
+              ? studentChallenge.updatedAt
+              : null,
           targetValue: studentChallenge.challenge.targetValue
             ? Number(studentChallenge.challenge.targetValue)
             : null,
@@ -168,6 +172,13 @@ export class DashboardService {
             dueDate: null,
             progress: progress.progress,
             currentValue: progress.currentValue,
+            achievedAt:
+              progress.status === ChallengeStatus.COMPLETED
+                ? latestPeriod?.closedAt ??
+                  latestPeriod?.submittedAt ??
+                  latestPeriod?.updatedAt ??
+                  null
+                : null,
             targetValue: challenge.targetValue
               ? Number(challenge.targetValue)
               : null,
