@@ -307,6 +307,10 @@ function buildMetricPayload(
   return values;
 }
 
+function hasAnyMetricsInSection(section: MetricFieldsState) {
+  return metricFieldKeys.some((field) => section[field].trim() !== "");
+}
+
 async function ensurePeriod(
   period: PeriodRef,
   createMessage: string,
@@ -658,6 +662,20 @@ export function StudentOnboardingForm({
     );
   }, [currentRegistrationPeriod, mentorshipStartPeriod]);
 
+  const hasPreviousMonthData = useMemo(
+    () => hasAnyMetricsInSection(form.previousMonth),
+    [form.previousMonth],
+  );
+  const hasLatestBillingMonthData = useMemo(
+    () => hasAnyMetricsInSection(form.latestBillingMonth),
+    [form.latestBillingMonth],
+  );
+  const canOfferAutomaticFill =
+    shouldCollectLatestBillingMonth &&
+    hasPreviousMonthData &&
+    hasLatestBillingMonthData &&
+    getMonthDistance(previousMonthPeriod, latestBillingPeriod) > 0;
+
   useEffect(() => {
     if (!shouldCollectLatestBillingMonth) {
       setActiveMetricsTab("previousMonth");
@@ -715,7 +733,14 @@ export function StudentOnboardingForm({
         );
       }
 
+      if (!hasPreviousMonthData && !hasLatestBillingMonthData) {
+        throw new Error(
+          "Carga al menos uno de estos dos cortes: el mes previo a la mentoria o el ultimo mes de facturacion.",
+        );
+      }
+
       const localCurrencyId = selectedCurrency.id;
+      let usedAutomaticFill = false;
 
       const profileResponse = await fetch("/api/student/profile", {
         method: "PATCH",
@@ -735,22 +760,63 @@ export function StudentOnboardingForm({
         );
       }
 
-      const periodsToPersist = shouldCollectLatestBillingMonth
-        ? listPeriodsBetween(previousMonthPeriod, latestBillingPeriod)
-        : [previousMonthPeriod];
-      const totalSteps = Math.max(0, periodsToPersist.length - 1);
+      let periodsToPersist: Array<{
+        period: PeriodRef;
+        section: MetricFieldsState;
+      }> = [];
 
-      for (const [index, period] of periodsToPersist.entries()) {
-        const section =
-          shouldCollectLatestBillingMonth && periodsToPersist.length > 1
-            ? interpolateMetricSection(
-                form.previousMonth,
-                form.latestBillingMonth,
-                index,
-                totalSteps,
-                metricDefinitionMap,
-              )
-            : form.previousMonth;
+      if (canOfferAutomaticFill) {
+        const shouldAutoFill = window.confirm(
+          "Quieres completar los meses del medio automaticamente?",
+        );
+
+        if (shouldAutoFill) {
+          usedAutomaticFill = true;
+          const periods = listPeriodsBetween(
+            previousMonthPeriod,
+            latestBillingPeriod,
+          );
+          const totalSteps = Math.max(0, periods.length - 1);
+
+          periodsToPersist = periods.map((period, index) => ({
+            period,
+            section: interpolateMetricSection(
+              form.previousMonth,
+              form.latestBillingMonth,
+              index,
+              totalSteps,
+              metricDefinitionMap,
+            ),
+          }));
+        } else {
+          periodsToPersist = [
+            { period: previousMonthPeriod, section: form.previousMonth },
+            { period: latestBillingPeriod, section: form.latestBillingMonth },
+          ];
+        }
+      } else if (hasPreviousMonthData) {
+        periodsToPersist.push({
+          period: previousMonthPeriod,
+          section: form.previousMonth,
+        });
+      }
+
+      if (
+        shouldCollectLatestBillingMonth &&
+        hasLatestBillingMonthData &&
+        (!hasPreviousMonthData ||
+          periodToIndex(latestBillingPeriod) !== periodToIndex(previousMonthPeriod))
+      ) {
+        periodsToPersist.push({
+          period: latestBillingPeriod,
+          section: form.latestBillingMonth,
+        });
+      }
+
+      for (const { period, section } of periodsToPersist) {
+        if (!hasAnyMetricsInSection(section)) {
+          continue;
+        }
 
         const ensuredPeriod = await ensurePeriod(
           period,
@@ -800,10 +866,15 @@ export function StudentOnboardingForm({
         }
       }
 
+      const savedPeriodsLabel =
+        periodsToPersist.length > 1
+          ? "Tus cortes iniciales quedaron cargados."
+          : "Tu corte inicial quedo cargado.";
+
       setSuccess(
-        shouldCollectLatestBillingMonth
-          ? "Tu perfil y el historial entre ambos meses quedaron cargados."
-          : "Tu perfil inicial y tu primer mes quedaron cargados.",
+        usedAutomaticFill
+          ? "Tu perfil y los periodos elegidos quedaron cargados."
+          : savedPeriodsLabel,
       );
       router.replace("/student?tab=results");
       router.refresh();
@@ -949,8 +1020,8 @@ export function StudentOnboardingForm({
           }
           description={
             activeMetricsTab === "previousMonth"
-              ? "Datos del mes anterior al inicio de la mentoria, para tener una base de comparacion."
-              : "Usaremos este ultimo corte real para reconstruir los meses intermedios y dejar una evolucion mas natural."
+              ? "Datos del mes anterior al inicio de la mentoria. Este bloque es opcional, salvo que no cargues el otro."
+              : "Ultimo corte real de facturacion previo al mes actual. Tambien es opcional si ya cargaste el otro."
           }
           data={activeSection}
           currencySymbol={selectedCurrency?.symbol ?? "$"}
@@ -959,13 +1030,12 @@ export function StudentOnboardingForm({
           }
         />
 
-        {shouldCollectLatestBillingMonth ? (
+        {canOfferAutomaticFill ? (
           <p className="student-onboarding-helper">
-            Al guardar, el sistema va a registrar desde{" "}
+            Si completas ambos meses, al guardar te vamos a preguntar si quieres
+            completar automaticamente los meses del medio desde{" "}
             <strong>{formatPeriodLabel(previousMonthPeriod)}</strong> hasta{" "}
-            <strong>{formatPeriodLabel(latestBillingPeriod)}</strong>, generando
-            los meses intermedios con una progresion acumulativa entre ambos
-            valores.
+            <strong>{formatPeriodLabel(latestBillingPeriod)}</strong>.
           </p>
         ) : null}
 
