@@ -35,6 +35,8 @@ type MetricFieldsState = {
   cierresNuevosClientes: string;
   cierresPorRecomendaciones: string;
   cierresRecurrentes: string;
+  cierresConNuevosSeguidores: string;
+  porcentajeSeguimiento: string;
 };
 
 type OnboardingFormState = {
@@ -79,6 +81,8 @@ const metricFieldKeys: Array<keyof MetricFieldsState> = [
   "cierresNuevosClientes",
   "cierresPorRecomendaciones",
   "cierresRecurrentes",
+  "cierresConNuevosSeguidores",
+  "porcentajeSeguimiento",
 ];
 
 const currentYear = new Date().getFullYear();
@@ -135,6 +139,8 @@ function createEmptyMetricsState(): MetricFieldsState {
     cierresNuevosClientes: "",
     cierresPorRecomendaciones: "",
     cierresRecurrentes: "",
+    cierresConNuevosSeguidores: "",
+    porcentajeSeguimiento: "",
   };
 }
 
@@ -209,6 +215,10 @@ function buildMetricNumberMap(section: MetricFieldsState) {
     "cierres-nuevos-clientes": toNumber(section.cierresNuevosClientes),
     "cierres-por-recomendaciones": toNumber(section.cierresPorRecomendaciones),
     "cierres-recurrentes": toNumber(section.cierresRecurrentes),
+    "cierres-con-nuevos-seguidores": toNumber(
+      section.cierresConNuevosSeguidores,
+    ),
+    "porcentaje-seguimiento": toNumber(section.porcentajeSeguimiento),
   };
 }
 
@@ -248,6 +258,8 @@ function interpolateMetricSection(
       cierresNuevosClientes: "cierres-nuevos-clientes",
       cierresPorRecomendaciones: "cierres-por-recomendaciones",
       cierresRecurrentes: "cierres-recurrentes",
+      cierresConNuevosSeguidores: "cierres-con-nuevos-seguidores",
+      porcentajeSeguimiento: "porcentaje-seguimiento",
     };
 
     const definition = metricDefinitionMap[slugByField[field] ?? ""];
@@ -529,6 +541,33 @@ function MetricSection({
               value={data.cierresRecurrentes}
               onChange={(event) =>
                 onChange("cierresRecurrentes", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            <span>Cierres con seguidores nuevos</span>
+            <input
+              type="number"
+              min="0"
+              step="1"
+              placeholder="0"
+              value={data.cierresConNuevosSeguidores}
+              onChange={(event) =>
+                onChange("cierresConNuevosSeguidores", event.target.value)
+              }
+            />
+          </label>
+          <label>
+            <span>Seguimiento del mes %</span>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              placeholder="0"
+              value={data.porcentajeSeguimiento}
+              onChange={(event) =>
+                onChange("porcentajeSeguimiento", event.target.value)
               }
             />
           </label>

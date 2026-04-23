@@ -83,7 +83,6 @@ export class DashboardService {
           },
         },
         orderBy: [{ updatedAt: 'desc' }],
-        take: 5,
       }),
       this.prisma.challenge.findMany({
         where: { isActive: true },
@@ -344,6 +343,14 @@ export class DashboardService {
           cierresRecurrentes: this.getMetricNumericValue(
             period.values,
             'cierres-recurrentes',
+          ),
+          cierresConNuevosSeguidores: this.getMetricNumericValue(
+            period.values,
+            'cierres-con-nuevos-seguidores',
+          ),
+          porcentajeSeguimiento: this.getMetricNumericValue(
+            period.values,
+            'porcentaje-seguimiento',
           ),
         })),
       dashboardQuickLinks,

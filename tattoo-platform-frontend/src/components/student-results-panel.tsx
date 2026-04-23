@@ -27,6 +27,8 @@ type EvolutionPeriod = {
   cierresNuevosClientes: number | null;
   cierresPorRecomendaciones: number | null;
   cierresRecurrentes: number | null;
+  cierresConNuevosSeguidores: number | null;
+  porcentajeSeguimiento: number | null;
 };
 
 type MetricDefinition = {
@@ -73,6 +75,8 @@ type FormState = {
   cierresNuevosClientes: string;
   cierresPorRecomendaciones: string;
   cierresRecurrentes: string;
+  cierresConNuevosSeguidores: string;
+  porcentajeSeguimiento: string;
 };
 
 const monthOptions = [
@@ -148,6 +152,8 @@ function buildInitialFormState(): FormState {
     cierresNuevosClientes: "",
     cierresPorRecomendaciones: "",
     cierresRecurrentes: "",
+    cierresConNuevosSeguidores: "",
+    porcentajeSeguimiento: "",
   };
 }
 
@@ -174,6 +180,8 @@ function buildFormStateForPeriod(
     cierresNuevosClientes: val(period?.cierresNuevosClientes ?? null),
     cierresPorRecomendaciones: val(period?.cierresPorRecomendaciones ?? null),
     cierresRecurrentes: val(period?.cierresRecurrentes ?? null),
+    cierresConNuevosSeguidores: val(period?.cierresConNuevosSeguidores ?? null),
+    porcentajeSeguimiento: val(period?.porcentajeSeguimiento ?? null),
   };
 }
 
@@ -342,6 +350,8 @@ export function StudentResultsPanel({
         ["cierres-nuevos-clientes", form.cierresNuevosClientes],
         ["cierres-por-recomendaciones", form.cierresPorRecomendaciones],
         ["cierres-recurrentes", form.cierresRecurrentes],
+        ["cierres-con-nuevos-seguidores", form.cierresConNuevosSeguidores],
+        ["porcentaje-seguimiento", form.porcentajeSeguimiento],
       ]
         .map(([slug, rawValue]) => {
           const definition = metricDefinitionMap[slug];
@@ -1059,6 +1069,36 @@ export function StudentResultsPanel({
                       value={form.cierresRecurrentes}
                       onChange={(event) =>
                         updateField("cierresRecurrentes", event.target.value)
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Cierres con seguidores nuevos</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                      value={form.cierresConNuevosSeguidores}
+                      onChange={(event) =>
+                        updateField(
+                          "cierresConNuevosSeguidores",
+                          event.target.value,
+                        )
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Seguimiento del mes %</span>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder="0"
+                      value={form.porcentajeSeguimiento}
+                      onChange={(event) =>
+                        updateField("porcentajeSeguimiento", event.target.value)
                       }
                     />
                   </label>

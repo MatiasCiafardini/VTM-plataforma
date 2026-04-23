@@ -84,6 +84,8 @@ type StudentDashboard = {
     cierresNuevosClientes: number | null;
     cierresPorRecomendaciones: number | null;
     cierresRecurrentes: number | null;
+    cierresConNuevosSeguidores: number | null;
+    porcentajeSeguimiento: number | null;
   }>;
   dashboardQuickLinks: Array<{ id: string; title: string; url: string }>;
   quickLinks: Array<{ id: string; title: string; url: string }>;

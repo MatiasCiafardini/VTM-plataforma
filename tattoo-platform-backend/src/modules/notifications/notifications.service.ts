@@ -301,23 +301,24 @@ export class NotificationsService {
           continue;
         }
 
-        const challengeAssignment =
-          await this.prisma.studentChallenge.findFirst({
-            where: {
+        await this.prisma.studentChallenge.upsert({
+          where: {
+            studentId_challengeId: {
               studentId: period.studentId,
               challengeId: challenge.id,
             },
-          });
-
-        if (
-          challengeAssignment &&
-          challengeAssignment.status !== ChallengeStatus.COMPLETED
-        ) {
-          await this.prisma.studentChallenge.update({
-            where: { id: challengeAssignment.id },
-            data: { status: ChallengeStatus.COMPLETED },
-          });
-        }
+          },
+          update: {
+            status: ChallengeStatus.COMPLETED,
+          },
+          create: {
+            studentId: period.studentId,
+            challengeId: challenge.id,
+            status: ChallengeStatus.COMPLETED,
+            assignedAt:
+              period.closedAt ?? period.submittedAt ?? period.updatedAt,
+          },
+        });
 
         if (settings.notifications.notifyStudentOnAchievement) {
           await this.createNotification({

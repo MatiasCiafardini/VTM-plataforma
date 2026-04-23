@@ -14,6 +14,7 @@
     "db:log": "powershell -Command \"Get-Content .postgres\\run\\postgres.log -Tail 100\"",
     "db:seed": "node prisma/seed.mjs",
     "db:seed:onboarding": "node scripts/seed-onboarding-roadmap.mjs",
+    "challenges:backfill": "node dist/src/scripts/backfill-challenge-progress.js",
     "admin:rename-email": "node scripts/rename-admin-email.mjs",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",

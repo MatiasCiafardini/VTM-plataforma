@@ -130,8 +130,7 @@ function formatMetricValue(
 
   if (
     metricSlug?.includes("tasa") ||
-    metricSlug?.includes("porcentaje") ||
-    metricSlug?.includes("meta-mensual")
+    metricSlug?.includes("porcentaje")
   ) {
     return `${Math.round(value)}%`;
   }

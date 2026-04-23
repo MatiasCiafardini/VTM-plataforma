@@ -9,6 +9,7 @@ import type { AuthenticatedUser } from '../../../common/types/authenticated-user
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AttentionScoreService } from '../../attention-score/attention-score.service';
 import { StudentsService } from '../../students/students.service';
+import { MetricPeriodAutomationService } from './metric-period-automation.service';
 import { CreateMetricPeriodDto } from './dto/create-metric-period.dto';
 
 @Injectable()
@@ -17,6 +18,7 @@ export class MetricPeriodsService {
     private readonly prisma: PrismaService,
     private readonly studentsService: StudentsService,
     private readonly attentionScoreService: AttentionScoreService,
+    private readonly metricPeriodAutomationService: MetricPeriodAutomationService,
   ) {}
 
   async create(dto: CreateMetricPeriodDto, actor: AuthenticatedUser) {
@@ -147,6 +149,9 @@ export class MetricPeriodsService {
       include: this.getPeriodInclude(),
     });
 
+    await this.metricPeriodAutomationService.syncStudentProgress(
+      updated.studentId,
+    );
     await this.attentionScoreService.recalculateForStudent(updated.studentId, {
       month: updated.month,
       year: updated.year,
@@ -172,6 +177,9 @@ export class MetricPeriodsService {
       include: this.getPeriodInclude(),
     });
 
+    await this.metricPeriodAutomationService.syncStudentProgress(
+      updated.studentId,
+    );
     await this.attentionScoreService.recalculateForStudent(updated.studentId, {
       month: updated.month,
       year: updated.year,
