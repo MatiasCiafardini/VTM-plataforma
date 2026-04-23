@@ -6033,11 +6033,34 @@ body {
 
 .student-onboarding-confirm-modal {
   width: min(640px, 100%);
+  padding: 28px;
+}
+
+.student-onboarding-confirm-head {
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.student-onboarding-confirm-title {
+  display: grid;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.student-onboarding-confirm-title h3 {
+  margin: 0;
+}
+
+.student-onboarding-confirm-title p {
+  margin: 0;
+  max-width: 44ch;
+  line-height: 1.7;
 }
 
 .student-onboarding-confirm-copy {
-  margin-top: 18px;
-  padding: 18px;
+  margin-top: 24px;
+  padding: 22px 20px;
   border: 1px solid rgba(255, 209, 2, 0.14);
   border-radius: 18px;
   background: rgba(255, 209, 2, 0.06);
@@ -6046,7 +6069,32 @@ body {
 .student-onboarding-confirm-copy p {
   margin: 0;
   color: var(--text-soft);
-  line-height: 1.6;
+  line-height: 1.75;
+}
+
+.student-onboarding-confirm-actions {
+  margin-top: 28px;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 720px) {
+  .student-onboarding-confirm-modal {
+    padding: 22px 18px;
+  }
+
+  .student-onboarding-confirm-head {
+    gap: 18px;
+  }
+
+  .student-onboarding-confirm-copy {
+    margin-top: 20px;
+    padding: 18px;
+  }
+
+  .student-onboarding-confirm-actions {
+    margin-top: 22px;
+  }
 }
 
 .onboarding-student-shell,

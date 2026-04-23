@@ -1063,14 +1063,13 @@ export function StudentOnboardingForm({
       {showAutoFillModal ? (
         <div
           className="student-results-modal-backdrop"
-          onClick={() => setShowAutoFillModal(false)}
         >
           <div
             className="student-results-modal student-onboarding-confirm-modal"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="student-results-modal-head">
-              <div>
+            <div className="student-results-modal-head student-onboarding-confirm-head">
+              <div className="student-onboarding-confirm-title">
                 <h3>Completar meses intermedios</h3>
                 <p>
                   Cargaste ambos cortes. Puedes completar automaticamente los
@@ -1079,13 +1078,6 @@ export function StudentOnboardingForm({
                   <strong>{formatPeriodLabel(latestBillingPeriod)}</strong>.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setShowAutoFillModal(false)}
-                disabled={isSaving}
-              >
-                Cerrar
-              </button>
             </div>
 
             <div className="student-onboarding-confirm-copy">
@@ -1096,7 +1088,7 @@ export function StudentOnboardingForm({
               </p>
             </div>
 
-            <div className="student-results-form-actions">
+            <div className="student-results-form-actions student-onboarding-confirm-actions">
               <button
                 type="button"
                 className="ghost-button"
