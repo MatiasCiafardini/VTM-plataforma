@@ -1,22 +1,11 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
-import * as PrismaClientPackage from '@prisma/client';
-import type { PrismaClient as GeneratedPrismaClient } from '@prisma/client';
-
-type PrismaClientCtor = new (options?: {
-  adapter?: PrismaPg;
-}) => GeneratedPrismaClient;
-
-const { PrismaClient } = PrismaClientPackage as unknown as {
-  PrismaClient: PrismaClientCtor;
-};
-
-const PrismaClientBase = PrismaClient;
+import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService
-  extends PrismaClientBase
+  extends PrismaClient
   implements OnModuleInit, OnModuleDestroy
 {
   constructor(private readonly configService: ConfigService) {

@@ -53,7 +53,8 @@ export class GroupMeetingsService {
 
     let scheduledDate: string;
     if (isRecurring) {
-      scheduledDate = this.nextWeekdayDate(weekDay, timezone);
+      const resolvedWeekDay = weekDay ?? 1;
+      scheduledDate = this.nextWeekdayDate(resolvedWeekDay, timezone);
     } else if (dto.scheduledDate) {
       scheduledDate = dto.scheduledDate;
     } else {
