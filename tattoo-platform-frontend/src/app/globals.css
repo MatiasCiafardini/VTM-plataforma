@@ -6031,6 +6031,24 @@ body {
   justify-content: flex-end;
 }
 
+.student-onboarding-confirm-modal {
+  width: min(640px, 100%);
+}
+
+.student-onboarding-confirm-copy {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid rgba(255, 209, 2, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 209, 2, 0.06);
+}
+
+.student-onboarding-confirm-copy p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
 .onboarding-student-shell,
 .onboarding-board-shell,
 .admin-onboarding-shell {

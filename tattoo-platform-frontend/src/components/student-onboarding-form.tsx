@@ -600,6 +600,7 @@ export function StudentOnboardingForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAutoFillModal, setShowAutoFillModal] = useState(false);
 
   const metricDefinitionMap = useMemo(
     () =>
@@ -700,47 +701,45 @@ export function StudentOnboardingForm({
     }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function validateBeforeSave() {
+    if (!form.country) {
+      return "Selecciona tu pais.";
+    }
+
+    if (!form.instagramHandle.trim()) {
+      return "Ingresa tu Instagram.";
+    }
+
+    if (!selectedCurrency) {
+      return "No pudimos resolver tu moneda local para ese pais.";
+    }
+
+    if (getMonthDistance(currentRegistrationPeriod, mentorshipStartPeriod) > 0) {
+      return "El inicio de la mentoria no puede ser posterior al mes actual.";
+    }
+
+    if (periodToIndex(previousMonthPeriod) > periodToIndex(latestBillingPeriod)) {
+      return "El mes previo al inicio no puede quedar despues del ultimo mes de facturacion.";
+    }
+
+    if (!hasPreviousMonthData && !hasLatestBillingMonthData) {
+      return "Carga al menos uno de estos dos cortes: el mes previo a la mentoria o el ultimo mes de facturacion.";
+    }
+
+    return null;
+  }
+
+  async function persistOnboarding(autoFillIntermediateMonths: boolean) {
     setError(null);
     setSuccess(null);
     setIsSaving(true);
 
     try {
-      if (!form.country) {
-        throw new Error("Selecciona tu pais.");
-      }
-
-      if (!form.instagramHandle.trim()) {
-        throw new Error("Ingresa tu Instagram.");
-      }
-
       if (!selectedCurrency) {
         throw new Error("No pudimos resolver tu moneda local para ese pais.");
       }
 
-      if (
-        getMonthDistance(currentRegistrationPeriod, mentorshipStartPeriod) > 0
-      ) {
-        throw new Error("El inicio de la mentoria no puede ser posterior al mes actual.");
-      }
-
-      if (
-        periodToIndex(previousMonthPeriod) > periodToIndex(latestBillingPeriod)
-      ) {
-        throw new Error(
-          "El mes previo al inicio no puede quedar despues del ultimo mes de facturacion.",
-        );
-      }
-
-      if (!hasPreviousMonthData && !hasLatestBillingMonthData) {
-        throw new Error(
-          "Carga al menos uno de estos dos cortes: el mes previo a la mentoria o el ultimo mes de facturacion.",
-        );
-      }
-
       const localCurrencyId = selectedCurrency.id;
-      let usedAutomaticFill = false;
 
       const profileResponse = await fetch("/api/student/profile", {
         method: "PATCH",
@@ -765,35 +764,28 @@ export function StudentOnboardingForm({
         section: MetricFieldsState;
       }> = [];
 
-      if (canOfferAutomaticFill) {
-        const shouldAutoFill = window.confirm(
-          "Quieres completar los meses del medio automaticamente?",
+      if (canOfferAutomaticFill && autoFillIntermediateMonths) {
+        const periods = listPeriodsBetween(
+          previousMonthPeriod,
+          latestBillingPeriod,
         );
+        const totalSteps = Math.max(0, periods.length - 1);
 
-        if (shouldAutoFill) {
-          usedAutomaticFill = true;
-          const periods = listPeriodsBetween(
-            previousMonthPeriod,
-            latestBillingPeriod,
-          );
-          const totalSteps = Math.max(0, periods.length - 1);
-
-          periodsToPersist = periods.map((period, index) => ({
-            period,
-            section: interpolateMetricSection(
-              form.previousMonth,
-              form.latestBillingMonth,
-              index,
-              totalSteps,
-              metricDefinitionMap,
-            ),
-          }));
-        } else {
-          periodsToPersist = [
-            { period: previousMonthPeriod, section: form.previousMonth },
-            { period: latestBillingPeriod, section: form.latestBillingMonth },
-          ];
-        }
+        periodsToPersist = periods.map((period, index) => ({
+          period,
+          section: interpolateMetricSection(
+            form.previousMonth,
+            form.latestBillingMonth,
+            index,
+            totalSteps,
+            metricDefinitionMap,
+          ),
+        }));
+      } else if (hasPreviousMonthData && hasLatestBillingMonthData) {
+        periodsToPersist = [
+          { period: previousMonthPeriod, section: form.previousMonth },
+          { period: latestBillingPeriod, section: form.latestBillingMonth },
+        ];
       } else if (hasPreviousMonthData) {
         periodsToPersist.push({
           period: previousMonthPeriod,
@@ -872,7 +864,7 @@ export function StudentOnboardingForm({
           : "Tu corte inicial quedo cargado.";
 
       setSuccess(
-        usedAutomaticFill
+        autoFillIntermediateMonths && canOfferAutomaticFill
           ? "Tu perfil y los periodos elegidos quedaron cargados."
           : savedPeriodsLabel,
       );
@@ -887,6 +879,25 @@ export function StudentOnboardingForm({
     } finally {
       setIsSaving(false);
     }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    const validationError = validateBeforeSave();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (canOfferAutomaticFill) {
+      setShowAutoFillModal(true);
+      return;
+    }
+
+    await persistOnboarding(false);
   }
 
   const activeSection =
@@ -1048,6 +1059,70 @@ export function StudentOnboardingForm({
           </button>
         </div>
       </section>
+
+      {showAutoFillModal ? (
+        <div
+          className="student-results-modal-backdrop"
+          onClick={() => setShowAutoFillModal(false)}
+        >
+          <div
+            className="student-results-modal student-onboarding-confirm-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="student-results-modal-head">
+              <div>
+                <h3>Completar meses intermedios</h3>
+                <p>
+                  Cargaste ambos cortes. Puedes completar automaticamente los
+                  meses del medio entre{" "}
+                  <strong>{formatPeriodLabel(previousMonthPeriod)}</strong> y{" "}
+                  <strong>{formatPeriodLabel(latestBillingPeriod)}</strong>.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAutoFillModal(false)}
+                disabled={isSaving}
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="student-onboarding-confirm-copy">
+              <p>
+                Si eliges el calculo automatico, vamos a interpolar los meses
+                intermedios para dejar una evolucion mas natural. Si no, solo se
+                guardaran los dos cortes que cargaste manualmente.
+              </p>
+            </div>
+
+            <div className="student-results-form-actions">
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={isSaving}
+                onClick={() => {
+                  setShowAutoFillModal(false);
+                  void persistOnboarding(false);
+                }}
+              >
+                {isSaving ? "Guardando..." : "Solo guardar cortes cargados"}
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={isSaving}
+                onClick={() => {
+                  setShowAutoFillModal(false);
+                  void persistOnboarding(true);
+                }}
+              >
+                {isSaving ? "Guardando..." : "Completar automatico"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </form>
   );
 }
