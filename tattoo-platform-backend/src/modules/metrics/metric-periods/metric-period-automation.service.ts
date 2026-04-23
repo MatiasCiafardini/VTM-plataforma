@@ -333,6 +333,7 @@ export class MetricPeriodAutomationService {
           create: {
             studentId,
             challengeId: challenge.id,
+            isManualAssignment: false,
             status: ChallengeStatus.COMPLETED,
             assignedAt: completedAt,
           },

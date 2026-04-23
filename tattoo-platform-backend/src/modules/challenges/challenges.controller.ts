@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -55,6 +56,13 @@ export class ChallengesController {
     return this.challengesService.assignChallenge(dto);
   }
 
+  @Get('manual-assignments')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'List manually assigned student challenges' })
+  listManualAssignments() {
+    return this.challengesService.listManualAssignments();
+  }
+
   @Get('me')
   @Roles(UserRole.STUDENT)
   @ApiOperation({ summary: 'List challenges for the authenticated student' })
@@ -83,6 +91,19 @@ export class ChallengesController {
     return this.challengesService.updateStudentChallenge(
       studentChallengeId,
       dto,
+      user,
+    );
+  }
+
+  @Delete('student-challenges/:studentChallengeId')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete a manual student challenge assignment' })
+  deleteManualStudentChallenge(
+    @Param('studentChallengeId') studentChallengeId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.challengesService.deleteManualStudentChallenge(
+      studentChallengeId,
       user,
     );
   }

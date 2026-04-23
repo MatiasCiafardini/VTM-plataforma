@@ -515,6 +515,7 @@ export class DashboardService {
       mentors,
       goals,
       challenges,
+      completedStudentChallenges,
       rewards,
       upcomingEvents,
     ] = await Promise.all([
@@ -547,6 +548,24 @@ export class DashboardService {
           metricDefinition: true,
         },
         orderBy: [{ createdAt: 'desc' }],
+      }),
+      this.prisma.studentChallenge.findMany({
+        where: {
+          status: ChallengeStatus.COMPLETED,
+        },
+        include: {
+          student: {
+            include: {
+              user: true,
+            },
+          },
+          challenge: {
+            include: {
+              metricDefinition: true,
+            },
+          },
+        },
+        orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
       }),
       this.prisma.reward.count({ where: { isActive: true } }),
       this.countUpcomingGroupMeetings(),
@@ -657,86 +676,135 @@ export class DashboardService {
       };
     });
 
-    const completedAchievements = students
-      .flatMap((student) => {
-        const studentPeriods = periods.filter(
-          (period) =>
-            period.studentId === student.id &&
-            period.status === MonthlyMetricPeriodStatus.CLOSED,
-        );
+    const completedAchievementMap = new Map<
+      string,
+      {
+        id: string;
+        completedAt: string;
+        month: number;
+        year: number;
+        studentId: string;
+        studentName: string;
+        studentEmail: string;
+        challengeId: string;
+        challengeTitle: string;
+        challengeDescription: string | null;
+        difficultyStars: number;
+        metricName: string;
+        targetValue: number;
+        currentValue: number;
+      }
+    >();
 
-        return challenges
-          .map((challenge) => {
-            if (!challenge.metricDefinition || challenge.targetValue === null) {
-              return null;
-            }
+    for (const student of students) {
+      const studentPeriods = periods.filter(
+        (period) =>
+          period.studentId === student.id &&
+          period.status === MonthlyMetricPeriodStatus.CLOSED,
+      );
 
-            const matchingPeriods = studentPeriods
-              .map((period) => {
-                const currentValue = this.getMetricNumericValue(
-                  period.values,
-                  challenge.metricDefinition!.slug,
-                );
+      for (const challenge of challenges) {
+        if (!challenge.metricDefinition || challenge.targetValue === null) {
+          continue;
+        }
 
-                if (
-                  currentValue === null ||
-                  currentValue < Number(challenge.targetValue)
-                ) {
-                  return null;
-                }
+        const matchingPeriods = studentPeriods
+          .map((period) => {
+            const currentValue = this.getMetricNumericValue(
+              period.values,
+              challenge.metricDefinition!.slug,
+            );
 
-                return {
-                  period,
-                  currentValue,
-                };
-              })
-              .filter(
-                (
-                  achievement,
-                ): achievement is {
-                  period: (typeof studentPeriods)[number];
-                  currentValue: number;
-                } => achievement !== null,
-              )
-              .sort((left, right) => {
-                if (left.period.year !== right.period.year) {
-                  return right.period.year - left.period.year;
-                }
-
-                return right.period.month - left.period.month;
-              });
-
-            const latestAchievement = matchingPeriods[0];
-
-            if (!latestAchievement) {
+            if (
+              currentValue === null ||
+              currentValue < Number(challenge.targetValue)
+            ) {
               return null;
             }
 
             return {
-              id: `${student.id}:${challenge.id}:${latestAchievement.period.year}:${latestAchievement.period.month}`,
-              completedAt: new Date(
-                Date.UTC(
-                  latestAchievement.period.year,
-                  latestAchievement.period.month - 1,
-                  1,
-                ),
-              ).toISOString(),
-              month: latestAchievement.period.month,
-              year: latestAchievement.period.year,
-              studentId: student.id,
-              studentName: `${student.user.firstName} ${student.user.lastName}`,
-              studentEmail: student.user.email,
-              challengeId: challenge.id,
-              challengeTitle: challenge.title,
-              challengeDescription: challenge.description,
-              difficultyStars: challenge.difficultyStars,
-              metricName: challenge.metricDefinition.name,
-              targetValue: Number(challenge.targetValue),
-              currentValue: latestAchievement.currentValue,
+              period,
+              currentValue,
             };
           })
-          .filter((achievement) => achievement !== null);
-      })
+          .filter(
+            (
+              achievement,
+            ): achievement is {
+              period: (typeof studentPeriods)[number];
+              currentValue: number;
+            } => achievement !== null,
+          )
+          .sort((left, right) => {
+            if (left.period.year !== right.period.year) {
+              return right.period.year - left.period.year;
+            }
+
+            return right.period.month - left.period.month;
+          });
+
+        const latestAchievement = matchingPeriods[0];
+
+        if (!latestAchievement) {
+          continue;
+        }
+
+        completedAchievementMap.set(`${student.id}:${challenge.id}`, {
+          id: `${student.id}:${challenge.id}:${latestAchievement.period.year}:${latestAchievement.period.month}`,
+          completedAt: new Date(
+            Date.UTC(
+              latestAchievement.period.year,
+              latestAchievement.period.month - 1,
+              1,
+            ),
+          ).toISOString(),
+          month: latestAchievement.period.month,
+          year: latestAchievement.period.year,
+          studentId: student.id,
+          studentName: `${student.user.firstName} ${student.user.lastName}`,
+          studentEmail: student.user.email,
+          challengeId: challenge.id,
+          challengeTitle: challenge.title,
+          challengeDescription: challenge.description,
+          difficultyStars: challenge.difficultyStars,
+          metricName: challenge.metricDefinition.name,
+          targetValue: Number(challenge.targetValue),
+          currentValue: latestAchievement.currentValue,
+        });
+      }
+    }
+
+    for (const studentChallenge of completedStudentChallenges) {
+      const completedAt = studentChallenge.updatedAt ?? studentChallenge.createdAt;
+      const key = `${studentChallenge.studentId}:${studentChallenge.challengeId}`;
+      const month = completedAt.getUTCMonth() + 1;
+      const year = completedAt.getUTCFullYear();
+
+      completedAchievementMap.set(key, {
+        id: studentChallenge.id,
+        completedAt: completedAt.toISOString(),
+        month,
+        year,
+        studentId: studentChallenge.studentId,
+        studentName: `${studentChallenge.student.user.firstName} ${studentChallenge.student.user.lastName}`,
+        studentEmail: studentChallenge.student.user.email,
+        challengeId: studentChallenge.challengeId,
+        challengeTitle: studentChallenge.challenge.title,
+        challengeDescription: studentChallenge.challenge.description,
+        difficultyStars: studentChallenge.challenge.difficultyStars,
+        metricName: studentChallenge.isManualAssignment
+          ? 'Asignacion manual'
+          : (studentChallenge.challenge.metricDefinition?.name ?? 'Logro completado'),
+        targetValue: studentChallenge.challenge.targetValue
+          ? Number(studentChallenge.challenge.targetValue)
+          : 0,
+        currentValue: studentChallenge.challenge.targetValue
+          ? Number(studentChallenge.challenge.targetValue)
+          : 0,
+      });
+    }
+
+    const completedAchievements = Array.from(completedAchievementMap.values())
       .sort((left, right) => {
         const leftTime = new Date(left.completedAt).getTime();
         const rightTime = new Date(right.completedAt).getTime();
@@ -779,6 +847,7 @@ export class DashboardService {
         totalRevenueHistorical,
         totalRevenueLatestMonth,
         averageProgress,
+        totalUnlockedAchievements: completedAchievementMap.size,
       },
       studentOverview: studentStatusOverview,
       completedAchievements,
@@ -873,9 +942,20 @@ export class DashboardService {
       Number.isNaN(currentValue)
     ) {
       return {
-        currentValue,
+        currentValue:
+          baseStatus === ChallengeStatus.COMPLETED && target
+            ? target
+            : currentValue,
         progress: baseStatus === ChallengeStatus.COMPLETED ? 100 : 0,
         status: baseStatus,
+      };
+    }
+
+    if (baseStatus === ChallengeStatus.COMPLETED) {
+      return {
+        currentValue: Math.max(currentValue, target),
+        progress: 100,
+        status: ChallengeStatus.COMPLETED,
       };
     }
 

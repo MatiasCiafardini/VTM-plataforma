@@ -1,0 +1,2 @@
+ALTER TABLE "StudentChallenge"
+ADD COLUMN IF NOT EXISTS "isManualAssignment" BOOLEAN NOT NULL DEFAULT false;

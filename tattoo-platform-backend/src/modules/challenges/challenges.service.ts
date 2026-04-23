@@ -95,10 +95,21 @@ export class ChallengesService {
       data: {
         studentId: dto.studentId,
         challengeId: dto.challengeId,
+        isManualAssignment: true,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         status: dto.status,
       },
       include: this.studentChallengeInclude,
+    });
+  }
+
+  listManualAssignments() {
+    return this.prisma.studentChallenge.findMany({
+      where: {
+        isManualAssignment: true,
+      },
+      include: this.studentChallengeInclude,
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
@@ -146,6 +157,32 @@ export class ChallengesService {
       },
       include: this.studentChallengeInclude,
     });
+  }
+
+  async deleteManualStudentChallenge(
+    studentChallengeId: string,
+    actor: AuthenticatedUser,
+  ) {
+    if (actor.role !== UserRole.ADMIN) {
+      throw new ForbiddenException(
+        'Only admins can delete manual challenge assignments',
+      );
+    }
+
+    const studentChallenge =
+      await this.findStudentChallengeByIdOrThrow(studentChallengeId);
+
+    if (!studentChallenge.isManualAssignment) {
+      throw new ConflictException(
+        'Only manually assigned challenges can be removed here',
+      );
+    }
+
+    await this.prisma.studentChallenge.delete({
+      where: { id: studentChallengeId },
+    });
+
+    return { success: true };
   }
 
   private async ensureStudentAccess(

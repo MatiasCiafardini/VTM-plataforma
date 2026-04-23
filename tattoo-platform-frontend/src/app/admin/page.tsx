@@ -48,6 +48,7 @@ type AdminDashboard = {
     totalRevenueHistorical: number;
     totalRevenueLatestMonth: number;
     averageProgress: number;
+    totalUnlockedAchievements: number;
   };
   studentOverview: Array<{
     studentId: string;
@@ -144,6 +145,35 @@ type ChallengeTemplate = {
     difficultyStars: number;
     iconKey: string;
   } | null;
+};
+
+type StudentOption = {
+  id: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+};
+
+type ManualStudentChallenge = {
+  id: string;
+  status: string;
+  isManualAssignment: boolean;
+  assignedAt: string;
+  student: {
+    id: string;
+    user: {
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  };
+  challenge: {
+    id: string;
+    title: string;
+    difficultyStars: number;
+  };
 };
 
 type MetricDefinition = {
@@ -291,7 +321,7 @@ export default async function AdminPage({
   const params = searchParams ? await searchParams : undefined;
   const activeTab = resolveTab(params?.tab);
   const challengesView = params?.view === 'manage' ? 'manage' : 'wall';
-  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, adminSettings, groupMeetings, registrationCodes, notifications, adminProfile, currencies, adminNews] = await Promise.all([
+  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, challengeStudents, manualChallengeAssignments, adminSettings, groupMeetings, registrationCodes, notifications, adminProfile, currencies, adminNews] = await Promise.all([
     activeTab === 'dashboard' ||
     activeTab === 'results' ||
     (activeTab === 'challenges' && challengesView === 'wall')
@@ -311,6 +341,16 @@ export default async function AdminPage({
       : Promise.resolve([]),
     activeTab === 'challenges'
       ? backendFetch<MetricDefinition[]>('/metrics/definitions?includeInactive=false', {
+          token: session.token,
+        })
+      : Promise.resolve([]),
+    activeTab === 'challenges'
+      ? backendFetch<StudentOption[]>('/students', {
+          token: session.token,
+        })
+      : Promise.resolve([]),
+    activeTab === 'challenges'
+      ? backendFetch<ManualStudentChallenge[]>('/challenges/manual-assignments', {
           token: session.token,
         })
       : Promise.resolve([]),
@@ -558,9 +598,14 @@ export default async function AdminPage({
           <AdminChallengesPanel
             initialChallenges={challengeTemplates}
             metricDefinitions={metricDefinitions}
+            students={challengeStudents}
+            initialManualAssignments={manualChallengeAssignments}
           />
         ) : data ? (
-          <AdminAchievementsWall achievements={data.completedAchievements} />
+          <AdminAchievementsWall
+            achievements={data.completedAchievements}
+            totalUnlockedAchievements={data.summary.totalUnlockedAchievements}
+          />
         ) : null
       ) : null}
 

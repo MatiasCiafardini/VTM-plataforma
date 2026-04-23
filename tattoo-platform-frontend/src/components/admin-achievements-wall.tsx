@@ -60,8 +60,10 @@ function renderStars(stars: number) {
 
 export function AdminAchievementsWall({
   achievements,
+  totalUnlockedAchievements,
 }: {
   achievements: AchievementItem[];
+  totalUnlockedAchievements: number;
 }) {
   return (
     <section className="admin-achievements-shell">
@@ -85,6 +87,13 @@ export function AdminAchievementsWall({
           Gestionar desafios
         </Link>
       </header>
+
+      <article className="admin-challenges-intro-card">
+        <p>
+          Los alumnos ya desbloquearon <strong>{totalUnlockedAchievements}</strong>{' '}
+          logros en total dentro de la plataforma.
+        </p>
+      </article>
 
       {achievements.length === 0 ? (
         <article className="admin-achievement-card admin-achievement-card-empty">

@@ -314,6 +314,7 @@ export class NotificationsService {
           create: {
             studentId: period.studentId,
             challengeId: challenge.id,
+            isManualAssignment: false,
             status: ChallengeStatus.COMPLETED,
             assignedAt:
               period.closedAt ?? period.submittedAt ?? period.updatedAt,

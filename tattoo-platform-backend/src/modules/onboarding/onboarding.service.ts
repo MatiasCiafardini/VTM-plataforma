@@ -927,6 +927,7 @@ export class OnboardingService {
         create: {
           studentId,
           challengeId: step.challengeId,
+          isManualAssignment: false,
           status: ChallengeStatus.COMPLETED,
         },
       });

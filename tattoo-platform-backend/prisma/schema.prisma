@@ -426,6 +426,7 @@ model StudentChallenge {
   id          String          @id @default(cuid())
   studentId   String
   challengeId String
+  isManualAssignment Boolean   @default(false)
   assignedAt  DateTime        @default(now())
   dueDate     DateTime?
   status      ChallengeStatus @default(ASSIGNED)
