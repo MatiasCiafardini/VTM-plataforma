@@ -45,7 +45,7 @@ type AdminSettings = {
   };
 };
 
-type TabKey = 'users' | 'metrics' | 'notifications' | 'meetings' | 'codes' | 'noticias';
+type TabKey = 'metrics' | 'notifications' | 'meetings' | 'codes' | 'noticias';
 
 const tabMeta: Array<{
   key: TabKey;
@@ -53,13 +53,6 @@ const tabMeta: Array<{
   eyebrow: string;
   description: string;
 }> = [
-  {
-    key: 'users',
-    title: 'Operacion de usuarios',
-    eyebrow: 'Altas y estados',
-    description:
-      'Define estados iniciales y como se interpreta la inactividad dentro de la plataforma.',
-  },
   {
     key: 'metrics',
     title: 'Configuracion de metricas',
@@ -109,7 +102,7 @@ export function AdminOperationsPanel({
   initialNews: NewsItem[];
 }) {
   const [settings, setSettings] = useState(initialSettings);
-  const [activeTab, setActiveTab] = useState<TabKey>('users');
+  const [activeTab, setActiveTab] = useState<TabKey>('metrics');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -216,13 +209,11 @@ export function AdminOperationsPanel({
             <div className="admin-settings-panel-hint">
               <strong>Vista actual</strong>
               <span>
-                {activeTab === 'users'
-                  ? 'Altas, defaults y lectura de estado.'
-                  : activeTab === 'metrics'
-                    ? 'Slugs, puntos de riesgo y umbrales del score.'
-                    : activeTab === 'notifications'
-                      ? 'Alertas del header y automatizaciones.'
-                      : activeTab === 'codes'
+                {activeTab === 'metrics'
+                  ? 'Slugs, puntos de riesgo y umbrales del score.'
+                  : activeTab === 'notifications'
+                    ? 'Alertas del header y automatizaciones.'
+                    : activeTab === 'codes'
                     ? 'Codigos activos, roles y conteo de usos.'
                     : activeTab === 'noticias'
                     ? 'Novedades publicadas y borradores.'
@@ -230,102 +221,6 @@ export function AdminOperationsPanel({
               </span>
             </div>
           </div>
-
-          {activeTab === 'users' ? (
-            <div className="admin-settings-section">
-              <div className="admin-settings-grid">
-                <label>
-                  <span>Estado por defecto de alumnos</span>
-                  <select
-                    value={settings.userOperations.defaultStudentStatus}
-                    onChange={(event) =>
-                      updateSection(
-                        'userOperations',
-                        'defaultStudentStatus',
-                        event.target.value as 'ACTIVE' | 'INACTIVE',
-                      )
-                    }
-                  >
-                    <option value="ACTIVE">Activo</option>
-                    <option value="INACTIVE">Inactivo</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Estado por defecto de mentores</span>
-                  <select
-                    value={settings.userOperations.defaultMentorStatus}
-                    onChange={(event) =>
-                      updateSection(
-                        'userOperations',
-                        'defaultMentorStatus',
-                        event.target.value as 'ACTIVE' | 'INACTIVE',
-                      )
-                    }
-                  >
-                    <option value="ACTIVE">Activo</option>
-                    <option value="INACTIVE">Inactivo</option>
-                  </select>
-                </label>
-
-                <label>
-                  <span>Dias de inactividad</span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={settings.userOperations.inactivityThresholdDays}
-                    onChange={(event) =>
-                      updateSection(
-                        'userOperations',
-                        'inactivityThresholdDays',
-                        Number(event.target.value),
-                      )
-                    }
-                  />
-                </label>
-
-                <label>
-                  <span>Etiqueta estado bueno</span>
-                  <input
-                    type="text"
-                    value={settings.userOperations.goodStandingLabel}
-                    onChange={(event) =>
-                      updateSection('userOperations', 'goodStandingLabel', event.target.value)
-                    }
-                  />
-                </label>
-
-                <label>
-                  <span>Etiqueta estado en riesgo</span>
-                  <input
-                    type="text"
-                    value={settings.userOperations.riskStandingLabel}
-                    onChange={(event) =>
-                      updateSection('userOperations', 'riskStandingLabel', event.target.value)
-                    }
-                  />
-                </label>
-
-                <label>
-                  <span>Codigo de registro para alumnos</span>
-                  <input
-                    type="text"
-                    value={settings.userOperations.studentRegistrationCode}
-                    onChange={(event) =>
-                      updateSection(
-                        'userOperations',
-                        'studentRegistrationCode',
-                        event.target.value,
-                      )
-                    }
-                  />
-                  <small>
-                    Este codigo se pide en la pantalla de registro y lo puedes cambiar cuando quieras.
-                  </small>
-                </label>
-              </div>
-            </div>
-          ) : null}
 
           {activeTab === 'metrics' ? (
             <div className="admin-settings-section">
