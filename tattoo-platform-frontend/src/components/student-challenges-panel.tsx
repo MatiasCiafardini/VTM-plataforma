@@ -7,6 +7,7 @@ type StudentChallengeItem = {
   id: string;
   status: string;
   dueDate: string | null;
+  progress: number;
   challenge: {
     title: string;
     description: string | null;
@@ -65,22 +66,6 @@ function RibbonIcon() {
 
 function clampProgress(value: number) {
   return Math.max(0, Math.min(100, value));
-}
-
-function getChallengeProgress(challenge: StudentChallengeItem, index: number) {
-  if (challenge.status === "COMPLETED") {
-    return 100;
-  }
-
-  if (challenge.status === "IN_PROGRESS") {
-    return [57, 63, 72][index % 3];
-  }
-
-  if (challenge.status === "ASSIGNED") {
-    return [18, 24, 31][index % 3];
-  }
-
-  return 0;
 }
 
 function getStatusCopy(status: string, progress: number) {
@@ -185,8 +170,8 @@ export function StudentChallengesPanel({
     null,
   );
   const [isSharing, setIsSharing] = useState(false);
-  const normalized = challenges.map((challenge, index) => {
-    const progress = clampProgress(getChallengeProgress(challenge, index));
+  const normalized = challenges.map((challenge) => {
+    const progress = clampProgress(challenge.progress ?? 0);
     return {
       ...challenge,
       progress,
