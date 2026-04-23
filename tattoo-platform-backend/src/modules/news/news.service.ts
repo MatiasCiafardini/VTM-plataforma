@@ -34,10 +34,17 @@ export class NewsService {
     });
 
     if (dto.notifyStudents !== false && news.isPublished) {
-      await this.notificationsService.notifyNewsPublished({
-        newsId: news.id,
-        newsTitle: news.title,
-      });
+      try {
+        await this.notificationsService.notifyNewsPublished({
+          newsId: news.id,
+          newsTitle: news.title,
+        });
+      } catch (error) {
+        console.error('News created but student notifications failed', {
+          newsId: news.id,
+          error,
+        });
+      }
     }
 
     return news;
