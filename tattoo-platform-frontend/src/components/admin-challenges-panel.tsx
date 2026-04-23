@@ -89,6 +89,7 @@ export function AdminChallengesPanel({
   const [challenges, setChallenges] = useState(initialChallenges);
   const [metricDefinitionId, setMetricDefinitionId] = useState(metricDefinitions[0]?.id ?? '');
   const [targetValue, setTargetValue] = useState('');
+  const [customTitle, setCustomTitle] = useState('');
   const [difficultyStars, setDifficultyStars] = useState(3);
   const [description, setDescription] = useState('');
   const [iconKey, setIconKey] = useState('trophy');
@@ -105,7 +106,7 @@ export function AdminChallengesPanel({
     [metricDefinitionId, metricDefinitions],
   );
 
-  const generatedTitle = buildChallengeTitle(selectedMetric ?? undefined, targetValue);
+  const generatedTitle = customTitle.trim() || buildChallengeTitle(selectedMetric ?? undefined, targetValue);
   const generatedDescription = description.trim()
     ? description.trim()
     : buildChallengeDescription(selectedMetric ?? undefined, targetValue, difficultyStars);
@@ -117,6 +118,7 @@ export function AdminChallengesPanel({
     setEditingId(challenge.id);
     setMetricDefinitionId(challenge.metricDefinition?.id ?? '');
     setTargetValue(challenge.targetValue !== null ? String(challenge.targetValue) : '');
+    setCustomTitle(challenge.title);
     setDifficultyStars(challenge.difficultyStars);
     setDescription(challenge.description ?? '');
     setIconKey(challenge.iconKey || 'trophy');
@@ -131,6 +133,7 @@ export function AdminChallengesPanel({
     setEditingId(null);
     setMetricDefinitionId(metricDefinitions[0]?.id ?? '');
     setTargetValue('');
+    setCustomTitle('');
     setDifficultyStars(3);
     setDescription('');
     setIconKey('trophy');
@@ -254,6 +257,16 @@ export function AdminChallengesPanel({
                 </option>
               ))}
             </select>
+          </label>
+
+          <label>
+            <span>Nombre del desafio (personalizado)</span>
+            <input
+              type="text"
+              value={customTitle}
+              onChange={(event) => setCustomTitle(event.target.value)}
+              placeholder={buildChallengeTitle(selectedMetric ?? undefined, targetValue) || 'Se genera automaticamente'}
+            />
           </label>
 
           <label>
