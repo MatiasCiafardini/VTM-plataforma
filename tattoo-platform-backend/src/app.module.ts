@@ -12,6 +12,7 @@ import { CurrencyModule } from './modules/currency/currency.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { EventsModule } from './modules/events/events.module';
 import { GroupMeetingsModule } from './modules/group-meetings/group-meetings.module';
+import { NewsModule } from './modules/news/news.module';
 import { RegistrationCodesModule } from './modules/registration-codes/registration-codes.module';
 import { GoalsModule } from './modules/goals/goals.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
@@ -49,6 +50,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DashboardModule,
     EventsModule,
     GroupMeetingsModule,
+    NewsModule,
     RegistrationCodesModule,
     AuditModule,
     IntegrationsModule,

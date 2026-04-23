@@ -342,6 +342,24 @@ export class NotificationsService {
     }
   }
 
+  async notifyNewsPublished(params: { newsId: string; newsTitle: string }) {
+    const students = await this.prisma.user.findMany({
+      where: { status: UserStatus.ACTIVE, role: UserRole.STUDENT },
+      select: { id: true },
+    });
+
+    for (const student of students) {
+      await this.createNotification({
+        type: NotificationType.NEWS_PUBLISHED,
+        recipientUserId: student.id,
+        title: 'Nueva novedad publicada',
+        message: params.newsTitle,
+        dedupeKey: `news:${params.newsId}:${student.id}`,
+        metadata: { newsId: params.newsId },
+      });
+    }
+  }
+
   private async createNotification(data: {
     type: NotificationType;
     title: string;

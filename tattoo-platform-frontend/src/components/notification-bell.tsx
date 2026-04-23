@@ -27,6 +27,18 @@ function formatNotificationDate(value: string) {
 }
 
 function getDestination(role: AppRole, notification: NotificationItem) {
+  if (notification.type === 'NEWS_PUBLISHED') {
+    if (role === 'STUDENT') {
+      return '/student';
+    }
+
+    if (role === 'MENTOR') {
+      return '/mentor';
+    }
+
+    return '/admin?tab=settings';
+  }
+
   if (notification.type === 'ACHIEVEMENT_COMPLETED') {
     if (role === 'STUDENT') {
       return '/student?tab=challenges';

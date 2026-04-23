@@ -9,6 +9,7 @@ import {
   AdminRegistrationCodesPanel,
   type RegistrationCode,
 } from './admin-registration-codes-panel';
+import { AdminNewsPanel, type NewsItem } from './admin-news-panel';
 
 type AdminSettings = {
   userOperations: {
@@ -44,7 +45,7 @@ type AdminSettings = {
   };
 };
 
-type TabKey = 'users' | 'metrics' | 'notifications' | 'meetings' | 'codes';
+type TabKey = 'users' | 'metrics' | 'notifications' | 'meetings' | 'codes' | 'noticias';
 
 const tabMeta: Array<{
   key: TabKey;
@@ -87,16 +88,25 @@ const tabMeta: Array<{
     description:
       'Crea y administra los codigos que permiten registrarse con cada rol de la plataforma.',
   },
+  {
+    key: 'noticias',
+    title: 'Novedades',
+    eyebrow: 'Panel de noticias',
+    description:
+      'Publica novedades que aparecen en el dashboard de los alumnos. Podes notificarlos al instante.',
+  },
 ];
 
 export function AdminOperationsPanel({
   initialSettings,
   initialMeetings,
   initialCodes,
+  initialNews,
 }: {
   initialSettings: AdminSettings;
   initialMeetings: GroupMeeting[];
   initialCodes: RegistrationCode[];
+  initialNews: NewsItem[];
 }) {
   const [settings, setSettings] = useState(initialSettings);
   const [activeTab, setActiveTab] = useState<TabKey>('users');
@@ -195,7 +205,7 @@ export function AdminOperationsPanel({
 
         <form
           className="admin-settings-panel"
-          onSubmit={activeTab === 'meetings' || activeTab === 'codes' ? (event) => event.preventDefault() : handleSubmit}
+          onSubmit={activeTab === 'meetings' || activeTab === 'codes' || activeTab === 'noticias' ? (event) => event.preventDefault() : handleSubmit}
         >
           <div className="admin-settings-panel-header">
             <div>
@@ -214,6 +224,8 @@ export function AdminOperationsPanel({
                       ? 'Alertas del header y automatizaciones.'
                       : activeTab === 'codes'
                     ? 'Codigos activos, roles y conteo de usos.'
+                    : activeTab === 'noticias'
+                    ? 'Novedades publicadas y borradores.'
                     : 'Agenda del grupo visible para todos los alumnos.'}
               </span>
             </div>
@@ -459,7 +471,11 @@ export function AdminOperationsPanel({
             <AdminRegistrationCodesPanel initialCodes={initialCodes} />
           ) : null}
 
-          {activeTab !== 'meetings' && activeTab !== 'codes' ? (
+          {activeTab === 'noticias' ? (
+            <AdminNewsPanel initialNews={initialNews} />
+          ) : null}
+
+          {activeTab !== 'meetings' && activeTab !== 'codes' && activeTab !== 'noticias' ? (
             <>
               {message ? <p className="student-results-form-success">{message}</p> : null}
               {error ? <p className="student-results-form-error">{error}</p> : null}

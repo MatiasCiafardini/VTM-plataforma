@@ -210,6 +210,15 @@ type RegistrationCode = {
   createdAt: string;
 };
 
+type NewsItem = {
+  id: string;
+  title: string;
+  body: string;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 type NotificationItem = {
   id: string;
   type: string;
@@ -282,7 +291,7 @@ export default async function AdminPage({
   const params = searchParams ? await searchParams : undefined;
   const activeTab = resolveTab(params?.tab);
   const challengesView = params?.view === 'manage' ? 'manage' : 'wall';
-  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, adminSettings, groupMeetings, registrationCodes, notifications, adminProfile, currencies] = await Promise.all([
+  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, adminSettings, groupMeetings, registrationCodes, notifications, adminProfile, currencies, adminNews] = await Promise.all([
     activeTab === 'dashboard' ||
     activeTab === 'results' ||
     (activeTab === 'challenges' && challengesView === 'wall')
@@ -352,6 +361,14 @@ export default async function AdminPage({
       ? backendFetch<Currency[]>('/currency/currencies', {
           token: session.token,
         })
+      : Promise.resolve([]),
+    activeTab === 'settings'
+      ? safeBackendFetch<NewsItem[]>(
+          '/news',
+          [],
+          { token: session.token },
+          'admin news',
+        )
       : Promise.resolve([]),
   ]);
   const studentsNeedingAttention = [...(data?.studentOverview ?? [])]
@@ -577,6 +594,7 @@ export default async function AdminPage({
           initialSettings={adminSettings}
           initialMeetings={groupMeetings}
           initialCodes={registrationCodes}
+          initialNews={adminNews}
         />
       ) : activeTab === 'settings' ? (
         <article className="list-card">

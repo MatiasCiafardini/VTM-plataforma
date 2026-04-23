@@ -162,6 +162,14 @@ type QuickLink = {
   url: string;
 };
 
+type NewsItem = {
+  id: string;
+  title: string;
+  body: string;
+  isPublished: boolean;
+  createdAt: string;
+};
+
 function resolveTab(tab?: string): TabKey {
   if (
     tab === 'results' ||
@@ -232,7 +240,7 @@ export default async function StudentPage({
   const session = await requireRole('STUDENT');
   const params = searchParams ? await searchParams : undefined;
   const activeTab = resolveTab(params?.tab);
-  const [data, metricDefinitions, ownProfile, quickLinks, currencies, notifications] = await Promise.all([
+  const [data, metricDefinitions, ownProfile, quickLinks, currencies, notifications, publishedNews] = await Promise.all([
     activeTab === 'dashboard' || activeTab === 'results' || activeTab === 'challenges' || activeTab === 'profile'
       ? backendFetch<StudentDashboard>('/dashboard/student', {
           token: session.token,
@@ -266,6 +274,14 @@ export default async function StudentPage({
       },
       'student notifications',
     ),
+    activeTab === 'dashboard'
+      ? safeBackendFetch<NewsItem[]>(
+          '/news/published',
+          [],
+          { token: session.token },
+          'student news',
+        )
+      : Promise.resolve([]),
   ]);
 
   const latestRevenue = data?.latestMetrics.ingresosFacturacion ?? 0;
@@ -408,6 +424,37 @@ export default async function StudentPage({
             <ExternalToolPromo tool={EXTERNAL_TOOLS['mentoring-videos']} />
             <ExternalToolPromo tool={EXTERNAL_TOOLS['sales-simulator']} />
           </section>
+
+          {publishedNews.length > 0 ? (
+            <section className="student-calendar-shell">
+              <header className="student-calendar-header">
+                <div>
+                  <h3>Novedades</h3>
+                  <p>Ultimas noticias y anuncios del equipo VMT.</p>
+                </div>
+              </header>
+
+              <div className="student-group-meeting-list">
+                {publishedNews.map((item) => (
+                  <article key={item.id} className="student-calendar-card student-group-meeting-card">
+                    <div className="student-group-meeting-head">
+                      <div>
+                        <strong>{item.title}</strong>
+                        <p>
+                          {new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium' }).format(
+                            new Date(item.createdAt),
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="student-group-meeting-description">
+                      {item.body}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <section className="student-calendar-shell">
             <header className="student-calendar-header">

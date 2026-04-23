@@ -82,6 +82,7 @@ enum NotificationType {
   METRIC_REMINDER
   ACHIEVEMENT_COMPLETED
   ATTENTION_RISK
+  NEWS_PUBLISHED
 }
 
 enum OnboardingStepKind {
@@ -635,6 +636,15 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+model News {
+  id          String   @id @default(cuid())
+  title       String
+  body        String   @db.Text
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Notification {

@@ -1890,6 +1890,7 @@ h3 {
 
 .student-group-meeting-description {
   line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .student-group-meeting-meta {
@@ -6513,4 +6514,15 @@ body {
   .student-profile-info-list > div {
     grid-template-columns: 1fr;
   }
+}
+
+/* News panel */
+.admin-news-body {
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.admin-news-date {
+  opacity: 0.5;
+  font-size: 0.8rem;
 }
