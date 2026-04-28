@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
 import {
+  formatAttentionLevelLabel,
   formatCompactNumber,
   getStatusClass,
 } from '@/components/dashboard-utils';
@@ -166,9 +168,12 @@ export default async function MentorPage({
                   <h3>{student.name}</h3>
                   <p className="muted">{student.email}</p>
                   {student.country ? <p className="muted">{student.country}</p> : null}
+                  <Link className="ghost-button student-management-profile-link" href={`/admin/students/${student.studentId}`}>
+                    Ver perfil completo
+                  </Link>
                 </div>
                 <span className={getStatusClass(student.attentionLevel)}>
-                  {student.attentionLevel ?? 'GREEN'}
+                  {formatAttentionLevelLabel(student.attentionLevel)}
                 </span>
               </div>
               <div className="result-points">
@@ -257,7 +262,7 @@ export default async function MentorPage({
               <div>
                 <span className="list-row-label">Atencion</span>
                 <span className={getStatusClass(student.attentionLevel)}>
-                  {student.attentionLevel ?? 'GREEN'}
+                  {formatAttentionLevelLabel(student.attentionLevel)}
                 </span>
               </div>
               <div>
@@ -278,10 +283,13 @@ export default async function MentorPage({
                   <p className="eyebrow">Perfil del alumno</p>
                   <h3>{student.name}</h3>
                   <p className="muted">{student.email}</p>
+                  <Link className="ghost-button student-management-profile-link" href={`/admin/students/${student.studentId}`}>
+                    Ver perfil completo
+                  </Link>
                 </div>
                 <div className="stacked-status">
                   <span className={getStatusClass(student.attentionLevel)}>
-                    {student.attentionLevel ?? 'GREEN'}
+                    {formatAttentionLevelLabel(student.attentionLevel)}
                   </span>
                   <strong>{student.attentionScore ?? 0} pts</strong>
                 </div>

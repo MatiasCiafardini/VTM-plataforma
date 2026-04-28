@@ -25,6 +25,22 @@ export function getStatusClass(level: string | null) {
   return 'status-chip status-neutral';
 }
 
+export function formatAttentionLevelLabel(level: string | null) {
+  if (level === 'RED') {
+    return 'En riesgo';
+  }
+
+  if (level === 'YELLOW') {
+    return 'En seguimiento';
+  }
+
+  if (level === 'GREEN') {
+    return 'Positivo';
+  }
+
+  return 'Neutral';
+}
+
 export function formatCompactNumber(value: number | null) {
   if (value === null) {
     return '-';

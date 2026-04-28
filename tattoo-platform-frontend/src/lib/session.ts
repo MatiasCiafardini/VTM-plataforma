@@ -51,6 +51,16 @@ export async function requireRole(role: AppRole) {
   return session;
 }
 
+export async function requireAnyRole(roles: AppRole[]) {
+  const session = await requireSession();
+
+  if (!roles.includes(session.role)) {
+    redirect(getDashboardPath(session.role));
+  }
+
+  return session;
+}
+
 export function getDashboardPath(role: AppRole) {
   if (role === 'ADMIN') {
     return '/admin';

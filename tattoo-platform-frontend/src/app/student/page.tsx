@@ -1,5 +1,6 @@
 import { AppShell } from '@/components/app-shell';
 import {
+  formatAttentionLevelLabel,
   getStatusClass,
 } from '@/components/dashboard-utils';
 import { StudentResultsPanel } from '@/components/student-results-panel';
@@ -472,7 +473,7 @@ export default async function StudentPage({
               <div className="student-calendar-badge">
                 <span>Atencion</span>
                 <strong className={getStatusClass(data.summary.attentionLevel)}>
-                  {data.summary.attentionLevel ?? 'GREEN'}
+                  {formatAttentionLevelLabel(data.summary.attentionLevel)}
                 </strong>
               </div>
             </header>

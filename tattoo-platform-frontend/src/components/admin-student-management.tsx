@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useDeferredValue, useMemo, useState } from 'react';
+import { formatAttentionLevelLabel } from './dashboard-utils';
 
 type StudentOverview = {
   studentId: string;
@@ -215,7 +216,7 @@ export function AdminStudentManagement({
                   <div className="student-management-risk-callout">
                     <div className="student-management-risk-callout-header">
                       <strong>{student.riskSummary.headline}</strong>
-                      <span>{student.attentionLevel ?? 'GREEN'}</span>
+                      <span>{formatAttentionLevelLabel(student.attentionLevel)}</span>
                     </div>
                     <ul className="student-management-risk-list">
                       {student.riskSummary.items.map((item) => (
@@ -259,7 +260,7 @@ export function AdminStudentManagement({
                   <div className="student-management-risk-callout">
                     <div className="student-management-risk-callout-header">
                       <strong>{student.riskSummary.headline}</strong>
-                      <span>{student.attentionLevel ?? 'GREEN'}</span>
+                      <span>{formatAttentionLevelLabel(student.attentionLevel)}</span>
                     </div>
                     <ul className="student-management-risk-list">
                       {student.riskSummary.items.map((item) => (

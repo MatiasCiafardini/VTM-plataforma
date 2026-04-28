@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
 import { ChallengeIcon } from '@/components/challenge-icons';
 import { safeBackendFetch } from '@/lib/server-fetch';
-import { requireRole } from '@/lib/session';
+import { requireAnyRole } from '@/lib/session';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -66,15 +66,41 @@ type MetricPeriod = {
   month: number;
   year: number;
   status: string;
+  submittedAt: string | null;
+  closedAt: string | null;
+  updatedAt: string;
   values: Array<{
     id: string;
-    value: string | null;
+    numberValue: string | number | null;
+    textValue: string | null;
+    booleanValue: boolean | null;
+    originalAmount: string | number | null;
+    usdAmount: string | number | null;
+    originalCurrency: { code: string; symbol: string | null } | null;
     metricDefinition: {
       name: string;
       slug: string;
-      valueType: string;
+      valueType: 'INTEGER' | 'DECIMAL' | 'CURRENCY' | 'TEXT' | 'BOOLEAN';
+      isRequired: boolean;
+      category: {
+        name: string;
+        slug: string;
+      };
     };
   }>;
+};
+
+type MetricDefinition = {
+  id: string;
+  name: string;
+  slug: string;
+  valueType: 'INTEGER' | 'DECIMAL' | 'CURRENCY' | 'TEXT' | 'BOOLEAN';
+  isRequired: boolean;
+  isActive: boolean;
+  category: {
+    name: string;
+    slug: string;
+  };
 };
 
 type NotificationItem = {
@@ -152,18 +178,148 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatCurrencyWithCode(value: number, currencyCode: string) {
+  return new Intl.NumberFormat(currencyCode === 'USD' ? 'en-US' : 'es-AR', {
+    style: 'currency',
+    currency: currencyCode,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('es-AR', {
+    maximumFractionDigits: Number.isInteger(value) ? 0 : 2,
+  }).format(value);
+}
+
 function renderStars(stars: number) {
   return '★'.repeat(stars) + '☆'.repeat(Math.max(0, 5 - stars));
+}
+
+function toNumber(value: string | number | null | undefined) {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getMetricNumber(value: MetricPeriod['values'][number] | null) {
+  if (!value) return null;
+  return toNumber(value.usdAmount ?? value.originalAmount ?? value.numberValue);
+}
+
+function hasMetricValue(value: MetricPeriod['values'][number]) {
+  return (
+    value.numberValue !== null ||
+    value.textValue !== null ||
+    value.booleanValue !== null ||
+    value.originalAmount !== null ||
+    value.usdAmount !== null
+  );
+}
+
+function formatMetricValue(value: MetricPeriod['values'][number]) {
+  if (value.metricDefinition.valueType === 'BOOLEAN') {
+    return value.booleanValue ? 'Si' : 'No';
+  }
+
+  if (value.metricDefinition.valueType === 'TEXT') {
+    return value.textValue?.trim() || 'Sin dato';
+  }
+
+  if (value.metricDefinition.valueType === 'CURRENCY') {
+    const original = toNumber(value.originalAmount);
+    const usd = toNumber(value.usdAmount);
+    const currencyCode = value.originalCurrency?.code ?? 'USD';
+
+    if (original === null && usd === null) {
+      return 'Sin dato';
+    }
+
+    if (original !== null && currencyCode !== 'USD') {
+      const local = formatCurrencyWithCode(original, currencyCode);
+      return usd !== null ? `${local} / ${formatCurrencyWithCode(usd, 'USD')}` : local;
+    }
+
+    return formatCurrencyWithCode(usd ?? original ?? 0, 'USD');
+  }
+
+  const numeric = toNumber(value.numberValue);
+  return numeric === null ? 'Sin dato' : formatNumber(numeric);
+}
+
+function groupValuesByCategory(values: MetricPeriod['values']) {
+  const groups = new Map<string, { name: string; values: MetricPeriod['values'] }>();
+
+  for (const value of values) {
+    const category = value.metricDefinition.category;
+    const key = category?.slug ?? 'sin-categoria';
+    const existing = groups.get(key);
+
+    if (existing) {
+      existing.values.push(value);
+    } else {
+      groups.set(key, {
+        name: category?.name ?? 'Sin categoria',
+        values: [value],
+      });
+    }
+  }
+
+  return Array.from(groups.values());
+}
+
+function getMetricBySlug(period: MetricPeriod, slug: string) {
+  return period.values.find((value) => value.metricDefinition.slug === slug) ?? null;
+}
+
+function buildPeriodReview(period: MetricPeriod, definitions: MetricDefinition[]) {
+  const presentSlugs = new Set(
+    period.values.filter(hasMetricValue).map((value) => value.metricDefinition.slug),
+  );
+  const missingRequired = definitions.filter(
+    (definition) => definition.isActive && definition.isRequired && !presentSlugs.has(definition.slug),
+  );
+  const issues: string[] = [];
+
+  if (missingRequired.length > 0) {
+    issues.push(`Faltan metricas obligatorias: ${missingRequired.map((item) => item.name).join(', ')}.`);
+  }
+
+  const leads = getMetricNumber(getMetricBySlug(period, 'consultas-mensuales'));
+  const quotes = getMetricNumber(getMetricBySlug(period, 'cotizaciones'));
+  const closures = getMetricNumber(getMetricBySlug(period, 'cierres-del-mes'));
+  const newClients = getMetricNumber(getMetricBySlug(period, 'cierres-nuevos-clientes')) ?? 0;
+  const recommendations = getMetricNumber(getMetricBySlug(period, 'cierres-por-recomendaciones')) ?? 0;
+  const recurring = getMetricNumber(getMetricBySlug(period, 'cierres-recurrentes')) ?? 0;
+  const closureOrigins = newClients + recommendations + recurring;
+
+  if (leads !== null && quotes !== null && quotes > leads) {
+    issues.push('Hay mas cotizaciones que consultas mensuales.');
+  }
+
+  if (leads !== null && closures !== null && closures > leads) {
+    issues.push('Hay mas cierres que consultas mensuales.');
+  }
+
+  if (closures !== null && closureOrigins > 0 && closureOrigins !== closures) {
+    issues.push(`Los origenes de cierres suman ${formatNumber(closureOrigins)} y el total declarado es ${formatNumber(closures)}.`);
+  }
+
+  return issues;
 }
 
 function getRevenueHistory(periods: MetricPeriod[]) {
   return periods
     .map((period) => {
-      const revenueValue = period.values.find((v) => v.metricDefinition.valueType === 'CURRENCY');
+      const revenueValue =
+        period.values.find((v) => v.metricDefinition.slug === 'ingresos-facturacion') ??
+        period.values.find((v) => v.metricDefinition.valueType === 'CURRENCY');
+      const revenue = getMetricNumber(revenueValue ?? null);
       return {
         month: period.month,
         year: period.year,
-        revenue: revenueValue?.value ? Number(revenueValue.value) : null,
+        revenue,
         label: getMonthLabel(period.month, period.year),
       };
     })
@@ -227,10 +383,12 @@ export default async function StudentProfilePage({
 }: {
   params: Promise<{ studentId: string }>;
 }) {
-  const session = await requireRole('ADMIN');
+  const session = await requireAnyRole(['ADMIN', 'MENTOR']);
   const { studentId } = await params;
+  const attentionScoresPath =
+    session.role === 'MENTOR' ? '/attention-scores/mentor' : '/attention-scores/admin';
 
-  const [profile, challenges, periods, notifications, attentionScores, onboarding] = await Promise.all([
+  const [profile, challenges, periods, metricDefinitions, notifications, attentionScores, onboarding] = await Promise.all([
     safeBackendFetch<StudentProfile | null>(
       `/students/${studentId}`,
       null,
@@ -249,6 +407,12 @@ export default async function StudentProfilePage({
       { token: session.token },
       'student periods',
     ),
+    safeBackendFetch<MetricDefinition[]>(
+      '/metrics/definitions?includeInactive=false',
+      [],
+      { token: session.token },
+      'metric definitions',
+    ),
     safeBackendFetch<NotificationItem[]>(
       '/notifications',
       [],
@@ -256,7 +420,7 @@ export default async function StudentProfilePage({
       'admin notifications',
     ),
     safeBackendFetch<AttentionScore[]>(
-      '/attention-scores/admin',
+      attentionScoresPath,
       [],
       { token: session.token },
       'attention scores',
@@ -283,6 +447,12 @@ export default async function StudentProfilePage({
   const riskInfo = getRiskInfo(riskScore);
   const mentors = profile.mentorAssignments.map((a) => a.mentor.user);
   const fullName = `${profile.user.firstName} ${profile.user.lastName}`;
+  const completedPeriods = periods.filter(
+    (period) => period.status === 'SUBMITTED' || period.status === 'CLOSED',
+  );
+  const backHref = session.role === 'MENTOR' ? '/mentor?tab=profile' : '/admin?tab=results';
+  const backLabel =
+    session.role === 'MENTOR' ? 'Volver a mis alumnos' : 'Volver a gestion de alumnos';
 
   return (
     <AppShell
@@ -290,15 +460,15 @@ export default async function StudentProfilePage({
       subtitle=""
       role={session.role}
       displayName={session.displayName}
-      activeNav="results"
+      activeNav={session.role === 'MENTOR' ? 'profile' : 'results'}
       showSectionEyebrow={false}
       notifications={notifications}
     >
       <div className="student-profile-page">
 
         {/* Back nav */}
-        <Link href="/admin?tab=results" className="student-profile-back-link">
-          ← Volver a gestion de alumnos
+        <Link href={backHref} className="student-profile-back-link" aria-label={backLabel}>
+          &larr; {backLabel}
         </Link>
 
         {/* Hero */}
@@ -430,6 +600,77 @@ export default async function StudentProfilePage({
               </div>
             </section>
           ) : null}
+
+          <section className="student-profile-section">
+            <h3 className="student-profile-section-title">
+              Meses completos cargados
+              <span className="student-profile-section-count">{completedPeriods.length}</span>
+            </h3>
+            {completedPeriods.length > 0 ? (
+              <div className="student-profile-month-detail-list">
+                {completedPeriods.map((period) => {
+                  const issues = buildPeriodReview(period, metricDefinitions);
+                  const groupedValues = groupValuesByCategory(period.values);
+
+                  return (
+                    <details className="student-profile-month-detail" key={period.id}>
+                      <summary className="student-profile-month-summary">
+                        <div>
+                          <strong>{getMonthLabel(period.month, period.year)}</strong>
+                          <span>{period.status === 'CLOSED' ? 'Cerrado' : 'Enviado'}</span>
+                        </div>
+                        <div className="student-profile-month-summary-meta">
+                          <span>{period.values.filter(hasMetricValue).length} metricas</span>
+                          <span className={issues.length > 0 ? 'student-profile-month-review-warn' : 'student-profile-month-review-ok'}>
+                            {issues.length > 0 ? `${issues.length} observacion${issues.length === 1 ? '' : 'es'}` : 'Sin observaciones'}
+                          </span>
+                        </div>
+                      </summary>
+
+                      <div className="student-profile-month-content">
+                        {issues.length > 0 ? (
+                          <div className="student-profile-month-review">
+                            <strong>Para revisar</strong>
+                            <ul>
+                              {issues.map((issue) => (
+                                <li key={issue}>{issue}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : (
+                          <div className="student-profile-month-review student-profile-month-review-good">
+                            <strong>Lectura rapida</strong>
+                            <p>Las metricas obligatorias y las relaciones principales no muestran inconsistencias.</p>
+                          </div>
+                        )}
+
+                        <div className="student-profile-month-category-list">
+                          {groupedValues.map((group) => (
+                            <section className="student-profile-month-category" key={group.name}>
+                              <h4>{group.name}</h4>
+                              <div className="student-profile-month-metric-grid">
+                                {group.values.map((value) => (
+                                  <div className="student-profile-month-metric" key={value.id}>
+                                    <span>
+                                      {value.metricDefinition.name}
+                                      {value.metricDefinition.isRequired ? ' *' : ''}
+                                    </span>
+                                    <strong>{formatMetricValue(value)}</strong>
+                                  </div>
+                                ))}
+                              </div>
+                            </section>
+                          ))}
+                        </div>
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="student-profile-empty">Todavia no hay meses enviados o cerrados para desglozar.</p>
+            )}
+          </section>
 
           {/* Achievements */}
           <section className="student-profile-section">
