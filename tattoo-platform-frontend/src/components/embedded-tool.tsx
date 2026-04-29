@@ -68,7 +68,7 @@ export const EMBEDDED_TOOLS: Record<
     pageDescription:
       "Herramienta embebida para hacer seguimiento comercial de clientes, revisar estados y mantener continuidad en las conversaciones.",
     embedUrl:
-      "https://claude.site/public/artifacts/68fc429f-787d-44e2-ab8a-6f4db25308ea/embed",
+      "https://claude.site/public/artifacts/7d6543ad-da86-4f46-8728-ef37eaf13942/embed",
     frameTitle: "VMT Seguimiento de Clientes",
   },
 };
