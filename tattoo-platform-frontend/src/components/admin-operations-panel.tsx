@@ -45,7 +45,13 @@ type AdminSettings = {
   };
 };
 
-type TabKey = 'metrics' | 'notifications' | 'meetings' | 'codes' | 'noticias';
+type QuickLink = {
+  id: string;
+  title: string;
+  url: string;
+};
+
+type TabKey = 'metrics' | 'notifications' | 'meetings' | 'codes' | 'noticias' | 'links';
 
 const tabMeta: Array<{
   key: TabKey;
@@ -88,24 +94,47 @@ const tabMeta: Array<{
     description:
       'Publica novedades que aparecen en el dashboard de los alumnos. Podes notificarlos al instante.',
   },
+  {
+    key: 'links',
+    title: 'Accesos rapidos',
+    eyebrow: 'Dashboard alumnos',
+    description:
+      'Administra las cards de enlaces que aparecen en el dashboard de los alumnos.',
+  },
 ];
+
+function normalizeLinkUrl(url: string) {
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+
+  return `https://${url}`;
+}
 
 export function AdminOperationsPanel({
   initialSettings,
   initialMeetings,
   initialCodes,
   initialNews,
+  initialStudentDashboardLinks,
 }: {
   initialSettings: AdminSettings;
   initialMeetings: GroupMeeting[];
   initialCodes: RegistrationCode[];
   initialNews: NewsItem[];
+  initialStudentDashboardLinks: QuickLink[];
 }) {
   const [settings, setSettings] = useState(initialSettings);
+  const [links, setLinks] = useState<QuickLink[]>(initialStudentDashboardLinks);
   const [activeTab, setActiveTab] = useState<TabKey>('metrics');
   const [isSaving, setIsSaving] = useState(false);
+  const [linkTitle, setLinkTitle] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
+  const [isSavingLink, setIsSavingLink] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [linkMessage, setLinkMessage] = useState<string | null>(null);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   function updateSection<
     SectionKey extends keyof AdminSettings,
@@ -154,6 +183,67 @@ export function AdminOperationsPanel({
     }
   }
 
+  async function handleAddLink() {
+    setIsSavingLink(true);
+    setLinkError(null);
+    setLinkMessage(null);
+
+    try {
+      const title = linkTitle.trim();
+      const url = linkUrl.trim();
+
+      if (!title || !url) {
+        throw new Error('Completa nombre y URL para crear el acceso rapido.');
+      }
+
+      const response = await fetch('/api/admin/student-dashboard-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          url: normalizeLinkUrl(url),
+          sortOrder: links.length,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? 'No pudimos crear el acceso rapido.');
+      }
+
+      setLinks((current) => [...current, payload]);
+      setLinkTitle('');
+      setLinkUrl('');
+      setLinkMessage('Acceso rapido creado.');
+    } catch (error) {
+      setLinkError(
+        error instanceof Error ? error.message : 'No pudimos crear el acceso rapido.',
+      );
+    } finally {
+      setIsSavingLink(false);
+    }
+  }
+
+  async function handleDeleteLink(linkId: string) {
+    setLinkError(null);
+    setLinkMessage(null);
+
+    const response = await fetch(`/api/admin/student-dashboard-links/${linkId}`, {
+      method: 'DELETE',
+    });
+
+    const payload = await response.json();
+
+    if (!response.ok) {
+      setLinkError(payload.message ?? 'No pudimos quitar el acceso rapido.');
+      return;
+    }
+
+    setLinks((current) => current.filter((link) => link.id !== linkId));
+    setLinkMessage('Acceso rapido eliminado.');
+  }
+
   const currentTab = useMemo(
     () => tabMeta.find((tab) => tab.key === activeTab) ?? tabMeta[0],
     [activeTab],
@@ -198,7 +288,14 @@ export function AdminOperationsPanel({
 
         <form
           className="admin-settings-panel"
-          onSubmit={activeTab === 'meetings' || activeTab === 'codes' || activeTab === 'noticias' ? (event) => event.preventDefault() : handleSubmit}
+          onSubmit={
+            activeTab === 'meetings' ||
+            activeTab === 'codes' ||
+            activeTab === 'noticias' ||
+            activeTab === 'links'
+              ? (event) => event.preventDefault()
+              : handleSubmit
+          }
         >
           <div className="admin-settings-panel-header">
             <div>
@@ -216,8 +313,10 @@ export function AdminOperationsPanel({
                     : activeTab === 'codes'
                     ? 'Codigos activos, roles y conteo de usos.'
                     : activeTab === 'noticias'
-                    ? 'Novedades publicadas y borradores.'
-                    : 'Agenda del grupo visible para todos los alumnos.'}
+                      ? 'Novedades publicadas y borradores.'
+                      : activeTab === 'links'
+                        ? 'Cards visibles en accesos rapidos del dashboard alumno.'
+                        : 'Agenda del grupo visible para todos los alumnos.'}
               </span>
             </div>
           </div>
@@ -370,7 +469,66 @@ export function AdminOperationsPanel({
             <AdminNewsPanel initialNews={initialNews} />
           ) : null}
 
-          {activeTab !== 'meetings' && activeTab !== 'codes' && activeTab !== 'noticias' ? (
+          {activeTab === 'links' ? (
+            <div className="admin-settings-section">
+              <article className="profile-card profile-links-card student-links-card">
+                <div className="profile-card-header">
+                  <h4>
+                    <span className="profile-card-icon" aria-hidden="true">
+                      o-o
+                    </span>
+                    Accesos Rapidos de Alumnos
+                  </h4>
+                  <p>Estos enlaces se muestran como cards en el dashboard de los alumnos.</p>
+                </div>
+
+                {links.length > 0 ? (
+                  <div className="profile-links-list">
+                    {links.map((link) => (
+                      <div className="profile-link-row" key={link.id}>
+                        <a href={link.url} target="_blank" rel="noreferrer">
+                          <strong>{link.title}</strong>
+                          <span>{link.url}</span>
+                        </a>
+                        <button type="button" onClick={() => handleDeleteLink(link.id)}>
+                          Quitar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="profile-empty-state">
+                    Todavia no hay accesos rapidos configurados para alumnos.
+                  </p>
+                )}
+
+                <div className="profile-link-form">
+                  <input
+                    type="text"
+                    placeholder="Nombre"
+                    value={linkTitle}
+                    onChange={(event) => setLinkTitle(event.target.value)}
+                  />
+                  <input
+                    type="url"
+                    placeholder="URL"
+                    value={linkUrl}
+                    onChange={(event) => setLinkUrl(event.target.value)}
+                  />
+                  <button type="button" disabled={isSavingLink} onClick={handleAddLink}>
+                    {isSavingLink ? 'Guardando...' : '+ Agregar'}
+                  </button>
+                </div>
+
+                {linkError ? <p className="student-results-form-error">{linkError}</p> : null}
+                {linkMessage ? (
+                  <p className="student-profile-success">{linkMessage}</p>
+                ) : null}
+              </article>
+            </div>
+          ) : null}
+
+          {activeTab !== 'meetings' && activeTab !== 'codes' && activeTab !== 'noticias' && activeTab !== 'links' ? (
             <>
               {message ? <p className="student-results-form-success">{message}</p> : null}
               {error ? <p className="student-results-form-error">{error}</p> : null}

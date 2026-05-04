@@ -400,7 +400,7 @@ export default async function StudentPage({
 
           <section className="quick-access-grid">
             {data.dashboardQuickLinks.length > 0 ? (
-              data.dashboardQuickLinks.slice(0, 4).map((link) => (
+              data.dashboardQuickLinks.map((link) => (
                 <a
                   className="quick-access-card"
                   href={link.url}

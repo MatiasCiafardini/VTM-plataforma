@@ -5,6 +5,7 @@ import {
   Param,
   Patch,
   Post,
+  Delete,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -14,7 +15,9 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
+import { CreateAdminQuickLinkDto } from './dto/create-admin-quick-link.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateAdminQuickLinkDto } from './dto/update-admin-quick-link.dto';
 import { UpdateOwnAdminProfileDto } from './dto/update-own-admin-profile.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UsersService } from './users.service';
@@ -40,6 +43,23 @@ export class UsersController {
     return this.usersService.getOwnAdminProfile(user.sub);
   }
 
+  @Get('me/quick-links')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'List quick links for the authenticated admin' })
+  listMyQuickLinks(@CurrentUser() user: AuthenticatedUser) {
+    return this.usersService.listOwnAdminQuickLinks(user.sub);
+  }
+
+  @Post('me/quick-links')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Create a quick link for the authenticated admin' })
+  createMyQuickLink(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CreateAdminQuickLinkDto,
+  ) {
+    return this.usersService.createOwnAdminQuickLink(user.sub, dto);
+  }
+
   @Post()
   @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a generic user' })
@@ -55,6 +75,27 @@ export class UsersController {
     @Body() dto: UpdateOwnAdminProfileDto,
   ) {
     return this.usersService.updateOwnAdminProfile(user.sub, dto);
+  }
+
+  @Patch('me/quick-links/:linkId')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Update a quick link for the authenticated admin' })
+  updateMyQuickLink(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('linkId') linkId: string,
+    @Body() dto: UpdateAdminQuickLinkDto,
+  ) {
+    return this.usersService.updateOwnAdminQuickLink(user.sub, linkId, dto);
+  }
+
+  @Delete('me/quick-links/:linkId')
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Delete a quick link for the authenticated admin' })
+  deleteMyQuickLink(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('linkId') linkId: string,
+  ) {
+    return this.usersService.deleteOwnAdminQuickLink(user.sub, linkId);
   }
 
   @Patch(':id/status')

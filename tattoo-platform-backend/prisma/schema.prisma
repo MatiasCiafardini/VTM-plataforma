@@ -146,6 +146,7 @@ model AdminProfile {
 
   user          User      @relation(fields: [userId], references: [id])
   localCurrency Currency? @relation("AdminLocalCurrency", fields: [localCurrencyId], references: [id])
+  quickLinks    AdminQuickLink[]
 
   @@index([localCurrencyId])
 }
@@ -220,6 +221,20 @@ model StudentQuickLink {
   student StudentProfile @relation(fields: [studentId], references: [id])
 
   @@index([studentId])
+}
+
+model AdminQuickLink {
+  id             String   @id @default(cuid())
+  adminProfileId String
+  title          String
+  url            String
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  adminProfile AdminProfile @relation(fields: [adminProfileId], references: [id])
+
+  @@index([adminProfileId])
 }
 
 model StudentDashboardQuickLink {

@@ -98,6 +98,13 @@ type StudentDashboardQuickLink = {
   sortOrder?: number;
 };
 
+type AdminQuickLink = {
+  id: string;
+  title: string;
+  url: string;
+  sortOrder?: number;
+};
+
 type Currency = {
   id: string;
   code: string;
@@ -321,7 +328,7 @@ export default async function AdminPage({
   const params = searchParams ? await searchParams : undefined;
   const activeTab = resolveTab(params?.tab);
   const challengesView = params?.view === 'manage' ? 'manage' : 'wall';
-  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, challengeStudents, manualChallengeAssignments, adminSettings, groupMeetings, registrationCodes, notifications, adminProfile, currencies, adminNews] = await Promise.all([
+  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, challengeStudents, manualChallengeAssignments, adminSettings, groupMeetings, registrationCodes, notifications, adminProfile, adminQuickLinks, currencies, adminNews] = await Promise.all([
     activeTab === 'dashboard' ||
     activeTab === 'results' ||
     (activeTab === 'challenges' && challengesView === 'wall')
@@ -329,7 +336,7 @@ export default async function AdminPage({
           token: session.token,
         })
       : Promise.resolve(null),
-    activeTab === 'profile'
+    activeTab === 'settings'
       ? backendFetch<StudentDashboardQuickLink[]>('/student-dashboard-links', {
           token: session.token,
         })
@@ -397,6 +404,11 @@ export default async function AdminPage({
           token: session.token,
         })
       : Promise.resolve(null),
+    activeTab === 'profile'
+      ? backendFetch<AdminQuickLink[]>('/users/me/quick-links', {
+          token: session.token,
+        })
+      : Promise.resolve([]),
     activeTab === 'profile'
       ? backendFetch<Currency[]>('/currency/currencies', {
           token: session.token,
@@ -628,7 +640,7 @@ export default async function AdminPage({
       {activeTab === 'profile' && adminProfile ? (
         <AdminProfilePanel
           displayName={session.displayName}
-          initialLinks={studentDashboardLinks}
+          initialQuickLinks={adminQuickLinks}
           profile={adminProfile}
           currencies={currencies}
         />
@@ -640,6 +652,7 @@ export default async function AdminPage({
           initialMeetings={groupMeetings}
           initialCodes={registrationCodes}
           initialNews={adminNews}
+          initialStudentDashboardLinks={studentDashboardLinks}
         />
       ) : activeTab === 'settings' ? (
         <article className="list-card">

@@ -7,7 +7,9 @@ import { Prisma, UserRole, UserStatus } from '@prisma/client';
 import { hash } from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminSettingsService } from '../admin-settings/admin-settings.service';
+import { CreateAdminQuickLinkDto } from './dto/create-admin-quick-link.dto';
 import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateAdminQuickLinkDto } from './dto/update-admin-quick-link.dto';
 import { UpdateOwnAdminProfileDto } from './dto/update-own-admin-profile.dto';
 
 @Injectable()
@@ -178,6 +180,63 @@ export class UsersService {
     return this.getOwnAdminProfile(userId);
   }
 
+  async listOwnAdminQuickLinks(userId: string) {
+    const adminProfile = await this.getOwnAdminProfileOrThrow(userId);
+
+    return this.prisma.adminQuickLink.findMany({
+      where: { adminProfileId: adminProfile.id },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async createOwnAdminQuickLink(userId: string, dto: CreateAdminQuickLinkDto) {
+    const adminProfile = await this.getOwnAdminProfileOrThrow(userId);
+
+    return this.prisma.adminQuickLink.create({
+      data: {
+        adminProfileId: adminProfile.id,
+        title: dto.title,
+        url: dto.url,
+        sortOrder: dto.sortOrder ?? 0,
+      },
+    });
+  }
+
+  async updateOwnAdminQuickLink(
+    userId: string,
+    linkId: string,
+    dto: UpdateAdminQuickLinkDto,
+  ) {
+    const adminProfile = await this.getOwnAdminProfileOrThrow(userId);
+    const link = await this.findOwnAdminQuickLinkOrThrow(
+      adminProfile.id,
+      linkId,
+    );
+
+    return this.prisma.adminQuickLink.update({
+      where: { id: link.id },
+      data: {
+        title: dto.title,
+        url: dto.url,
+        sortOrder: dto.sortOrder,
+      },
+    });
+  }
+
+  async deleteOwnAdminQuickLink(userId: string, linkId: string) {
+    const adminProfile = await this.getOwnAdminProfileOrThrow(userId);
+    const link = await this.findOwnAdminQuickLinkOrThrow(
+      adminProfile.id,
+      linkId,
+    );
+
+    await this.prisma.adminQuickLink.delete({
+      where: { id: link.id },
+    });
+
+    return { success: true };
+  }
+
   toSafeUser<T extends { passwordHash?: string | null }>(user: T) {
     const { passwordHash, ...safeUser } = user;
     void passwordHash;
@@ -186,5 +245,33 @@ export class UsersService {
 
   isAdmin(role: UserRole) {
     return role === UserRole.ADMIN;
+  }
+
+  private async getOwnAdminProfileOrThrow(userId: string) {
+    const adminProfile = await this.prisma.adminProfile.upsert({
+      where: { userId },
+      update: {},
+      create: { userId },
+    });
+
+    return adminProfile;
+  }
+
+  private async findOwnAdminQuickLinkOrThrow(
+    adminProfileId: string,
+    linkId: string,
+  ) {
+    const link = await this.prisma.adminQuickLink.findFirst({
+      where: {
+        id: linkId,
+        adminProfileId,
+      },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Admin quick link not found');
+    }
+
+    return link;
   }
 }

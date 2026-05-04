@@ -75,18 +75,18 @@ function formatCurrencyOptionLabel(currency: Currency) {
 
 export function AdminProfilePanel({
   displayName,
-  initialLinks,
+  initialQuickLinks,
   profile,
   currencies,
 }: {
   displayName: string;
-  initialLinks: QuickLink[];
+  initialQuickLinks: QuickLink[];
   profile: AdminProfileData;
   currencies: Currency[];
 }) {
   const router = useRouter();
   const fullNameFallback = `${profile.firstName} ${profile.lastName}`.trim() || displayName;
-  const [links, setLinks] = useState<QuickLink[]>(initialLinks);
+  const [links, setLinks] = useState<QuickLink[]>(initialQuickLinks);
   const [isExpanded, setIsExpanded] = useState(false);
   const [form, setForm] = useState({
     fullName: fullNameFallback,
@@ -177,7 +177,7 @@ export function AdminProfilePanel({
     setIsSubmittingLink(true);
 
     try {
-      const response = await fetch('/api/admin/student-dashboard-links', {
+      const response = await fetch('/api/admin/quick-links', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -188,7 +188,7 @@ export function AdminProfilePanel({
       });
 
       if (!response.ok) {
-        throw new Error('No pudimos guardar el acceso rapido.');
+        throw new Error('No pudimos guardar tu acceso rapido.');
       }
 
       const created = (await response.json()) as QuickLink;
@@ -201,12 +201,12 @@ export function AdminProfilePanel({
   }
 
   async function handleDeleteLink(linkId: string) {
-    const response = await fetch(`/api/admin/student-dashboard-links/${linkId}`, {
+    const response = await fetch(`/api/admin/quick-links/${linkId}`, {
       method: 'DELETE',
     });
 
     if (!response.ok) {
-      throw new Error('No pudimos quitar el acceso rapido.');
+      throw new Error('No pudimos quitar tu acceso rapido.');
     }
 
     setLinks((current) => current.filter((link) => link.id !== linkId));
@@ -352,8 +352,9 @@ export function AdminProfilePanel({
             <span className="profile-card-icon" aria-hidden="true">
               o-o
             </span>
-            Accesos Rapidos de Alumnos
+            Mis Links
           </h4>
+          <p>Guarda tus accesos rapidos personales y tenelos siempre a mano.</p>
         </div>
 
         {links.length > 0 ? (
@@ -370,7 +371,9 @@ export function AdminProfilePanel({
               </div>
             ))}
           </div>
-        ) : null}
+        ) : (
+          <p className="profile-empty-state">Todavia no cargaste accesos rapidos personales.</p>
+        )}
 
         <form className="profile-link-form" onSubmit={handleAddLink}>
           <input
