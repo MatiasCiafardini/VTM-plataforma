@@ -178,6 +178,18 @@ type NewsItem = {
   createdAt: string;
 };
 
+const COUNTRY_TIMEZONE_BY_NAME: Record<string, string> = {
+  Argentina: 'America/Argentina/Buenos_Aires',
+  Brazil: 'America/Sao_Paulo',
+  Chile: 'America/Santiago',
+  Colombia: 'America/Bogota',
+  Mexico: 'America/Mexico_City',
+  Peru: 'America/Lima',
+  Spain: 'Europe/Madrid',
+  Uruguay: 'America/Montevideo',
+  'United States': 'America/New_York',
+};
+
 function resolveTab(tab?: string): TabKey {
   if (
     tab === 'results' ||
@@ -238,6 +250,38 @@ function formatMeetingTimeRange(
   }
 
   return `${startLabel} a ${formatter.format(new Date(endsAt))}`;
+}
+
+function isValidTimezone(timezone: string | null | undefined) {
+  if (!timezone) {
+    return false;
+  }
+
+  try {
+    new Intl.DateTimeFormat('es-AR', { timeZone: timezone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function resolveMeetingDisplayTimezone(
+  studentTimezone: string | null | undefined,
+  country: string | null | undefined,
+  meetingTimezone: string | null | undefined,
+) {
+  const countryTimezone = country ? COUNTRY_TIMEZONE_BY_NAME[country] : null;
+  const candidates = [studentTimezone, countryTimezone, meetingTimezone, 'UTC'];
+
+  for (const candidate of candidates) {
+    const normalized = candidate?.trim();
+
+    if (normalized && isValidTimezone(normalized)) {
+      return normalized;
+    }
+  }
+
+  return 'UTC';
 }
 
 export default async function StudentPage({
@@ -485,7 +529,11 @@ export default async function StudentPage({
             ) : (
               <div className="student-group-meeting-list">
                 {data.upcomingEvents.map((meeting) => {
-                  const studentTimezone = data.student.timezone ?? meeting.timezone ?? 'UTC';
+                  const studentTimezone = resolveMeetingDisplayTimezone(
+                    data.student.timezone,
+                    data.student.country,
+                    meeting.timezone,
+                  );
                   const content = (
                     <>
                       <div className="student-group-meeting-head">

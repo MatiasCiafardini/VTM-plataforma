@@ -1221,15 +1221,14 @@ export class DashboardService {
 
   private async listUpcomingGroupMeetings() {
     try {
-      return await this.prisma.groupMeeting.findMany({
+      const meetings = await this.prisma.groupMeeting.findMany({
         where: {
-          startsAt: {
-            gte: new Date(),
-          },
+          OR: [{ startsAt: { gte: new Date() } }, { isRecurring: true }],
         },
         orderBy: [{ startsAt: 'asc' }, { createdAt: 'asc' }],
-        take: 5,
       });
+
+      return this.materializeUpcomingGroupMeetings(meetings).slice(0, 5);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -1244,13 +1243,13 @@ export class DashboardService {
 
   private async countUpcomingGroupMeetings() {
     try {
-      return await this.prisma.groupMeeting.count({
+      const meetings = await this.prisma.groupMeeting.findMany({
         where: {
-          startsAt: {
-            gte: new Date(),
-          },
+          OR: [{ startsAt: { gte: new Date() } }, { isRecurring: true }],
         },
       });
+
+      return this.materializeUpcomingGroupMeetings(meetings).length;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -1260,6 +1259,185 @@ export class DashboardService {
       }
 
       throw error;
+    }
+  }
+
+  private materializeUpcomingGroupMeetings<
+    Meeting extends {
+      isRecurring: boolean;
+      weekDay: number | null;
+      startsAt: Date;
+      endsAt: Date | null;
+      timezone: string;
+    },
+  >(meetings: Meeting[]) {
+    const now = new Date();
+
+    return meetings
+      .map((meeting) =>
+        meeting.isRecurring
+          ? this.materializeRecurringGroupMeeting(meeting, now)
+          : meeting,
+      )
+      .filter((meeting) => meeting.startsAt >= now)
+      .sort((left, right) => {
+        const startsAtDelta = left.startsAt.getTime() - right.startsAt.getTime();
+
+        if (startsAtDelta !== 0) {
+          return startsAtDelta;
+        }
+
+        return 0;
+      });
+  }
+
+  private materializeRecurringGroupMeeting<
+    Meeting extends {
+      weekDay: number | null;
+      startsAt: Date;
+      endsAt: Date | null;
+      timezone: string;
+    },
+  >(meeting: Meeting, now: Date) {
+    const timezone = this.normalizeTimezone(meeting.timezone);
+    const weekDay =
+      meeting.weekDay ?? this.getWeekdayInTimezone(meeting.startsAt, timezone);
+    const startTime = this.formatTimeInTimezone(meeting.startsAt, timezone);
+    const startsAt = this.nextRecurringStartsAt(
+      weekDay,
+      startTime,
+      timezone,
+      now,
+    );
+    const duration = meeting.endsAt
+      ? meeting.endsAt.getTime() - meeting.startsAt.getTime()
+      : null;
+
+    return {
+      ...meeting,
+      startsAt,
+      endsAt:
+        duration !== null ? new Date(startsAt.getTime() + duration) : null,
+    };
+  }
+
+  private nextRecurringStartsAt(
+    weekDay: number,
+    timeValue: string,
+    timezone: string,
+    now: Date,
+  ) {
+    const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
+    for (let offset = 0; offset <= 7; offset++) {
+      const candidate = new Date(now.getTime() + offset * 24 * 60 * 60 * 1000);
+
+      if (this.getWeekdayInTimezone(candidate, timezone) !== weekDay) {
+        continue;
+      }
+
+      const startsAt = this.zonedTimeToUtc(
+        dateFormatter.format(candidate),
+        timeValue,
+        timezone,
+      );
+
+      if (startsAt >= now) {
+        return startsAt;
+      }
+    }
+
+    const fallback = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    return this.zonedTimeToUtc(
+      dateFormatter.format(fallback),
+      timeValue,
+      timezone,
+    );
+  }
+
+  private getWeekdayInTimezone(date: Date, timezone: string) {
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezone,
+      weekday: 'short',
+    });
+
+    return weekdays.indexOf(formatter.format(date));
+  }
+
+  private zonedTimeToUtc(
+    dateValue: string,
+    timeValue: string,
+    timezone: string,
+  ) {
+    const [year, month, day] = dateValue.split('-').map(Number);
+    const [hour, minute] = timeValue.split(':').map(Number);
+    const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+    const offset = this.getTimeZoneOffset(utcGuess, timezone);
+    const resolved = new Date(utcGuess.getTime() - offset);
+    const secondOffset = this.getTimeZoneOffset(resolved, timezone);
+
+    return secondOffset === offset
+      ? resolved
+      : new Date(utcGuess.getTime() - secondOffset);
+  }
+
+  private getTimeZoneOffset(date: Date, timezone: string) {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: timezone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    });
+
+    const parts = Object.fromEntries(
+      formatter
+        .formatToParts(date)
+        .filter((part) => part.type !== 'literal')
+        .map((part) => [part.type, Number(part.value)]),
+    ) as Record<
+      'year' | 'month' | 'day' | 'hour' | 'minute' | 'second',
+      number
+    >;
+
+    const asUtc = Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+    );
+
+    return asUtc - date.getTime();
+  }
+
+  private formatTimeInTimezone(date: Date, timezone: string) {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).format(date);
+  }
+
+  private normalizeTimezone(timezone: string) {
+    try {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+      }).resolvedOptions().timeZone;
+    } catch {
+      return 'UTC';
     }
   }
 }
