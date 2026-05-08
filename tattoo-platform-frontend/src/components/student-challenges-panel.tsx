@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { ChallengeIcon } from "./challenge-icons";
 import { useState } from "react";
@@ -284,7 +284,10 @@ export function StudentChallengesPanel({
         <circle cx="180" cy="1620" r="240" fill="rgba(255,209,2,0.08)"/>
         <rect x="88" y="116" width="904" height="1688" rx="44" fill="#232223" stroke="rgba(255,209,2,0.28)"/>
         <rect x="136" y="182" width="120" height="120" rx="28" fill="url(#gold)"/>
-        <text x="196" y="260" text-anchor="middle" fill="#1a1403" font-size="62" font-family="Arial" font-weight="700">ðŸ†</text>
+        <g transform="translate(166 212) scale(2.55)" fill="none" stroke="#1a1403" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3h8v3a4 4 0 0 0 3 3.87V11a7 7 0 0 1-5.5 6.83V20H16v2H8v-2h2.5v-2.17A7 7 0 0 1 5 11V9.87A4 4 0 0 0 8 6V3Z"/>
+          <path d="M5 5H3v1a4 4 0 0 0 4 4M19 5h2v1a4 4 0 0 1-4 4"/>
+        </g>
         <text x="136" y="402" fill="#FFD102" font-size="34" font-family="Arial" font-weight="700" letter-spacing="5">DESAFIO</text>
         <text x="136" y="492" fill="#FFFFFF" font-size="88" font-family="Arial" font-weight="700">${title}</text>
         <text x="136" y="598" fill="#9A999A" font-size="44" font-family="Arial">${subtitle}</text>

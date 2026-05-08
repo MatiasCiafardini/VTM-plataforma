@@ -166,7 +166,10 @@ export function AdminAchievementsWall({
         <circle cx="156" cy="1648" r="260" fill="rgba(255,209,2,0.08)"/>
         <rect x="86" y="112" width="908" height="1696" rx="54" fill="#151515" stroke="rgba(255,209,2,0.28)" stroke-width="2"/>
         <rect x="134" y="176" width="136" height="136" rx="34" fill="url(#gold)"/>
-        <text x="202" y="264" text-anchor="middle" fill="#161003" font-size="70" font-family="Arial" font-weight="700">★</text>
+        <g transform="translate(168 210) scale(2.8)" fill="none" stroke="#161003" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3h8v3a4 4 0 0 0 3 3.87V11a7 7 0 0 1-5.5 6.83V20H16v2H8v-2h2.5v-2.17A7 7 0 0 1 5 11V9.87A4 4 0 0 0 8 6V3Z"/>
+          <path d="M5 5H3v1a4 4 0 0 0 4 4M19 5h2v1a4 4 0 0 1-4 4"/>
+        </g>
         <text x="134" y="406" fill="#FFD102" font-size="34" font-family="Arial" font-weight="700" letter-spacing="6">LOGRO DESBLOQUEADO</text>
         <text x="134" y="530" fill="#FFFFFF" font-size="72" font-family="Arial" font-weight="700">${studentName}</text>
         <text x="134" y="592" fill="#CFC9B7" font-size="38" font-family="Arial">${handle}</text>
