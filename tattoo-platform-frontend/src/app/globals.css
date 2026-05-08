@@ -34,9 +34,13 @@ body {
   min-height: 100vh;
   color: var(--text);
   background:
-    radial-gradient(circle at top left, rgba(255, 209, 2, 0.08), transparent 26%),
+    radial-gradient(
+      circle at top left,
+      rgba(255, 209, 2, 0.08),
+      transparent 26%
+    ),
     linear-gradient(180deg, #0a0a0a 0%, #232223 100%);
-  font-family: var(--font-body), 'Futura PT', sans-serif;
+  font-family: var(--font-body), "Futura PT", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scrollbar-width: thin;
@@ -92,7 +96,7 @@ button {
 h1,
 h2,
 h3 {
-  font-family: var(--font-heading), 'DIN 1451 LT Pro Engschrift', sans-serif;
+  font-family: var(--font-heading), "DIN 1451 LT Pro Engschrift", sans-serif;
   letter-spacing: 0.01em;
   text-transform: uppercase;
 }
@@ -428,7 +432,10 @@ h3 {
   border: 1px solid #2d2d2d;
   background: #111;
   color: #f4f0e6;
-  transition: filter 160ms ease, transform 160ms ease, border-color 160ms ease;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease,
+    border-color 160ms ease;
 }
 
 .profile-circle:not(:disabled) {
@@ -554,7 +561,10 @@ h3 {
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
 }
 
 .notification-popover-item-button:hover {
@@ -637,7 +647,9 @@ h3 {
   padding: 0 18px;
   border-radius: 14px;
   border: 1px solid transparent;
-  transition: filter 160ms ease, transform 160ms ease;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
   cursor: pointer;
 }
 
@@ -855,7 +867,15 @@ h3 {
   width: 16px;
   height: 24px;
   background: linear-gradient(180deg, #ffd34a 0%, #f4bf19 100%);
-  clip-path: polygon(42% 0, 100% 0, 63% 42%, 89% 42%, 18% 100%, 38% 56%, 8% 56%);
+  clip-path: polygon(
+    42% 0,
+    100% 0,
+    63% 42%,
+    89% 42%,
+    18% 100%,
+    38% 56%,
+    8% 56%
+  );
   transform: rotate(10deg);
 }
 
@@ -882,7 +902,11 @@ h3 {
 .login-aside {
   padding: 34px;
   background:
-    radial-gradient(circle at top left, rgba(244, 191, 25, 0.12), transparent 28%),
+    radial-gradient(
+      circle at top left,
+      rgba(244, 191, 25, 0.12),
+      transparent 28%
+    ),
     linear-gradient(180deg, #101010 0%, #0a0a0a 100%);
 }
 
@@ -898,7 +922,11 @@ h3 {
   margin-inline: auto;
   padding: 28px 22px 18px;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(24, 24, 24, 0.98) 0%, rgba(18, 18, 18, 0.98) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(24, 24, 24, 0.98) 0%,
+    rgba(18, 18, 18, 0.98) 100%
+  );
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42);
 }
 
@@ -1025,8 +1053,16 @@ h3 {
   border-radius: 18px;
   border: 1px solid rgba(244, 191, 25, 0.24);
   background:
-    radial-gradient(circle at left center, rgba(244, 191, 25, 0.12), transparent 36%),
-    linear-gradient(180deg, rgba(39, 34, 12, 0.92) 0%, rgba(24, 24, 18, 0.92) 100%);
+    radial-gradient(
+      circle at left center,
+      rgba(244, 191, 25, 0.12),
+      transparent 36%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(39, 34, 12, 0.92) 0%,
+      rgba(24, 24, 18, 0.92) 100%
+    );
   box-shadow: var(--shadow);
 }
 
@@ -1198,7 +1234,10 @@ h3 {
 
 .student-search-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(180px, 0.85fr) minmax(220px, 1fr);
+  grid-template-columns: minmax(0, 1.6fr) minmax(180px, 0.85fr) minmax(
+      220px,
+      1fr
+    );
   gap: 0.75rem;
   align-self: start;
 }
@@ -1758,18 +1797,17 @@ h3 {
 }
 
 .student-calendar-shell::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background:
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.08) 0%,
-      rgba(244, 191, 25, 0.12) 38%,
-      rgba(255, 255, 255, 0.03) 100%
-    );
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(244, 191, 25, 0.12) 38%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -1821,8 +1859,11 @@ h3 {
   padding: 20px;
   border-radius: 22px !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
-  background:
-    linear-gradient(180deg, rgba(34, 34, 35, 0.96) 0%, rgba(14, 14, 15, 0.96) 100%) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(34, 34, 35, 0.96) 0%,
+    rgba(14, 14, 15, 0.96) 100%
+  ) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.025),
     0 10px 24px rgba(0, 0, 0, 0.18);
@@ -1842,7 +1883,7 @@ h3 {
 }
 
 .student-group-meeting-card::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -2046,8 +2087,16 @@ h3 {
   border-radius: 10px;
   border: 1px solid rgba(255, 202, 44, 0.24);
   background:
-    radial-gradient(circle at top left, rgba(244, 191, 25, 0.18), transparent 65%),
-    linear-gradient(180deg, rgba(54, 45, 14, 0.96) 0%, rgba(28, 24, 14, 0.96) 100%);
+    radial-gradient(
+      circle at top left,
+      rgba(244, 191, 25, 0.18),
+      transparent 65%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(54, 45, 14, 0.96) 0%,
+      rgba(28, 24, 14, 0.96) 100%
+    );
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.28);
   overflow: hidden;
 }
@@ -2252,10 +2301,16 @@ h3 {
   min-height: 18px;
   align-self: end;
   border-radius: 14px 14px 10px 10px;
-  background: linear-gradient(180deg, rgba(231, 198, 70, 0.76) 0%, rgba(126, 97, 18, 0.92) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(231, 198, 70, 0.76) 0%,
+    rgba(126, 97, 18, 0.92) 100%
+  );
   border: 1px solid rgba(255, 210, 79, 0.18);
   box-shadow: inset 0 -8px 22px rgba(0, 0, 0, 0.2);
-  transition: filter 160ms ease, transform 160ms ease;
+  transition:
+    filter 160ms ease,
+    transform 160ms ease;
 }
 
 .student-results-chart-column-active .student-results-chart-bar {
@@ -2418,7 +2473,10 @@ h3 {
 
 .student-history-card-clickable {
   cursor: pointer;
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
 }
 
 .student-history-card-clickable:hover {
@@ -2490,7 +2548,7 @@ h3 {
 }
 
 .student-history-pie::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 28px;
   border-radius: inherit;
@@ -2649,7 +2707,9 @@ h3 {
   background-position:
     calc(100% - 18px) calc(50% - 3px),
     calc(100% - 12px) calc(50% - 3px);
-  background-size: 6px 6px, 6px 6px;
+  background-size:
+    6px 6px,
+    6px 6px;
   background-repeat: no-repeat;
 }
 
@@ -3005,7 +3065,11 @@ h3 {
   padding: 14px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025) 0%, rgba(255, 255, 255, 0.015) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.025) 0%,
+    rgba(255, 255, 255, 0.015) 100%
+  );
 }
 
 .student-challenge-footer strong,
@@ -3104,8 +3168,16 @@ h3 {
   border-radius: 24px;
   border: 1px solid rgba(255, 202, 44, 0.28);
   background:
-    radial-gradient(circle at top right, rgba(244, 191, 25, 0.18), transparent 28%),
-    radial-gradient(circle at bottom left, rgba(244, 191, 25, 0.08), transparent 32%),
+    radial-gradient(
+      circle at top right,
+      rgba(244, 191, 25, 0.18),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at bottom left,
+      rgba(244, 191, 25, 0.08),
+      transparent 32%
+    ),
     linear-gradient(180deg, #171717 0%, #14120b 100%);
 }
 
@@ -3478,7 +3550,10 @@ h3 {
   background: #111;
   color: inherit;
   cursor: pointer;
-  transition: border-color 160ms ease, transform 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
 }
 
 .admin-settings-tab:hover {
@@ -3559,7 +3634,11 @@ h3 {
   border: 1px solid rgba(255, 202, 44, 0.2);
   border-radius: 14px;
   background:
-    radial-gradient(circle at top right, rgba(244, 191, 25, 0.12), transparent 58%),
+    radial-gradient(
+      circle at top right,
+      rgba(244, 191, 25, 0.12),
+      transparent 58%
+    ),
     #101010;
 }
 
@@ -3603,7 +3682,11 @@ h3 {
   min-height: 52px;
   padding-inline: 16px;
   border-radius: 14px;
-  background: linear-gradient(180deg, rgba(20, 20, 20, 0.98) 0%, rgba(12, 12, 12, 0.98) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(20, 20, 20, 0.98) 0%,
+    rgba(12, 12, 12, 0.98) 100%
+  );
   color-scheme: dark;
 }
 
@@ -3631,7 +3714,9 @@ h3 {
   font-size: 13px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.45);
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -3641,7 +3726,7 @@ h3 {
   color: #ffca2c;
 }
 
-.admin-group-meetings-type-option input[type='radio'] {
+.admin-group-meetings-type-option input[type="radio"] {
   position: absolute;
   opacity: 0;
   width: 0;
@@ -3854,6 +3939,14 @@ h3 {
   gap: 16px;
 }
 
+.admin-achievements-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .admin-achievements-title-row {
   display: flex;
   align-items: center;
@@ -3894,6 +3987,77 @@ h3 {
   gap: 14px;
 }
 
+.admin-achievements-controls {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #262626;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #171717 0%, #121212 100%);
+}
+
+.admin-achievements-controls label {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-achievements-controls label span {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-achievements-controls select {
+  min-height: 44px;
+  padding: 0 38px 0 12px;
+  border: 1px solid #2b2b2b;
+  border-radius: 12px;
+  background: #090909;
+  color: var(--text);
+  outline: none;
+}
+
+.admin-achievements-controls p {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.admin-achievements-view-toggle {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(92px, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #2a2a2a;
+  border-radius: 14px;
+  background: #111;
+}
+
+.admin-achievements-view-toggle button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.admin-achievements-view-toggle button.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
 .admin-achievement-card {
   display: grid;
   gap: 10px;
@@ -3902,6 +4066,28 @@ h3 {
   border-radius: 16px;
   background: linear-gradient(180deg, #171717 0%, #121212 100%);
   box-shadow: var(--shadow);
+}
+
+.admin-achievement-card-button {
+  width: 100%;
+  min-height: 100%;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
+}
+
+.admin-achievement-card-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 209, 2, 0.3);
+}
+
+.admin-achievement-card-button:focus-visible {
+  outline: 2px solid rgba(255, 209, 2, 0.52);
+  outline-offset: 3px;
 }
 
 .admin-achievement-card-empty {
@@ -3963,6 +4149,105 @@ h3 {
   text-shadow: 0 0 12px rgba(244, 191, 25, 0.28);
 }
 
+.admin-achievements-carousel-shell {
+  position: relative;
+  overflow: hidden;
+  min-height: 360px;
+  padding: 4px 0;
+  border-radius: 18px;
+  border: 1px solid #262626;
+  background: linear-gradient(180deg, #171717 0%, #121212 100%);
+}
+
+.admin-achievements-carousel-shell::before,
+.admin-achievements-carousel-shell::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 80px;
+  pointer-events: none;
+}
+
+.admin-achievements-carousel-shell::before {
+  left: 0;
+  background: linear-gradient(90deg, #121212 0%, transparent 100%);
+}
+
+.admin-achievements-carousel-shell::after {
+  right: 0;
+  background: linear-gradient(270deg, #121212 0%, transparent 100%);
+}
+
+.admin-achievements-carousel-track {
+  display: flex;
+  width: max-content;
+  gap: 14px;
+  padding: 22px 16px;
+  animation: admin-achievements-marquee 144s linear infinite;
+}
+
+.admin-achievements-carousel-shell:hover .admin-achievements-carousel-track {
+  animation-play-state: paused;
+}
+
+.admin-achievements-carousel-item {
+  width: min(430px, 82vw);
+  flex: 0 0 auto;
+}
+
+.admin-achievement-carousel-card {
+  min-height: 312px;
+  align-content: space-between;
+}
+
+.admin-achievement-story-modal {
+  width: min(660px, 100%);
+}
+
+.admin-achievement-story-preview h4 {
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+}
+
+.admin-achievement-story-handle {
+  margin-top: -8px;
+  color: var(--text-soft) !important;
+}
+
+.admin-achievement-story-stats {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 14px;
+  border: 1px solid rgba(255, 209, 2, 0.16);
+  border-radius: 16px;
+  background: rgba(255, 209, 2, 0.06);
+}
+
+.admin-achievement-story-stats span {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-achievement-story-stats strong {
+  color: #fff8ea;
+  font-size: 1.15rem;
+}
+
+@keyframes admin-achievements-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(calc(-50% - 7px));
+  }
+}
+
 .dashboard-cta {
   min-width: 220px;
 }
@@ -4016,8 +4301,16 @@ h3 {
   border: 1px solid rgba(244, 191, 25, 0.18);
   border-radius: 22px;
   background:
-    radial-gradient(circle at top left, rgba(244, 191, 25, 0.16), transparent 34%),
-    linear-gradient(180deg, rgba(20, 20, 20, 0.98) 0%, rgba(14, 14, 14, 0.98) 100%);
+    radial-gradient(
+      circle at top left,
+      rgba(244, 191, 25, 0.16),
+      transparent 34%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(20, 20, 20, 0.98) 0%,
+      rgba(14, 14, 14, 0.98) 100%
+    );
   box-shadow: var(--shadow);
 }
 
@@ -4442,6 +4735,8 @@ body {
 .admin-settings-tabs,
 .admin-settings-panel,
 .admin-achievement-card,
+.admin-achievements-controls,
+.admin-achievements-carousel-shell,
 .admin-achievements-title-icon,
 .student-management-card,
 .student-history-card,
@@ -4460,7 +4755,11 @@ body {
 .notification-popover,
 .notification-feed-item {
   border-color: var(--border-subtle) !important;
-  background: linear-gradient(180deg, rgba(35, 34, 35, 0.98) 0%, rgba(10, 10, 10, 0.98) 100%) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(35, 34, 35, 0.98) 0%,
+    rgba(10, 10, 10, 0.98) 100%
+  ) !important;
   color: var(--text);
 }
 
@@ -4529,6 +4828,8 @@ body {
 .admin-challenge-form input,
 .admin-challenge-form textarea,
 .admin-challenge-form select,
+.admin-achievements-controls select,
+.admin-achievements-view-toggle,
 .admin-settings-grid input,
 .admin-settings-grid select {
   border-color: var(--border-subtle) !important;
@@ -4580,7 +4881,8 @@ body {
 
 .primary-button,
 .student-challenge-flyer-mark,
-.admin-achievements-title-icon {
+.admin-achievements-title-icon,
+.admin-achievements-view-toggle button.is-active {
   background: var(--accent) !important;
   color: var(--accent-ink) !important;
   border-color: transparent !important;
@@ -4647,8 +4949,16 @@ body {
 .student-challenge-card-pending {
   border-color: rgba(255, 209, 2, 0.24) !important;
   background:
-    radial-gradient(circle at top right, rgba(255, 209, 2, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(35, 34, 35, 0.98) 0%, rgba(10, 10, 10, 0.98) 100%) !important;
+    radial-gradient(
+      circle at top right,
+      rgba(255, 209, 2, 0.08),
+      transparent 28%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(35, 34, 35, 0.98) 0%,
+      rgba(10, 10, 10, 0.98) 100%
+    ) !important;
 }
 
 .mentor-hero-label,
@@ -4711,7 +5021,11 @@ body {
   width: 100vw;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 50% 44%, rgba(255, 209, 2, 0.05), transparent 28%),
+    radial-gradient(
+      circle at 50% 44%,
+      rgba(255, 209, 2, 0.05),
+      transparent 28%
+    ),
     linear-gradient(180deg, #050505 0%, #090909 100%);
   background-position: center;
   background-size: cover;
@@ -4722,10 +5036,14 @@ body {
 }
 
 .auth-page-reference::after {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.2) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.04) 0%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
   pointer-events: none;
 }
 
@@ -4793,7 +5111,11 @@ body {
   padding: 30px 22px 20px;
   border-radius: 20px;
   border: 1px solid rgba(154, 153, 154, 0.14);
-  background: linear-gradient(180deg, rgba(31, 31, 31, 0.96) 0%, rgba(21, 21, 21, 0.96) 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(31, 31, 31, 0.96) 0%,
+    rgba(21, 21, 21, 0.96) 100%
+  );
   box-shadow: 0 26px 72px rgba(0, 0, 0, 0.42);
 }
 
@@ -4805,7 +5127,7 @@ body {
 }
 
 .login-card-reference .login-card-head h1 {
-  font-family: var(--font-heading), 'DIN 1451 LT Pro Engschrift', sans-serif;
+  font-family: var(--font-heading), "DIN 1451 LT Pro Engschrift", sans-serif;
   font-size: clamp(2rem, 4vw, 2.55rem);
   font-weight: 400;
   letter-spacing: 0;
@@ -4878,7 +5200,9 @@ body {
   color: rgba(10, 10, 10, 0.74);
   cursor: pointer;
   transform: translateY(-50%);
-  transition: background 160ms ease, color 160ms ease;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
 }
 
 .password-toggle:hover {
@@ -4915,7 +5239,10 @@ body {
   border-radius: 0;
   border: 0;
   background: transparent;
-  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
 }
 
 .field-control:focus-within {
@@ -5148,6 +5475,14 @@ body {
 
   .admin-achievements-list {
     grid-template-columns: 1fr;
+  }
+
+  .admin-achievements-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-achievements-controls p {
+    justify-content: flex-start;
   }
 
   .student-history-card {
@@ -5512,7 +5847,9 @@ body {
 
   .student-results-header-actions .primary-button,
   .student-results-header-actions .ghost-button,
-  .admin-achievements-header .primary-button {
+  .admin-achievements-header .primary-button,
+  .admin-achievements-header-actions,
+  .admin-achievements-view-toggle {
     width: 100%;
   }
 }
@@ -5602,7 +5939,11 @@ body {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255, 209, 2, 0.25) 0%, rgba(255, 209, 2, 0.08) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 209, 2, 0.25) 0%,
+    rgba(255, 209, 2, 0.08) 100%
+  );
   border: 2px solid rgba(255, 209, 2, 0.3);
   display: flex;
   align-items: center;
@@ -6113,7 +6454,11 @@ body {
   border-radius: 22px;
   border: 1px solid rgba(255, 209, 2, 0.16);
   background:
-    radial-gradient(circle at top left, rgba(255, 209, 2, 0.1), transparent 30%),
+    radial-gradient(
+      circle at top left,
+      rgba(255, 209, 2, 0.1),
+      transparent 30%
+    ),
     linear-gradient(180deg, #171717 0%, #121212 100%);
   box-shadow: var(--shadow);
 }
@@ -6337,7 +6682,11 @@ body {
 
 .onboarding-student-step-card-completed {
   border-color: rgba(74, 222, 128, 0.2);
-  background: linear-gradient(180deg, rgba(74, 222, 128, 0.06) 0%, #141414 100%);
+  background: linear-gradient(
+    180deg,
+    rgba(74, 222, 128, 0.06) 0%,
+    #141414 100%
+  );
 }
 
 .onboarding-student-step-card-next {

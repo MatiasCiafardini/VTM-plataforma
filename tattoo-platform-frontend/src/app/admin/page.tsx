@@ -81,6 +81,7 @@ type AdminDashboard = {
     studentId: string;
     studentName: string;
     studentEmail: string;
+    studentInstagramHandle: string | null;
     challengeId: string;
     challengeTitle: string;
     challengeDescription: string | null;

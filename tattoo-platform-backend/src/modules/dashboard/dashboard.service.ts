@@ -686,6 +686,7 @@ export class DashboardService {
         studentId: string;
         studentName: string;
         studentEmail: string;
+        studentInstagramHandle: string | null;
         challengeId: string;
         challengeTitle: string;
         challengeDescription: string | null;
@@ -763,6 +764,7 @@ export class DashboardService {
           studentId: student.id,
           studentName: `${student.user.firstName} ${student.user.lastName}`,
           studentEmail: student.user.email,
+          studentInstagramHandle: student.instagramHandle,
           challengeId: challenge.id,
           challengeTitle: challenge.title,
           challengeDescription: challenge.description,
@@ -788,6 +790,7 @@ export class DashboardService {
         studentId: studentChallenge.studentId,
         studentName: `${studentChallenge.student.user.firstName} ${studentChallenge.student.user.lastName}`,
         studentEmail: studentChallenge.student.user.email,
+        studentInstagramHandle: studentChallenge.student.instagramHandle,
         challengeId: studentChallenge.challengeId,
         challengeTitle: studentChallenge.challenge.title,
         challengeDescription: studentChallenge.challenge.description,
