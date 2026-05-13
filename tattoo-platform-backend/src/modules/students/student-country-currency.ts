@@ -12,7 +12,7 @@ export const STUDENT_COUNTRY_CURRENCY_BY_NAME: Record<string, string> = {
   'estados unidos': 'USD',
   'united states': 'USD',
   usa: 'USD',
-  espana: 'EUR',
+  españa: 'EUR',
   españa: 'EUR',
   spain: 'EUR',
 };
