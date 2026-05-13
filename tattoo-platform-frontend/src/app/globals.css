@@ -3286,6 +3286,87 @@ h3 {
   min-height: 52px;
 }
 
+.achievement-format-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border-radius: 24px;
+  background: rgba(0, 0, 0, 0.72);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.achievement-format-modal {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #2a2a2a;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #181818 0%, #101010 100%);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+}
+
+.achievement-format-modal h4 {
+  color: #fff8ea;
+  font-size: 1.15rem;
+}
+
+.achievement-format-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.achievement-format-option {
+  min-height: 132px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid rgba(255, 209, 2, 0.18);
+  border-radius: 14px;
+  background: rgba(255, 209, 2, 0.06);
+  color: #f5f1e8;
+  text-align: left;
+  cursor: pointer;
+}
+
+.achievement-format-option:hover,
+.achievement-format-option:focus-visible {
+  border-color: rgba(255, 209, 2, 0.46);
+  background: rgba(255, 209, 2, 0.11);
+}
+
+.achievement-format-option span {
+  color: var(--accent);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.achievement-format-option strong {
+  color: #fff8ea;
+  font-size: 0.95rem;
+}
+
+.achievement-format-option small {
+  color: #9a999a;
+  font-size: 0.78rem;
+}
+
+.achievement-format-cancel {
+  min-height: 42px;
+  border: 1px solid #2a2a2a;
+  border-radius: 12px;
+  background: #171717;
+  color: #f5f1e8;
+  cursor: pointer;
+}
+
 .admin-challenges-shell {
   display: grid;
   gap: 16px;
@@ -4185,7 +4266,7 @@ h3 {
   width: max-content;
   gap: 14px;
   padding: 22px 16px;
-  animation: admin-achievements-marquee 144s linear infinite;
+  animation: admin-achievements-marquee 260s linear infinite;
 }
 
 .admin-achievements-carousel-shell:hover .admin-achievements-carousel-track {
@@ -5759,6 +5840,19 @@ body {
   .student-challenge-flyer-mark svg {
     width: 24px;
     height: 24px;
+  }
+
+  .achievement-format-modal-backdrop {
+    padding: 12px;
+    border-radius: 20px;
+  }
+
+  .achievement-format-options {
+    grid-template-columns: 1fr;
+  }
+
+  .achievement-format-option {
+    min-height: 104px;
   }
 
   .student-history-card-top,
