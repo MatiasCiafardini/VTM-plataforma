@@ -16,6 +16,7 @@ import {
 import { backendFetch } from '@/lib/backend';
 import { safeBackendFetch } from '@/lib/server-fetch';
 import { requireRole } from '@/lib/session';
+import { getTimezoneForCountry } from '@/lib/countries';
 import Link from 'next/link';
 
 type TabKey = 'dashboard' | 'results' | 'challenges' | 'analyzer' | 'followups' | 'profile';
@@ -178,18 +179,6 @@ type NewsItem = {
   createdAt: string;
 };
 
-const COUNTRY_TIMEZONE_BY_NAME: Record<string, string> = {
-  Argentina: 'America/Argentina/Buenos_Aires',
-  Brazil: 'America/Sao_Paulo',
-  Chile: 'America/Santiago',
-  Colombia: 'America/Bogota',
-  Mexico: 'America/Mexico_City',
-  Peru: 'America/Lima',
-  Spain: 'Europe/Madrid',
-  Uruguay: 'America/Montevideo',
-  'United States': 'America/New_York',
-};
-
 function resolveTab(tab?: string): TabKey {
   if (
     tab === 'results' ||
@@ -270,7 +259,7 @@ function resolveMeetingDisplayTimezone(
   country: string | null | undefined,
   meetingTimezone: string | null | undefined,
 ) {
-  const countryTimezone = country ? COUNTRY_TIMEZONE_BY_NAME[country] : null;
+  const countryTimezone = getTimezoneForCountry(country);
   const candidates = [studentTimezone, countryTimezone, meetingTimezone, 'UTC'];
 
   for (const candidate of candidates) {

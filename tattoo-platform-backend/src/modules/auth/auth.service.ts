@@ -87,6 +87,10 @@ export class AuthService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         country: dto.country ?? '',
+        nationality: dto.country ?? '',
+        instagramHandle: dto.instagramHandle?.replace(/^@/, ''),
+        phoneCountryCode: dto.phoneCountryCode,
+        phoneNumber: dto.phoneNumber?.replace(/\s+/g, ''),
         birthDate: dto.birthDate,
       });
 

@@ -8,7 +8,10 @@ import { DisplayCurrencyMode, Prisma, UserRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { UsersService } from '../users/users.service';
-import { getCurrencyCodeForCountry } from './student-country-currency';
+import {
+  getCurrencyCodeForCountry,
+  getTimezoneForCountry,
+} from './student-country-currency';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { UpdateOwnStudentProfileDto } from './dto/update-own-student-profile.dto';
 
@@ -38,6 +41,8 @@ export class StudentsService {
         dto.country,
         tx,
       );
+      const resolvedTimezone =
+        dto.timezone ?? getTimezoneForCountry(dto.country);
 
       const createdUser = await this.usersService.createUser(
         {
@@ -54,10 +59,13 @@ export class StudentsService {
       const createdStudent = await tx.studentProfile.create({
         data: {
           userId: createdUser.id,
+          nationality: dto.nationality ?? dto.country,
           country: dto.country,
           instagramHandle: dto.instagramHandle,
+          phoneCountryCode: dto.phoneCountryCode,
+          phoneNumber: dto.phoneNumber,
           birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
-          timezone: dto.timezone,
+          timezone: resolvedTimezone,
           localCurrencyId: resolvedCurrencyId,
           displayCurrencyMode:
             dto.displayCurrencyMode ?? DisplayCurrencyMode.BOTH,

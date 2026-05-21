@@ -2,7 +2,12 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { getCurrencyCodeForCountry, supportedCountries } from '@/lib/countries';
+import {
+  getCurrencyCodeForCountry,
+  getTimezoneForCountry,
+  supportedCountries,
+  supportedTimezones,
+} from '@/lib/countries';
 
 type QuickLink = {
   id: string;
@@ -120,8 +125,8 @@ export function StudentProfilePanel({
   const [linkError, setLinkError] = useState<string | null>(null);
   const [form, setForm] = useState({
     fullName: fallbackName,
-    nationality: profile.nationality ?? '',
-    country: profile.country ?? '',
+    nationality: profile.nationality ?? profile.country ?? '',
+    country: profile.country ?? profile.nationality ?? '',
     instagramHandle: profile.instagramHandle ?? '',
     birthDate: profile.birthDate ? profile.birthDate.slice(0, 10) : '',
     timezone: profile.timezone ?? '',
@@ -131,16 +136,23 @@ export function StudentProfilePanel({
 
   function updateForm(field: keyof typeof form, value: string) {
     setForm((current) => {
-      const next = { ...current, [field]: value };
+      const next = field === 'nationality'
+        ? { ...current, nationality: value, country: value }
+        : { ...current, [field]: value };
 
-      if (field === 'country') {
+      if (field === 'nationality' || field === 'country') {
         const inferredCurrencyCode = getCurrencyCodeForCountry(value);
         const inferredCurrency = currencies.find(
           (currency) => currency.code === inferredCurrencyCode,
         );
+        const inferredTimezone = getTimezoneForCountry(value);
 
         if (inferredCurrency) {
           next.localCurrencyId = inferredCurrency.id;
+        }
+
+        if (inferredTimezone) {
+          next.timezone = inferredTimezone;
         }
       }
 
@@ -163,7 +175,7 @@ export function StudentProfilePanel({
           firstName,
           lastName,
           nationality: form.nationality || undefined,
-          country: form.country || undefined,
+          country: form.nationality || undefined,
           instagramHandle: form.instagramHandle || undefined,
           birthDate: form.birthDate || undefined,
           timezone: form.timezone || undefined,
@@ -180,8 +192,8 @@ export function StudentProfilePanel({
 
       setForm({
         fullName: `${payload.user.firstName} ${payload.user.lastName}`.trim(),
-        nationality: payload.nationality ?? '',
-        country: payload.country ?? '',
+        nationality: payload.nationality ?? payload.country ?? '',
+        country: payload.country ?? payload.nationality ?? '',
         instagramHandle: payload.instagramHandle ?? '',
         birthDate: payload.birthDate ? payload.birthDate.slice(0, 10) : '',
         timezone: payload.timezone ?? '',
@@ -292,8 +304,8 @@ export function StudentProfilePanel({
               <strong>{form.fullName || fallbackName}</strong>
             </div>
             <div className="profile-preview-item">
-              <span>Pais</span>
-              <strong>{form.country || '-'}</strong>
+              <span>Nacionalidad</span>
+              <strong>{form.nationality || '-'}</strong>
             </div>
             <div className="profile-preview-item">
               <span>Instagram</span>
@@ -333,26 +345,9 @@ export function StudentProfilePanel({
                 </label>
                 <label>
                   <span>Nacionalidad</span>
-                  <input
-                    type="text"
+                  <select
                     value={form.nationality}
                     onChange={(event) => updateForm('nationality', event.target.value)}
-                    placeholder="Argentina"
-                  />
-                </label>
-                <label>
-                  <span>Fecha de nacimiento</span>
-                  <input
-                    type="date"
-                    value={form.birthDate}
-                    onChange={(event) => updateForm('birthDate', event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Pais</span>
-                  <select
-                    value={form.country}
-                    onChange={(event) => updateForm('country', event.target.value)}
                   >
                     <option value="">Seleccionar pais</option>
                     {supportedCountries.map((country) => (
@@ -361,6 +356,14 @@ export function StudentProfilePanel({
                       </option>
                     ))}
                   </select>
+                </label>
+                <label>
+                  <span>Fecha de nacimiento</span>
+                  <input
+                    type="date"
+                    value={form.birthDate}
+                    onChange={(event) => updateForm('birthDate', event.target.value)}
+                  />
                 </label>
                 <label>
                   <span>Instagram</span>
@@ -373,12 +376,17 @@ export function StudentProfilePanel({
                 </label>
                 <label>
                   <span>Zona horaria</span>
-                  <input
-                    type="text"
+                  <select
                     value={form.timezone}
                     onChange={(event) => updateForm('timezone', event.target.value)}
-                    placeholder="America/Argentina/Buenos_Aires"
-                  />
+                  >
+                    <option value="">Seleccionar zona horaria</option>
+                    {supportedTimezones.map((timezone) => (
+                      <option key={timezone} value={timezone}>
+                        {timezone}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   <span>Moneda local</span>

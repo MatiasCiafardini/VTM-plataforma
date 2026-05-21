@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
-import { supportedCountries } from "@/lib/countries";
+import {
+  countryPhonePrefixes,
+  getPhonePrefixForCountry,
+  supportedCountries,
+} from "@/lib/countries";
 
 type RegisterPayload = {
   role: "ADMIN" | "MENTOR" | "STUDENT";
@@ -50,7 +54,14 @@ export function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [phonePrefix, setPhonePrefix] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  function handleCountryChange(value: string) {
+    setSelectedCountry(value);
+    setPhonePrefix(getPhonePrefixForCountry(value) ?? "");
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -63,6 +74,9 @@ export function RegisterForm() {
     const password = String(formData.get("password") ?? "");
     const confirmPassword = String(formData.get("confirmPassword") ?? "");
     const country = String(formData.get("country") ?? "").trim();
+    const instagramHandle = String(formData.get("instagramHandle") ?? "").trim();
+    const phoneCountryCode = String(formData.get("phoneCountryCode") ?? "").trim();
+    const phoneNumber = String(formData.get("phoneNumber") ?? "").trim();
     const accessCode = String(formData.get("accessCode") ?? "").trim();
     const birthDate = String(formData.get("birthDate") ?? "").trim();
 
@@ -83,6 +97,9 @@ export function RegisterForm() {
           email,
           password,
           country,
+          instagramHandle: instagramHandle.replace(/^@/, ""),
+          phoneCountryCode,
+          phoneNumber,
           accessCode,
           birthDate: birthDate || undefined,
         }),
@@ -162,7 +179,12 @@ export function RegisterForm() {
 
       <label className="field login-field-simple">
         <span>Pais</span>
-        <select name="country" required defaultValue="">
+        <select
+          name="country"
+          required
+          value={selectedCountry}
+          onChange={(event) => handleCountryChange(event.target.value)}
+        >
           <option value="" disabled>
             Selecciona tu pais
           </option>
@@ -173,6 +195,49 @@ export function RegisterForm() {
           ))}
         </select>
       </label>
+
+      <label className="field login-field-simple">
+        <span>Instagram</span>
+        <input
+          name="instagramHandle"
+          type="text"
+          placeholder="@tuusuario"
+          required
+        />
+      </label>
+
+      <div className="register-grid">
+        <label className="field login-field-simple">
+          <span>Prefijo</span>
+          <select
+            name="phoneCountryCode"
+            required
+            value={phonePrefix}
+            onChange={(event) => setPhonePrefix(event.target.value)}
+          >
+            <option value="" disabled>
+              Prefijo
+            </option>
+            {countryPhonePrefixes.map(({ country, prefix }) => (
+              <option key={`${country}-${prefix}`} value={prefix}>
+                {prefix} {country}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="field login-field-simple">
+          <span>Telefono</span>
+          <input
+            name="phoneNumber"
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9 ]+"
+            placeholder="Numero"
+            required
+          />
+        </label>
+      </div>
 
       <label className="field login-field-simple">
         <span>Fecha de nacimiento</span>

@@ -157,6 +157,8 @@ model StudentProfile {
   nationality         String?
   country             String?
   instagramHandle     String?
+  phoneCountryCode    String?
+  phoneNumber         String?
   birthDate           DateTime?
   localCurrencyId     String?
   timezone            String?

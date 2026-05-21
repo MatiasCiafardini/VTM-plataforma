@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { supportedCountries } from '@/lib/countries';
 
 type QuickLink = {
   id: string;
@@ -90,8 +91,8 @@ export function AdminProfilePanel({
   const [isExpanded, setIsExpanded] = useState(false);
   const [form, setForm] = useState({
     fullName: fullNameFallback,
-    nationality: profile.adminProfile?.nationality ?? '',
-    country: profile.adminProfile?.country ?? '',
+    nationality: profile.adminProfile?.nationality ?? profile.adminProfile?.country ?? '',
+    country: profile.adminProfile?.country ?? profile.adminProfile?.nationality ?? '',
     localCurrencyId: profile.adminProfile?.localCurrency?.id ?? '',
     birthDate: profile.adminProfile?.birthDate
       ? profile.adminProfile.birthDate.slice(0, 10)
@@ -108,7 +109,13 @@ export function AdminProfilePanel({
   const [profileError, setProfileError] = useState<string | null>(null);
 
   function updateField(field: keyof typeof form, value: string) {
-    setForm((current) => ({ ...current, [field]: value }));
+    setForm((current) => {
+      if (field === 'nationality') {
+        return { ...current, nationality: value, country: value };
+      }
+
+      return { ...current, [field]: value };
+    });
   }
 
   async function handleSaveProfile(event: React.FormEvent<HTMLFormElement>) {
@@ -126,7 +133,7 @@ export function AdminProfilePanel({
           firstName,
           lastName,
           nationality: form.nationality || undefined,
-          country: form.country || undefined,
+          country: form.nationality || undefined,
           localCurrencyId: form.localCurrencyId || undefined,
           birthDate: form.birthDate || undefined,
           startDate: form.startDate || undefined,
@@ -142,8 +149,8 @@ export function AdminProfilePanel({
       setForm((current) => ({
         ...current,
         fullName: `${payload.firstName} ${payload.lastName}`.trim(),
-        nationality: payload.adminProfile?.nationality ?? '',
-        country: payload.adminProfile?.country ?? '',
+        nationality: payload.adminProfile?.nationality ?? payload.adminProfile?.country ?? '',
+        country: payload.adminProfile?.country ?? payload.adminProfile?.nationality ?? '',
         localCurrencyId: payload.adminProfile?.localCurrency?.id ?? '',
         birthDate: payload.adminProfile?.birthDate
           ? payload.adminProfile.birthDate.slice(0, 10)
@@ -240,8 +247,8 @@ export function AdminProfilePanel({
               <strong>{form.fullName || fullNameFallback}</strong>
             </div>
             <div className="profile-preview-item">
-              <span>Pais</span>
-              <strong>{form.country || '-'}</strong>
+              <span>Nacionalidad</span>
+              <strong>{form.nationality || '-'}</strong>
             </div>
             <div className="profile-preview-item">
               <span>Moneda local</span>
@@ -277,21 +284,17 @@ export function AdminProfilePanel({
                 </label>
                 <label>
                   <span>Nacionalidad</span>
-                  <input
-                    type="text"
+                  <select
                     value={form.nationality}
                     onChange={(event) => updateField('nationality', event.target.value)}
-                    placeholder="Argentina"
-                  />
-                </label>
-                <label>
-                  <span>Pais</span>
-                  <input
-                    type="text"
-                    value={form.country}
-                    onChange={(event) => updateField('country', event.target.value)}
-                    placeholder="Argentina"
-                  />
+                  >
+                    <option value="">Seleccionar pais</option>
+                    {supportedCountries.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
                   <span>Moneda local</span>

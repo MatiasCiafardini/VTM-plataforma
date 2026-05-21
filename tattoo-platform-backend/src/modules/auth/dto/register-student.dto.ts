@@ -30,6 +30,21 @@ export class RegisterStudentDto {
   @IsString()
   country?: string;
 
+  @ApiPropertyOptional({ example: 'tuusuario' })
+  @IsOptional()
+  @IsString()
+  instagramHandle?: string;
+
+  @ApiPropertyOptional({ example: '+54' })
+  @IsOptional()
+  @IsString()
+  phoneCountryCode?: string;
+
+  @ApiPropertyOptional({ example: '1123456789' })
+  @IsOptional()
+  @IsString()
+  phoneNumber?: string;
+
   @ApiProperty({ example: 'VMT2026' })
   @IsString()
   accessCode!: string;

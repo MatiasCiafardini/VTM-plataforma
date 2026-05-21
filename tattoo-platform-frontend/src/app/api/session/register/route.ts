@@ -26,6 +26,9 @@ export async function POST(request: NextRequest) {
       firstName: string;
       lastName: string;
       country: string;
+      instagramHandle?: string;
+      phoneCountryCode?: string;
+      phoneNumber?: string;
       accessCode: string;
       birthDate?: string;
     };
