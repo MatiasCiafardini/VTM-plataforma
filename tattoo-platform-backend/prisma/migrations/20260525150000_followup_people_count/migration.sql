@@ -1,3 +1,40 @@
+INSERT INTO "MetricDefinition" (
+  "id",
+  "categoryId",
+  "name",
+  "slug",
+  "description",
+  "valueType",
+  "isRequired",
+  "isActive",
+  "isSystemSeed",
+  "isMonetary",
+  "sortOrder",
+  "createdAt",
+  "updatedAt"
+)
+SELECT
+  'metric-personas-en-seguimiento',
+  "id",
+  'Personas en seguimiento',
+  'porcentaje-seguimiento',
+  NULL,
+  'INTEGER',
+  false,
+  true,
+  true,
+  false,
+  10,
+  now(),
+  now()
+FROM "MetricCategory"
+WHERE "slug" = 'marketing-ventas'
+AND NOT EXISTS (
+  SELECT 1
+  FROM "MetricDefinition"
+  WHERE "slug" = 'porcentaje-seguimiento'
+);
+
 UPDATE "MetricDefinition"
 SET
   "name" = 'Personas en seguimiento',

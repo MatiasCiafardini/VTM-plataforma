@@ -880,7 +880,7 @@ export function StudentResultsPanel({
                 ) : null}
                 {isExistingPeriodLocked ? (
                   <p className="student-results-form-error">
-                    Ese mes no se puede modificar porque ya no estA en borrador.
+                    Ese mes no se puede modificar porque ya no está en borrador.
                   </p>
                 ) : null}
               </article>
@@ -1112,28 +1112,40 @@ export function StudentResultsPanel({
               ) : null}
 
               <div className="student-results-form-actions">
-                <button
-                  type="button"
-                  className="ghost-button"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="primary-button"
-                  disabled={isSubmitting || isSaving || isExistingPeriodLocked}
-                  onClick={handleSubmitMonth}
-                >
-                  {isSubmitting ? "Enviando..." : "Enviar mes"}
-                </button>
-                <button
-                  type="submit"
-                  className="ghost-button"
-                  disabled={isSaving || isSubmitting || isExistingPeriodLocked}
-                >
-                  {isSaving ? "Guardando..." : "Guardar borrador"}
-                </button>
+                {isExistingPeriodLocked ? (
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Volver
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      className="primary-button"
+                      disabled={isSubmitting || isSaving}
+                      onClick={handleSubmitMonth}
+                    >
+                      {isSubmitting ? "Enviando..." : "Enviar mes"}
+                    </button>
+                    <button
+                      type="submit"
+                      className="ghost-button"
+                      disabled={isSaving || isSubmitting}
+                    >
+                      {isSaving ? "Guardando..." : "Guardar borrador"}
+                    </button>
+                  </>
+                )}
               </div>
             </form>
           </div>
