@@ -71,7 +71,7 @@ VALUES
   (gen_random_uuid()::text, marketing_cat_id, 'Nuevos seguidores ganados en el mes',             'nuevos-seguidores-mes',               'INTEGER', false, true, true, false,  7, now(), now()),
   (gen_random_uuid()::text, marketing_cat_id, 'Seguidores ganados acumulados',                   'seguidores-ganados-acumulados',        'INTEGER', false, true, true, false,  8, now(), now()),
   (gen_random_uuid()::text, marketing_cat_id, 'Tasa de cierre del mes (%)',                      'tasa-de-cierre',                      'DECIMAL', false, true, true, false,  9, now(), now()),
-  (gen_random_uuid()::text, marketing_cat_id, 'Porcentaje de seguimiento del mes (%)',           'porcentaje-seguimiento',              'DECIMAL', false, true, true, false, 10, now(), now()),
+  (gen_random_uuid()::text, marketing_cat_id, 'Personas en seguimiento',                        'porcentaje-seguimiento',              'INTEGER', false, true, true, false, 10, now(), now()),
   (gen_random_uuid()::text, marketing_cat_id, 'Variacion de conversaciones vs mes anterior',     'crecimiento-conversaciones-mensual',  'INTEGER', false, true, true, false, 11, now(), now()),
   (gen_random_uuid()::text, marketing_cat_id, 'Meses consecutivos con crecimiento',              'meses-consecutivos-creciendo',        'INTEGER', false, true, true, false, 12, now(), now()),
   (gen_random_uuid()::text, marketing_cat_id, 'Meses activos consecutivos en el sistema',        'meses-activos-consecutivos',          'INTEGER', false, true, true, false, 13, now(), now()),
@@ -219,14 +219,14 @@ VALUES
 
 -- ── SEGUIMIENTO ───────────────────────────────────────────────────────────
 (gen_random_uuid()::text,
- 'Cero prospectos sin respuesta',
- 'Mes completo con seguimiento a todos',
- 'ribbon', 100, 3, true, mid_pct_seguimiento, NULL, NULL, NULL, now(), now()),
+ 'Primer seguimiento activo',
+ 'Persona en seguimiento registrada en el mes',
+ 'ribbon', 1, 1, true, mid_pct_seguimiento, NULL, NULL, NULL, now(), now()),
 
 (gen_random_uuid()::text,
- 'Sin fantasmas este mes',
- 'Ningún prospecto quedó sin respuesta',
- 'spark', 100, 2, true, mid_pct_seguimiento, NULL, NULL, NULL, now(), now()),
+ '10 personas en seguimiento',
+ 'Prospectos activos en seguimiento durante el mes',
+ 'spark', 10, 2, true, mid_pct_seguimiento, NULL, NULL, NULL, now(), now()),
 
 -- ── CIERRES MENSUALES ─────────────────────────────────────────────────────
 (gen_random_uuid()::text,

@@ -750,9 +750,9 @@ async function seedMetricCatalog() {
           sortOrder: 9,
         },
         {
-          name: 'Porcentaje de seguimiento del mes (%)',
+          name: 'Personas en seguimiento',
           slug: 'porcentaje-seguimiento',
-          valueType: MetricValueType.DECIMAL,
+          valueType: MetricValueType.INTEGER,
           isRequired: false,
           isMonetary: false,
           sortOrder: 10,

@@ -76,7 +76,7 @@ type FormState = {
   cierresPorRecomendaciones: string;
   cierresRecurrentes: string;
   cierresConNuevosSeguidores: string;
-  porcentajeSeguimiento: string;
+  personasEnSeguimiento: string;
 };
 
 const monthOptions = [
@@ -153,7 +153,7 @@ function buildInitialFormState(): FormState {
     cierresPorRecomendaciones: "",
     cierresRecurrentes: "",
     cierresConNuevosSeguidores: "",
-    porcentajeSeguimiento: "",
+    personasEnSeguimiento: "",
   };
 }
 
@@ -181,7 +181,7 @@ function buildFormStateForPeriod(
     cierresPorRecomendaciones: val(period?.cierresPorRecomendaciones ?? null),
     cierresRecurrentes: val(period?.cierresRecurrentes ?? null),
     cierresConNuevosSeguidores: val(period?.cierresConNuevosSeguidores ?? null),
-    porcentajeSeguimiento: val(period?.porcentajeSeguimiento ?? null),
+    personasEnSeguimiento: val(period?.porcentajeSeguimiento ?? null),
   };
 }
 
@@ -351,11 +351,14 @@ export function StudentResultsPanel({
         ["cierres-por-recomendaciones", form.cierresPorRecomendaciones],
         ["cierres-recurrentes", form.cierresRecurrentes],
         ["cierres-con-nuevos-seguidores", form.cierresConNuevosSeguidores],
-        ["porcentaje-seguimiento", form.porcentajeSeguimiento],
+        ["porcentaje-seguimiento", form.personasEnSeguimiento],
       ]
         .map(([slug, rawValue]) => {
           const definition = metricDefinitionMap[slug];
-          const parsedValue = toNumber(rawValue);
+          const parsedValue =
+            slug === "porcentaje-seguimiento"
+              ? Math.round(toNumber(rawValue))
+              : toNumber(rawValue);
 
           if (!definition) {
             return null;
@@ -1089,16 +1092,15 @@ export function StudentResultsPanel({
                     />
                   </label>
                   <label>
-                    <span>Seguimiento del mes %</span>
+                    <span>Personas en seguimiento</span>
                     <input
                       type="number"
                       min="0"
-                      max="100"
-                      step="0.1"
+                      step="1"
                       placeholder="0"
-                      value={form.porcentajeSeguimiento}
+                      value={form.personasEnSeguimiento}
                       onChange={(event) =>
-                        updateField("porcentajeSeguimiento", event.target.value)
+                        updateField("personasEnSeguimiento", event.target.value)
                       }
                     />
                   </label>

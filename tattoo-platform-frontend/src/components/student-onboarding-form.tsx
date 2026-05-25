@@ -36,7 +36,7 @@ type MetricFieldsState = {
   cierresPorRecomendaciones: string;
   cierresRecurrentes: string;
   cierresConNuevosSeguidores: string;
-  porcentajeSeguimiento: string;
+  personasEnSeguimiento: string;
 };
 
 type OnboardingFormState = {
@@ -82,7 +82,7 @@ const metricFieldKeys: Array<keyof MetricFieldsState> = [
   "cierresPorRecomendaciones",
   "cierresRecurrentes",
   "cierresConNuevosSeguidores",
-  "porcentajeSeguimiento",
+  "personasEnSeguimiento",
 ];
 
 const currentYear = new Date().getFullYear();
@@ -140,7 +140,7 @@ function createEmptyMetricsState(): MetricFieldsState {
     cierresPorRecomendaciones: "",
     cierresRecurrentes: "",
     cierresConNuevosSeguidores: "",
-    porcentajeSeguimiento: "",
+    personasEnSeguimiento: "",
   };
 }
 
@@ -218,7 +218,9 @@ function buildMetricNumberMap(section: MetricFieldsState) {
     "cierres-con-nuevos-seguidores": toNumber(
       section.cierresConNuevosSeguidores,
     ),
-    "porcentaje-seguimiento": toNumber(section.porcentajeSeguimiento),
+    "porcentaje-seguimiento": Math.round(
+      toNumber(section.personasEnSeguimiento),
+    ),
   };
 }
 
@@ -259,12 +261,12 @@ function interpolateMetricSection(
       cierresPorRecomendaciones: "cierres-por-recomendaciones",
       cierresRecurrentes: "cierres-recurrentes",
       cierresConNuevosSeguidores: "cierres-con-nuevos-seguidores",
-      porcentajeSeguimiento: "porcentaje-seguimiento",
+      personasEnSeguimiento: "porcentaje-seguimiento",
     };
 
     const definition = metricDefinitionMap[slugByField[field] ?? ""];
     const rounded =
-      definition?.valueType === "INTEGER"
+      definition?.valueType === "INTEGER" || field === "personasEnSeguimiento"
         ? Math.round(interpolated)
         : roundTo(interpolated, 2);
 
@@ -562,16 +564,15 @@ function MetricSection({
             />
           </label>
           <label>
-            <span>Seguimiento del mes %</span>
+            <span>Personas en seguimiento</span>
             <input
               type="number"
               min="0"
-              max="100"
-              step="0.1"
+              step="1"
               placeholder="0"
-              value={data.porcentajeSeguimiento}
+              value={data.personasEnSeguimiento}
               onChange={(event) =>
-                onChange("porcentajeSeguimiento", event.target.value)
+                onChange("personasEnSeguimiento", event.target.value)
               }
             />
           </label>

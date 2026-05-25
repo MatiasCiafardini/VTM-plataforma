@@ -115,9 +115,9 @@ export class MetricPeriodAutomationService {
       const revenueUsd = this.getMetricNumber(
         valuesBySlug.get('ingresos-facturacion') ?? null,
       );
-      const storedFollowupPercent = this.getMetricNumberOrNull(
+      const peopleInFollowup = this.getMetricNumberOrNull(
         valuesBySlug.get('porcentaje-seguimiento') ?? null,
-      );
+      ) ?? 0;
 
       cumulativeConversations += conversations;
       cumulativeClosures += closures;
@@ -138,13 +138,6 @@ export class MetricPeriodAutomationService {
         cotizaciones > 0
           ? this.roundTo((closures / cotizaciones) * 100, 2)
           : 0;
-      const followupPercent =
-        storedFollowupPercent !== null
-          ? storedFollowupPercent
-          : conversations > 0
-            ? this.roundTo(Math.min(100, (cotizaciones / conversations) * 100), 2)
-            : 0;
-
       let conversationGrowth = 0;
       if (previousConversations !== null) {
         if (conversations >= previousConversations && conversations > 0) {
@@ -184,7 +177,7 @@ export class MetricPeriodAutomationService {
         this.upsertNumberMetric(
           period.id,
           definitionBySlug.get('porcentaje-seguimiento')?.id,
-          followupPercent,
+          peopleInFollowup,
         ),
         this.upsertNumberMetric(
           period.id,
