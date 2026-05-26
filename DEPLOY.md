@@ -263,6 +263,12 @@ Sincronizar solo onboarding:
 docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend npm run db:seed:onboarding
 ```
 
+Recalcular conversiones monetarias historicas:
+
+```bash
+docker compose --env-file .env.prod -f docker-compose.prod.yml exec backend npm run metrics:recalculate-currency
+```
+
 Verificar HTTP y HTTPS:
 
 ```bash

@@ -11,14 +11,18 @@ type EvolutionPeriod = {
   metricsCount: number;
   balanceGeneral: number | null;
   balanceGeneralUsd: number | null;
+  balanceGeneralCurrencyCode: string | null;
   ingresosFacturacion: number | null;
   ingresosFacturacionUsd: number | null;
+  ingresosFacturacionCurrencyCode: string | null;
   cantidadTotalTatuajes: number | null;
   comisionEstudio: number | null;
   comisionEstudioUsd: number | null;
+  comisionEstudioCurrencyCode: string | null;
   comisionEstudioPorcentaje: number | null;
   gastosDelMes: number | null;
   gastosDelMesUsd: number | null;
+  gastosDelMesCurrencyCode: string | null;
   seguidoresInstagramActuales: number | null;
   consultasMensuales: number | null;
   conversacionesANuevos: number | null;
@@ -113,7 +117,7 @@ function formatLocalAndUsd(
     maximumFractionDigits: 2,
   }).format(localValue ?? 0);
 
-  if (usdValue === null || usdValue === undefined) {
+  if (currencyCode === "USD" || usdValue === null || usdValue === undefined) {
     return localFormatted;
   }
 
@@ -623,7 +627,9 @@ export function StudentResultsPanel({
                               {formatLocalAndUsd(
                                 period.ingresosFacturacion,
                                 period.ingresosFacturacionUsd,
-                                localCurrency?.code ?? "USD",
+                                period.ingresosFacturacionCurrencyCode ??
+                                  localCurrency?.code ??
+                                  "USD",
                               )}
                             </strong>
                             {delta ? (
@@ -736,7 +742,9 @@ export function StudentResultsPanel({
                           {formatLocalAndUsd(
                             period.ingresosFacturacion,
                             period.ingresosFacturacionUsd,
-                            localCurrency?.code ?? "USD",
+                            period.ingresosFacturacionCurrencyCode ??
+                              localCurrency?.code ??
+                              "USD",
                           )}
                         </strong>
                       </div>
@@ -746,7 +754,9 @@ export function StudentResultsPanel({
                           {formatLocalAndUsd(
                             period.balanceGeneral,
                             period.balanceGeneralUsd,
-                            localCurrency?.code ?? "USD",
+                            period.balanceGeneralCurrencyCode ??
+                              localCurrency?.code ??
+                              "USD",
                           )}
                         </strong>
                       </div>
@@ -784,7 +794,9 @@ export function StudentResultsPanel({
                         {formatLocalAndUsd(
                           period.comisionEstudio,
                           period.comisionEstudioUsd,
-                          localCurrency?.code ?? "USD",
+                          period.comisionEstudioCurrencyCode ??
+                            localCurrency?.code ??
+                            "USD",
                         )}
                       </span>
                       <span>
@@ -792,7 +804,9 @@ export function StudentResultsPanel({
                         {formatLocalAndUsd(
                           period.gastosDelMes,
                           period.gastosDelMesUsd,
-                          localCurrency?.code ?? "USD",
+                          period.gastosDelMesCurrencyCode ??
+                            localCurrency?.code ??
+                            "USD",
                         )}
                       </span>
                     </div>

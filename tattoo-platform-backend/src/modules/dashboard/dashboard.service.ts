@@ -48,6 +48,7 @@ export class DashboardService {
           values: {
             include: {
               metricDefinition: true,
+              originalCurrency: true,
             },
           },
         },
@@ -234,11 +235,19 @@ export class DashboardService {
           latestPeriod?.values ?? [],
           'balance-general',
         ),
+        balanceGeneralCurrencyCode: this.getMetricOriginalCurrencyCode(
+          latestPeriod?.values ?? [],
+          'balance-general',
+        ),
         ingresosFacturacion: this.getMetricOriginalNumericValue(
           latestPeriod?.values ?? [],
           trackedMetrics.revenueMetricSlug,
         ),
         ingresosFacturacionUsd: this.getMetricUsdValue(
+          latestPeriod?.values ?? [],
+          trackedMetrics.revenueMetricSlug,
+        ),
+        ingresosFacturacionCurrencyCode: this.getMetricOriginalCurrencyCode(
           latestPeriod?.values ?? [],
           trackedMetrics.revenueMetricSlug,
         ),
@@ -250,11 +259,19 @@ export class DashboardService {
           latestPeriod?.values ?? [],
           'comision-estudio',
         ),
+        comisionEstudioCurrencyCode: this.getMetricOriginalCurrencyCode(
+          latestPeriod?.values ?? [],
+          'comision-estudio',
+        ),
         gastosDelMes: this.getMetricOriginalNumericValue(
           latestPeriod?.values ?? [],
           'gastos-del-mes',
         ),
         gastosDelMesUsd: this.getMetricUsdValue(
+          latestPeriod?.values ?? [],
+          'gastos-del-mes',
+        ),
+        gastosDelMesCurrencyCode: this.getMetricOriginalCurrencyCode(
           latestPeriod?.values ?? [],
           'gastos-del-mes',
         ),
@@ -272,11 +289,15 @@ export class DashboardService {
           year: period.year,
           status: period.status,
           metricsCount: period.values.length,
-          balanceGeneral: this.getMetricNumericValue(
+          balanceGeneral: this.getMetricOriginalNumericValue(
             period.values,
             'balance-general',
           ),
           balanceGeneralUsd: this.getMetricUsdValue(
+            period.values,
+            'balance-general',
+          ),
+          balanceGeneralCurrencyCode: this.getMetricOriginalCurrencyCode(
             period.values,
             'balance-general',
           ),
@@ -285,6 +306,10 @@ export class DashboardService {
             trackedMetrics.revenueMetricSlug,
           ),
           ingresosFacturacionUsd: this.getMetricUsdValue(
+            period.values,
+            trackedMetrics.revenueMetricSlug,
+          ),
+          ingresosFacturacionCurrencyCode: this.getMetricOriginalCurrencyCode(
             period.values,
             trackedMetrics.revenueMetricSlug,
           ),
@@ -300,6 +325,10 @@ export class DashboardService {
             period.values,
             'comision-estudio',
           ),
+          comisionEstudioCurrencyCode: this.getMetricOriginalCurrencyCode(
+            period.values,
+            'comision-estudio',
+          ),
           comisionEstudioPorcentaje: this.getMetricNumericValue(
             period.values,
             'comision-estudio-porcentaje',
@@ -309,6 +338,10 @@ export class DashboardService {
             'gastos-del-mes',
           ),
           gastosDelMesUsd: this.getMetricUsdValue(
+            period.values,
+            'gastos-del-mes',
+          ),
+          gastosDelMesCurrencyCode: this.getMetricOriginalCurrencyCode(
             period.values,
             'gastos-del-mes',
           ),
@@ -917,6 +950,18 @@ export class DashboardService {
     }
 
     return Number(metric.usdAmount);
+  }
+
+  private getMetricOriginalCurrencyCode(
+    values: Array<{
+      originalCurrency?: { code: string } | null;
+      metricDefinition: { slug: string };
+    }>,
+    slug: string,
+  ) {
+    const metric = values.find((value) => value.metricDefinition.slug === slug);
+
+    return metric?.originalCurrency?.code ?? null;
   }
 
   private getChallengeProgress(

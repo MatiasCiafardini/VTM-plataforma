@@ -16,6 +16,8 @@
     "db:seed:onboarding": "node scripts/seed-onboarding-roadmap.mjs",
     "challenges:backfill": "node dist/src/scripts/backfill-challenge-progress.js",
     "admin:rename-email": "node scripts/rename-admin-email.mjs",
+    "metrics:recalculate-currency": "node dist/src/scripts/recalculate-currency-results.js",
+    "metrics:recalculate-currency:dev": "ts-node src/scripts/recalculate-currency-results.ts",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",

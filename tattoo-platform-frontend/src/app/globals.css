@@ -1556,6 +1556,25 @@ h3 {
   font-size: 0.84rem;
 }
 
+.currency-rates-list {
+  margin-top: 14px;
+}
+
+.currency-rate-row {
+  grid-template-columns: minmax(180px, 1fr) minmax(240px, auto);
+}
+
+.currency-rate-row > div:last-child {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  text-align: right;
+}
+
+.currency-rate-row > div:last-child span {
+  color: var(--text-muted);
+}
+
 .profile-link-row button,
 .profile-link-form button {
   min-height: 44px;

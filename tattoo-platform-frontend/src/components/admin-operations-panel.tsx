@@ -51,7 +51,31 @@ type QuickLink = {
   url: string;
 };
 
-type TabKey = 'metrics' | 'notifications' | 'meetings' | 'codes' | 'noticias' | 'links';
+type Currency = {
+  id: string;
+  code: string;
+  name?: string;
+  symbol: string | null;
+  isActive?: boolean;
+};
+
+type ExchangeRate = {
+  id: string;
+  rate: string | number;
+  effectiveDate: string;
+  source: string | null;
+  fromCurrency: Currency;
+  toCurrency: Currency;
+};
+
+type TabKey =
+  | 'metrics'
+  | 'notifications'
+  | 'currencies'
+  | 'meetings'
+  | 'codes'
+  | 'noticias'
+  | 'links';
 
 const tabMeta: Array<{
   key: TabKey;
@@ -72,6 +96,13 @@ const tabMeta: Array<{
     eyebrow: 'Alertas automaticas',
     description:
       'Decide cuando avisar por carga mensual, logros completados y cambios de riesgo.',
+  },
+  {
+    key: 'currencies',
+    title: 'Conversiones',
+    eyebrow: 'Monedas',
+    description:
+      'Consulta cuanto convierte cada moneda hacia USD y cuando se actualizo esa tasa.',
   },
   {
     key: 'meetings',
@@ -111,23 +142,45 @@ function normalizeLinkUrl(url: string) {
   return `https://${url}`;
 }
 
+function formatRate(value: string | number, maximumFractionDigits = 8) {
+  return new Intl.NumberFormat('es-AR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits,
+  }).format(Number(value));
+}
+
+function formatRateDate(value: string) {
+  return new Intl.DateTimeFormat('es-AR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value));
+}
+
 export function AdminOperationsPanel({
   initialSettings,
   initialMeetings,
   initialCodes,
   initialNews,
   initialStudentDashboardLinks,
+  initialCurrencies,
+  initialExchangeRates,
 }: {
   initialSettings: AdminSettings;
   initialMeetings: GroupMeeting[];
   initialCodes: RegistrationCode[];
   initialNews: NewsItem[];
   initialStudentDashboardLinks: QuickLink[];
+  initialCurrencies: Currency[];
+  initialExchangeRates: ExchangeRate[];
 }) {
   const [settings, setSettings] = useState(initialSettings);
   const [links, setLinks] = useState<QuickLink[]>(initialStudentDashboardLinks);
+  const [exchangeRates, setExchangeRates] =
+    useState<ExchangeRate[]>(initialExchangeRates);
   const [activeTab, setActiveTab] = useState<TabKey>('metrics');
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncingRates, setIsSyncingRates] = useState(false);
   const [linkTitle, setLinkTitle] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [isSavingLink, setIsSavingLink] = useState(false);
@@ -135,6 +188,8 @@ export function AdminOperationsPanel({
   const [error, setError] = useState<string | null>(null);
   const [linkMessage, setLinkMessage] = useState<string | null>(null);
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [ratesMessage, setRatesMessage] = useState<string | null>(null);
+  const [ratesError, setRatesError] = useState<string | null>(null);
 
   function updateSection<
     SectionKey extends keyof AdminSettings,
@@ -244,9 +299,73 @@ export function AdminOperationsPanel({
     setLinkMessage('Acceso rapido eliminado.');
   }
 
+  async function handleSyncRates() {
+    setIsSyncingRates(true);
+    setRatesMessage(null);
+    setRatesError(null);
+
+    try {
+      const response = await fetch('/api/admin/currency/exchange-rates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload.message ?? 'No pudimos sincronizar las tasas.');
+      }
+
+      const ratesResponse = await fetch('/api/admin/currency/exchange-rates');
+      const ratesPayload = await ratesResponse.json();
+
+      if (!ratesResponse.ok) {
+        throw new Error(ratesPayload.message ?? 'No pudimos recargar las tasas.');
+      }
+
+      setExchangeRates(ratesPayload);
+      setRatesMessage('Tasas sincronizadas.');
+    } catch (error) {
+      setRatesError(
+        error instanceof Error ? error.message : 'No pudimos sincronizar las tasas.',
+      );
+    } finally {
+      setIsSyncingRates(false);
+    }
+  }
+
   const currentTab = useMemo(
     () => tabMeta.find((tab) => tab.key === activeTab) ?? tabMeta[0],
     [activeTab],
+  );
+  const latestRateByCurrencyId = useMemo(() => {
+    const latestRates = new Map<string, ExchangeRate>();
+
+    for (const rate of exchangeRates) {
+      if (rate.toCurrency.code !== 'USD') {
+        continue;
+      }
+
+      const current = latestRates.get(rate.fromCurrency.id);
+      const currentDate = current ? new Date(current.effectiveDate).getTime() : 0;
+      const nextDate = new Date(rate.effectiveDate).getTime();
+
+      if (!current || nextDate > currentDate) {
+        latestRates.set(rate.fromCurrency.id, rate);
+      }
+    }
+
+    return latestRates;
+  }, [exchangeRates]);
+  const currencyRows = useMemo(
+    () =>
+      initialCurrencies
+        .filter((currency) => currency.isActive !== false)
+        .map((currency) => ({
+          currency,
+          rate: currency.code === 'USD' ? null : latestRateByCurrencyId.get(currency.id) ?? null,
+        })),
+    [initialCurrencies, latestRateByCurrencyId],
   );
 
   return (
@@ -292,7 +411,8 @@ export function AdminOperationsPanel({
             activeTab === 'meetings' ||
             activeTab === 'codes' ||
             activeTab === 'noticias' ||
-            activeTab === 'links'
+            activeTab === 'links' ||
+            activeTab === 'currencies'
               ? (event) => event.preventDefault()
               : handleSubmit
           }
@@ -310,6 +430,8 @@ export function AdminOperationsPanel({
                   ? 'Slugs, puntos de riesgo y umbrales del score.'
                   : activeTab === 'notifications'
                     ? 'Alertas del header y automatizaciones.'
+                    : activeTab === 'currencies'
+                    ? 'Tasas actuales usadas para convertir montos a USD.'
                     : activeTab === 'codes'
                     ? 'Codigos activos, roles y conteo de usos.'
                     : activeTab === 'noticias'
@@ -457,6 +579,81 @@ export function AdminOperationsPanel({
             </div>
           ) : null}
 
+          {activeTab === 'currencies' ? (
+            <div className="admin-settings-section">
+              <article className="profile-card profile-links-card">
+                <div className="profile-card-header">
+                  <h4>
+                    <span className="profile-card-icon" aria-hidden="true">
+                      $
+                    </span>
+                    Tasas de conversion a USD
+                  </h4>
+                  <p>
+                    Estas son las tasas que usa el sistema para convertir metricas
+                    monetarias cuando se guardan.
+                  </p>
+                </div>
+
+                <div className="profile-link-form">
+                  <button
+                    type="button"
+                    className="primary-button"
+                    disabled={isSyncingRates}
+                    onClick={handleSyncRates}
+                  >
+                    {isSyncingRates ? 'Sincronizando...' : 'Sincronizar tasas'}
+                  </button>
+                </div>
+
+                {currencyRows.length > 0 ? (
+                  <div className="profile-links-list currency-rates-list">
+                    {currencyRows.map(({ currency, rate }) => {
+                      const numericRate = rate ? Number(rate.rate) : 1;
+                      const inverseRate = numericRate > 0 ? 1 / numericRate : null;
+
+                      return (
+                        <div
+                          className="profile-link-row currency-rate-row"
+                          key={currency.id}
+                        >
+                          <div>
+                            <strong>
+                              {currency.code} · {currency.name ?? currency.code}
+                            </strong>
+                          </div>
+                          <div>
+                            <strong>
+                              {currency.code === 'USD'
+                                ? 'US$ 1 = US$ 1,00'
+                                : inverseRate
+                                  ? `US$ 1 = ${formatRate(inverseRate, 2)} ${currency.code}`
+                                  : 'Pendiente'}
+                            </strong>
+                            <span>
+                              {rate
+                                ? `${rate.source ?? 'Manual'} · ${formatRateDate(rate.effectiveDate)}`
+                                : 'Moneda base'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="profile-empty-state">No hay monedas activas cargadas.</p>
+                )}
+
+                {ratesError ? (
+                  <p className="student-results-form-error">{ratesError}</p>
+                ) : null}
+                {ratesMessage ? (
+                  <p className="student-profile-success">{ratesMessage}</p>
+                ) : null}
+              </article>
+            </div>
+          ) : null}
+
           {activeTab === 'meetings' ? (
             <AdminGroupMeetingsPanel initialMeetings={initialMeetings} />
           ) : null}
@@ -528,7 +725,11 @@ export function AdminOperationsPanel({
             </div>
           ) : null}
 
-          {activeTab !== 'meetings' && activeTab !== 'codes' && activeTab !== 'noticias' && activeTab !== 'links' ? (
+          {activeTab !== 'meetings' &&
+          activeTab !== 'codes' &&
+          activeTab !== 'noticias' &&
+          activeTab !== 'links' &&
+          activeTab !== 'currencies' ? (
             <>
               {message ? <p className="student-results-form-success">{message}</p> : null}
               {error ? <p className="student-results-form-error">{error}</p> : null}

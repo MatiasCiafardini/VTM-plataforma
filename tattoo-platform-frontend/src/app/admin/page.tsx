@@ -111,6 +111,16 @@ type Currency = {
   code: string;
   name?: string;
   symbol: string | null;
+  isActive?: boolean;
+};
+
+type ExchangeRate = {
+  id: string;
+  rate: string | number;
+  effectiveDate: string;
+  source: string | null;
+  fromCurrency: Currency;
+  toCurrency: Currency;
 };
 
 type AdminOwnProfile = {
@@ -329,7 +339,7 @@ export default async function AdminPage({
   const params = searchParams ? await searchParams : undefined;
   const activeTab = resolveTab(params?.tab);
   const challengesView = params?.view === 'manage' ? 'manage' : 'wall';
-  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, challengeStudents, manualChallengeAssignments, adminSettings, groupMeetings, registrationCodes, notifications, adminProfile, adminQuickLinks, currencies, adminNews] = await Promise.all([
+  const [data, studentDashboardLinks, challengeTemplates, metricDefinitions, challengeStudents, manualChallengeAssignments, adminSettings, groupMeetings, registrationCodes, notifications, adminProfile, adminQuickLinks, currencies, adminNews, exchangeRates] = await Promise.all([
     activeTab === 'dashboard' ||
     activeTab === 'results' ||
     (activeTab === 'challenges' && challengesView === 'wall')
@@ -410,7 +420,7 @@ export default async function AdminPage({
           token: session.token,
         })
       : Promise.resolve([]),
-    activeTab === 'profile'
+    activeTab === 'profile' || activeTab === 'settings'
       ? backendFetch<Currency[]>('/currency/currencies', {
           token: session.token,
         })
@@ -421,6 +431,14 @@ export default async function AdminPage({
           [],
           { token: session.token },
           'admin news',
+        )
+      : Promise.resolve([]),
+    activeTab === 'settings'
+      ? safeBackendFetch<ExchangeRate[]>(
+          '/currency/exchange-rates',
+          [],
+          { token: session.token },
+          'exchange rates',
         )
       : Promise.resolve([]),
   ]);
@@ -654,6 +672,8 @@ export default async function AdminPage({
           initialCodes={registrationCodes}
           initialNews={adminNews}
           initialStudentDashboardLinks={studentDashboardLinks}
+          initialCurrencies={currencies}
+          initialExchangeRates={exchangeRates}
         />
       ) : activeTab === 'settings' ? (
         <article className="list-card">

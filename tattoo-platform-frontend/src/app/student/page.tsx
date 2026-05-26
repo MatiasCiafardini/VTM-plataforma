@@ -53,12 +53,16 @@ type StudentDashboard = {
   latestMetrics: {
     balanceGeneral: number | null;
     balanceGeneralUsd: number | null;
+    balanceGeneralCurrencyCode: string | null;
     ingresosFacturacion: number | null;
     ingresosFacturacionUsd: number | null;
+    ingresosFacturacionCurrencyCode: string | null;
     comisionEstudio: number | null;
     comisionEstudioUsd: number | null;
+    comisionEstudioCurrencyCode: string | null;
     gastosDelMes: number | null;
     gastosDelMesUsd: number | null;
+    gastosDelMesCurrencyCode: string | null;
     consultasMensuales: number | null;
     cierresDelMes: number | null;
   };
@@ -70,14 +74,18 @@ type StudentDashboard = {
     metricsCount: number;
     balanceGeneral: number | null;
     balanceGeneralUsd: number | null;
+    balanceGeneralCurrencyCode: string | null;
     ingresosFacturacion: number | null;
     ingresosFacturacionUsd: number | null;
+    ingresosFacturacionCurrencyCode: string | null;
     cantidadTotalTatuajes: number | null;
     comisionEstudio: number | null;
     comisionEstudioUsd: number | null;
+    comisionEstudioCurrencyCode: string | null;
     comisionEstudioPorcentaje: number | null;
     gastosDelMes: number | null;
     gastosDelMesUsd: number | null;
+    gastosDelMesCurrencyCode: string | null;
     seguidoresInstagramActuales: number | null;
     consultasMensuales: number | null;
     conversacionesANuevos: number | null;
@@ -204,7 +212,7 @@ function formatCurrencyAmount(value: number, currencyCode: string) {
 
 function formatMoneyWithUsd(localValue: number, currencyCode: string, usdValue?: number | null) {
   const local = formatCurrencyAmount(localValue, currencyCode);
-  if (usdValue === null || usdValue === undefined) {
+  if (currencyCode === 'USD' || usdValue === null || usdValue === undefined) {
     return local;
   }
 
@@ -334,15 +342,25 @@ export default async function StudentPage({
   const estimatedMargin =
     latestRevenue > 0 ? Math.round((latestOwnIncome / latestRevenue) * 100) : 0;
   const localCurrencyCode = data?.student.localCurrency?.code ?? 'USD';
-  const facturacionAmount = formatMoneyWithUsd(latestRevenue, localCurrencyCode, latestRevenueUsd);
+  const facturacionCurrencyCode =
+    data?.latestMetrics.ingresosFacturacionCurrencyCode ?? localCurrencyCode;
+  const ownIncomeCurrencyCode =
+    data?.latestMetrics.balanceGeneralCurrencyCode ?? localCurrencyCode;
+  const costsCurrencyCode =
+    data?.latestMetrics.gastosDelMesCurrencyCode ?? localCurrencyCode;
+  const facturacionAmount = formatMoneyWithUsd(
+    latestRevenue,
+    facturacionCurrencyCode,
+    latestRevenueUsd,
+  );
   const localIncomeAmount = formatMoneyWithUsd(
     latestOwnIncome,
-    localCurrencyCode,
+    ownIncomeCurrencyCode,
     latestOwnIncomeUsd,
   );
   const localCostsAmount = formatMoneyWithUsd(
     latestCosts,
-    localCurrencyCode,
+    costsCurrencyCode,
     latestCostsUsd,
   );
 
@@ -399,7 +417,7 @@ export default async function StudentPage({
                 <span className="metric-card-icon">$</span>
               </div>
               <strong>{facturacionAmount}</strong>
-              <p>Ultimo periodo registrado ({localCurrencyCode})</p>
+              <p>Ultimo periodo registrado ({facturacionCurrencyCode})</p>
             </article>
             <article className="summary-card metric-card">
               <div className="metric-card-top">
@@ -407,7 +425,7 @@ export default async function StudentPage({
                 <span className="metric-card-icon">+</span>
               </div>
               <strong>{localIncomeAmount}</strong>
-              <p>Luego de comision y gastos ({localCurrencyCode})</p>
+              <p>Luego de comision y gastos ({ownIncomeCurrencyCode})</p>
             </article>
             <article className="summary-card metric-card">
               <div className="metric-card-top">
@@ -415,7 +433,7 @@ export default async function StudentPage({
                 <span className="metric-card-icon">[]</span>
               </div>
               <strong>{localCostsAmount}</strong>
-              <p>Suma total cargada ({localCurrencyCode})</p>
+              <p>Suma total cargada ({costsCurrencyCode})</p>
             </article>
             <article className="summary-card metric-card">
               <div className="metric-card-top">
