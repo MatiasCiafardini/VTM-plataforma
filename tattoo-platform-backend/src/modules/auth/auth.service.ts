@@ -11,6 +11,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { RegistrationCodesService } from '../registration-codes/registration-codes.service';
 import { StudentsService } from '../students/students.service';
+import { getCurrencyCodeForCountry } from '../students/student-country-currency';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterStudentDto } from './dto/register-student.dto';
@@ -117,7 +118,17 @@ export class AuthService {
       if (code.role === UserRole.MENTOR) {
         await this.prisma.mentorProfile.create({ data: { userId } });
       } else if (code.role === UserRole.ADMIN) {
-        await this.prisma.adminProfile.create({ data: { userId } });
+        const localCurrencyId = await this.resolveLocalCurrencyId(dto.country);
+
+        await this.prisma.adminProfile.create({
+          data: {
+            userId,
+            nationality: dto.country,
+            country: dto.country,
+            birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+            localCurrencyId,
+          },
+        });
       }
     }
 
@@ -141,5 +152,19 @@ export class AuthService {
       accessToken: await this.jwtService.signAsync(payload),
       user: safeUser,
     };
+  }
+
+  private async resolveLocalCurrencyId(country: string | undefined) {
+    const currencyCode = getCurrencyCodeForCountry(country);
+
+    if (!currencyCode) {
+      return undefined;
+    }
+
+    const currency = await this.prisma.currency.findUnique({
+      where: { code: currencyCode },
+    });
+
+    return currency?.id;
   }
 }

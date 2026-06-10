@@ -87,6 +87,7 @@ function formatCurrencyOptionLabel(currency: Currency) {
     ARS: 'Peso argentino',
     CLP: 'Peso chileno',
     COP: 'Peso colombiano',
+    CRC: 'Colon costarricense',
     MXN: 'Peso mexicano',
     PEN: 'Sol peruano',
     UYU: 'Peso uruguayo',

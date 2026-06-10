@@ -562,6 +562,7 @@ async function seedCurrencies() {
     { code: 'ARS', name: 'Argentine Peso', symbol: '$', decimals: 2 },
     { code: 'CLP', name: 'Chilean Peso', symbol: '$', decimals: 0 },
     { code: 'COP', name: 'Colombian Peso', symbol: '$', decimals: 2 },
+    { code: 'CRC', name: 'Costa Rican Colon', symbol: '₡', decimals: 2 },
     { code: 'MXN', name: 'Mexican Peso', symbol: '$', decimals: 2 },
     { code: 'PEN', name: 'Peruvian Sol', symbol: 'S/', decimals: 2 },
     { code: 'UYU', name: 'Uruguayan Peso', symbol: '$', decimals: 2 },
