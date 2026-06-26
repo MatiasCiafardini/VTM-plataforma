@@ -1,21 +1,21 @@
-import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
-import { toApiErrorResponse } from '@/lib/api-errors';
-import { shouldUseSecureCookies } from '@/lib/auth-cookies';
-import { backendFetch } from '@/lib/backend';
+import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+import { toApiErrorResponse } from "@/lib/api-errors";
+import { shouldUseSecureCookies } from "@/lib/auth-cookies";
+import { backendFetch } from "@/lib/backend";
 import {
   nameCookieName,
   roleCookieName,
   sessionCookieName,
-} from '@/lib/config';
-import { getDashboardPath } from '@/lib/session';
+} from "@/lib/config";
+import { getDashboardPath } from "@/lib/session";
 
 type ResetPasswordResponse = {
   accessToken: string;
   user: {
     firstName: string;
     lastName: string;
-    role: 'ADMIN' | 'MENTOR' | 'STUDENT';
+    role: "ADMIN" | "MENTOR" | "STUDENT";
   };
 };
 
@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
     };
 
     const payload = await backendFetch<ResetPasswordResponse>(
-      '/auth/password-reset/confirm',
+      "/auth/password-reset/confirm",
       {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify(body),
       },
     );
@@ -40,17 +40,17 @@ export async function POST(request: NextRequest) {
 
     cookieStore.set(sessionCookieName, payload.accessToken, {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: "lax",
       secure: secureCookies,
-      path: '/',
+      path: "/",
       maxAge: 60 * 60 * 8,
     });
 
     cookieStore.set(roleCookieName, payload.user.role, {
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: "lax",
       secure: secureCookies,
-      path: '/',
+      path: "/",
       maxAge: 60 * 60 * 8,
     });
 
@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
       `${payload.user.firstName} ${payload.user.lastName}`,
       {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: "lax",
         secure: secureCookies,
-        path: '/',
+        path: "/",
         maxAge: 60 * 60 * 8,
       },
     );
@@ -71,6 +71,6 @@ export async function POST(request: NextRequest) {
       nextPath: getDashboardPath(payload.user.role),
     });
   } catch (error) {
-    return toApiErrorResponse(error, 'No pudimos actualizar la contrasena.');
+    return toApiErrorResponse(error, "No pudimos actualizar la contraseña.");
   }
 }

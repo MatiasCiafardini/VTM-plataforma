@@ -13,7 +13,12 @@ function EyeIcon({ crossed = false }: { crossed?: boolean }) {
   if (crossed) {
     return (
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <path
+          d="M3 3l18 18"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
         <path
           d="M10.58 10.58a2 2 0 0 0 2.84 2.84"
           stroke="currentColor"
@@ -77,13 +82,17 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form className="login-card login-card-compact login-card-reference" onSubmit={handleSubmit}>
+    <form
+      className="login-card login-card-compact login-card-reference"
+      onSubmit={handleSubmit}
+    >
       <div className="login-card-head">
-        <h1>Recuperar contrasena</h1>
+        <h1>Recuperar contraseña</h1>
       </div>
 
       <p className="register-help-text">
-        Ingresa tu email y te enviaremos un codigo para crear una nueva contrasena.
+        Ingresa tu email y te enviaremos un codigo para crear una nueva
+        contraseña.
       </p>
 
       <label className="field login-field-simple">
@@ -108,7 +117,10 @@ export function ForgotPasswordForm() {
 export function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialEmail = useMemo(() => searchParams.get("email") ?? "", [searchParams]);
+  const initialEmail = useMemo(
+    () => searchParams.get("email") ?? "",
+    [searchParams],
+  );
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [isCodeVerified, setIsCodeVerified] = useState(false);
@@ -145,7 +157,7 @@ export function ResetPasswordForm() {
     setError(null);
 
     if (password !== confirmPassword) {
-      setError("Las contrasenas no coinciden.");
+      setError("Las contraseñas no coinciden.");
       return;
     }
 
@@ -155,10 +167,16 @@ export function ResetPasswordForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, code, password }),
       });
-      const payload = (await response.json()) as ResetPayload | { message?: string };
+      const payload = (await response.json()) as
+        | ResetPayload
+        | { message?: string };
 
       if (!response.ok) {
-        setError("message" in payload ? payload.message ?? "No pudimos actualizar la contrasena." : "No pudimos actualizar la contrasena.");
+        setError(
+          "message" in payload
+            ? (payload.message ?? "No pudimos actualizar la contraseña.")
+            : "No pudimos actualizar la contraseña.",
+        );
         return;
       }
 
@@ -174,21 +192,31 @@ export function ResetPasswordForm() {
 
   if (!isCodeVerified) {
     return (
-      <form className="login-card login-card-compact login-card-reference" onSubmit={verifyCode}>
+      <form
+        className="login-card login-card-compact login-card-reference"
+        onSubmit={verifyCode}
+      >
         <div className="login-card-head">
           <h1>Codigo de recuperacion</h1>
         </div>
 
         <label className="field login-field-simple">
           <span>Email</span>
-          <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" required />
+          <input
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            type="email"
+            required
+          />
         </label>
 
         <label className="field login-field-simple">
           <span>Codigo</span>
           <input
             value={code}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+            onChange={(event) =>
+              setCode(event.target.value.replace(/\D/g, "").slice(0, 6))
+            }
             inputMode="numeric"
             pattern="[0-9]{6}"
             placeholder="123456"
@@ -198,7 +226,11 @@ export function ResetPasswordForm() {
 
         {error ? <p className="error-text">{error}</p> : null}
 
-        <button className="primary-button" type="submit" disabled={isPending || code.length !== 6}>
+        <button
+          className="primary-button"
+          type="submit"
+          disabled={isPending || code.length !== 6}
+        >
           {isPending ? "Verificando..." : "Verificar codigo"}
         </button>
 
@@ -210,13 +242,16 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <form className="login-card login-card-compact login-card-reference" onSubmit={resetPassword}>
+    <form
+      className="login-card login-card-compact login-card-reference"
+      onSubmit={resetPassword}
+    >
       <div className="login-card-head">
-        <h1>Nueva contrasena</h1>
+        <h1>Nueva contraseña</h1>
       </div>
 
       <label className="field login-field-simple">
-        <span>Nueva contrasena</span>
+        <span>Nueva contraseña</span>
         <div className="password-field">
           <input
             value={password}
@@ -230,7 +265,9 @@ export function ResetPasswordForm() {
             type="button"
             className="password-toggle"
             onClick={() => setShowPassword((current) => !current)}
-            aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+            aria-label={
+              showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+            }
             aria-pressed={showPassword}
           >
             <EyeIcon crossed={showPassword} />
@@ -239,13 +276,13 @@ export function ResetPasswordForm() {
       </label>
 
       <label className="field login-field-simple">
-        <span>Repetir contrasena</span>
+        <span>Repetir contraseña</span>
         <div className="password-field">
           <input
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
             type={showConfirmPassword ? "text" : "password"}
-            placeholder="Repite tu contrasena"
+            placeholder="Repite tu contraseña"
             required
             minLength={8}
           />
@@ -253,7 +290,9 @@ export function ResetPasswordForm() {
             type="button"
             className="password-toggle"
             onClick={() => setShowConfirmPassword((current) => !current)}
-            aria-label={showConfirmPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
+            aria-label={
+              showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+            }
             aria-pressed={showConfirmPassword}
           >
             <EyeIcon crossed={showConfirmPassword} />
@@ -264,7 +303,7 @@ export function ResetPasswordForm() {
       {error ? <p className="error-text">{error}</p> : null}
 
       <button className="primary-button" type="submit" disabled={isPending}>
-        {isPending ? "Actualizando..." : "Actualizar contrasena"}
+        {isPending ? "Actualizando..." : "Actualizar contraseña"}
       </button>
     </form>
   );

@@ -137,7 +137,7 @@ export function LoginForm() {
       </label>
 
       <p className="login-footer-copy login-footer-copy-reference">
-        <Link href="/forgot-password">Olvidaste tu contrasena?</Link>
+        <Link href="/forgot-password">Olvidaste tu contraseña?</Link>
       </p>
 
       {error ? <p className="error-text">{error}</p> : null}
