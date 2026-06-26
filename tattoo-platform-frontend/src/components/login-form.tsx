@@ -136,6 +136,10 @@ export function LoginForm() {
         </div>
       </label>
 
+      <p className="login-footer-copy login-footer-copy-reference">
+        <Link href="/forgot-password">Olvidaste tu contrasena?</Link>
+      </p>
+
       {error ? <p className="error-text">{error}</p> : null}
 
       <button className="primary-button" type="submit" disabled={isPending}>

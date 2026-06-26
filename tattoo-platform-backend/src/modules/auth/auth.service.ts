@@ -4,9 +4,10 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UserRole, UserStatus } from '@prisma/client';
+import { NotificationType, UserRole, UserStatus } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
-import { compare } from 'bcrypt';
+import { compare, hash } from 'bcrypt';
+import { randomInt } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { RegistrationCodesService } from '../registration-codes/registration-codes.service';
@@ -15,6 +16,13 @@ import { getCurrencyCodeForCountry } from '../students/student-country-currency'
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterStudentDto } from './dto/register-student.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyPasswordResetCodeDto } from './dto/verify-password-reset-code.dto';
+import { PasswordResetMailerService } from './password-reset-mailer.service';
+
+const PASSWORD_RESET_CODE_TTL_MINUTES = 15;
+const PASSWORD_RESET_MAX_ATTEMPTS = 5;
 
 @Injectable()
 export class AuthService {
@@ -24,6 +32,7 @@ export class AuthService {
     private readonly studentsService: StudentsService,
     private readonly registrationCodesService: RegistrationCodesService,
     private readonly jwtService: JwtService,
+    private readonly passwordResetMailer: PasswordResetMailerService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -44,6 +53,103 @@ export class AuthService {
     }
 
     await this.usersService.updateLastLogin(user.id);
+
+    const payload: AuthenticatedUser = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    };
+
+    return {
+      accessToken: await this.jwtService.signAsync(payload),
+      user: this.usersService.toSafeUser(user),
+    };
+  }
+
+  async requestPasswordReset(dto: RequestPasswordResetDto) {
+    const user = await this.usersService.findUserWithPasswordByEmail(dto.email);
+
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      return this.passwordResetRequestedResponse();
+    }
+
+    const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+    const codeHash = await hash(code, 10);
+    const expiresAt = new Date(
+      Date.now() + PASSWORD_RESET_CODE_TTL_MINUTES * 60 * 1000,
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.passwordResetCode.updateMany({
+        where: {
+          userId: user.id,
+          consumedAt: null,
+        },
+        data: {
+          consumedAt: new Date(),
+        },
+      });
+
+      await tx.passwordResetCode.create({
+        data: {
+          userId: user.id,
+          codeHash,
+          expiresAt,
+        },
+      });
+    });
+
+    await this.passwordResetMailer.sendResetCode({
+      email: user.email,
+      firstName: user.firstName,
+      code,
+      expiresInMinutes: PASSWORD_RESET_CODE_TTL_MINUTES,
+    });
+
+    return this.passwordResetRequestedResponse();
+  }
+
+  async verifyPasswordResetCode(dto: VerifyPasswordResetCodeDto) {
+    await this.resolveValidPasswordResetCode(dto.email, dto.code);
+
+    return { valid: true };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const { user, resetCode } = await this.resolveValidPasswordResetCode(
+      dto.email,
+      dto.code,
+    );
+
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new ForbiddenException('This user is inactive');
+    }
+
+    const passwordHash = await hash(dto.password, 10);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash,
+          lastLoginAt: new Date(),
+        },
+      });
+
+      await tx.passwordResetCode.update({
+        where: { id: resetCode.id },
+        data: { consumedAt: new Date() },
+      });
+
+      await tx.notification.create({
+        data: {
+          type: NotificationType.PASSWORD_UPDATED,
+          title: 'Contraseña actualizada',
+          message: 'Tu contraseña se actualizo correctamente.',
+          recipientUserId: user.id,
+        },
+      });
+    });
 
     const payload: AuthenticatedUser = {
       sub: user.id,
@@ -166,5 +272,47 @@ export class AuthService {
     });
 
     return currency?.id;
+  }
+
+  private passwordResetRequestedResponse() {
+    return {
+      message:
+        'Si el email existe, te enviamos un codigo para recuperar tu contraseña.',
+    };
+  }
+
+  private async resolveValidPasswordResetCode(email: string, code: string) {
+    const user = await this.usersService.findUserWithPasswordByEmail(email);
+
+    if (!user) {
+      throw new UnauthorizedException('El codigo no es valido o ya vencio.');
+    }
+
+    const resetCode = await this.prisma.passwordResetCode.findFirst({
+      where: {
+        userId: user.id,
+        consumedAt: null,
+        expiresAt: { gt: new Date() },
+        attempts: { lt: PASSWORD_RESET_MAX_ATTEMPTS },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!resetCode) {
+      throw new UnauthorizedException('El codigo no es valido o ya vencio.');
+    }
+
+    const isValid = await compare(code, resetCode.codeHash);
+
+    if (!isValid) {
+      await this.prisma.passwordResetCode.update({
+        where: { id: resetCode.id },
+        data: { attempts: { increment: 1 } },
+      });
+
+      throw new UnauthorizedException('El codigo no es valido o ya vencio.');
+    }
+
+    return { user, resetCode };
   }
 }

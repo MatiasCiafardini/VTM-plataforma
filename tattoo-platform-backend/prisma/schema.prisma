@@ -83,6 +83,7 @@ enum NotificationType {
   ACHIEVEMENT_COMPLETED
   ATTENTION_RISK
   NEWS_PUBLISHED
+  PASSWORD_UPDATED
 }
 
 enum OnboardingStepKind {
@@ -130,6 +131,7 @@ model User {
   updatedPeriods MonthlyMetricPeriod[] @relation("PeriodUpdatedBy")
   auditLogs      AuditLog[]
   notifications  Notification[]       @relation("UserNotifications")
+  passwordResetCodes PasswordResetCode[]
   onboardingStepStatusesCompleted OnboardingStepStatus[] @relation("OnboardingStepCompletedBy")
 }
 
@@ -639,6 +641,21 @@ model RegistrationCode {
   maxUses    Int?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+}
+
+model PasswordResetCode {
+  id           String    @id @default(cuid())
+  userId       String
+  codeHash     String
+  expiresAt    DateTime
+  attempts     Int       @default(0)
+  consumedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
 }
 
 model AuditLog {
