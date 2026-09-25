@@ -207,6 +207,14 @@ export class MetricPeriodsService {
     });
   }
 
+  async refreshPeriodProgress(period: { studentId: string; month: number; year: number }) {
+    await this.metricPeriodAutomationService.syncStudentProgress(period.studentId);
+    await this.attentionScoreService.recalculateForStudent(period.studentId, {
+      month: period.month,
+      year: period.year,
+    });
+  }
+
   private getPeriodInclude() {
     const asc = 'asc' as const;
 

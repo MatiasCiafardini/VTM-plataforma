@@ -13,6 +13,7 @@ import type { AuthenticatedUser } from '../../../common/types/authenticated-user
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CurrencyService } from '../../currency/currency.service';
 import { MetricDefinitionsService } from '../metric-definitions/metric-definitions.service';
+import { canStudentEditPeriod } from '../metric-periods/period-edit-window';
 import { MetricPeriodsService } from '../metric-periods/metric-periods.service';
 import {
   MetricValueInputDto,
@@ -45,9 +46,9 @@ export class MetricValuesService {
 
     if (
       actor.role === UserRole.STUDENT &&
-      period.status !== MonthlyMetricPeriodStatus.DRAFT
+      !canStudentEditPeriod(period)
     ) {
-      throw new ConflictException('Students can only edit draft periods');
+      throw new ConflictException('El plazo de 15 días para editar este mes ya terminó.');
     }
 
     const ids = dto.values.map((value) => value.metricDefinitionId);
@@ -125,6 +126,10 @@ export class MetricValuesService {
         updatedByUserId: actor.sub,
       },
     });
+
+    if (period.status !== MonthlyMetricPeriodStatus.DRAFT) {
+      await this.metricPeriodsService.refreshPeriodProgress(period);
+    }
 
     return this.metricPeriodsService.findAccessiblePeriodByIdOrThrow(
       periodId,

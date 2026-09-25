@@ -71,6 +71,7 @@ type StudentDashboard = {
     month: number;
     year: number;
     status: string;
+    editDeadline: string | null;
     metricsCount: number;
     balanceGeneral: number | null;
     balanceGeneralUsd: number | null;

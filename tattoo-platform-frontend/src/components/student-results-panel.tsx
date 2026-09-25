@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type EvolutionPeriod = {
   id: string;
   month: number;
   year: number;
   status: string;
+  editDeadline: string | null;
   metricsCount: number;
   balanceGeneral: number | null;
   balanceGeneralUsd: number | null;
@@ -204,10 +205,17 @@ export function StudentResultsPanel({
   metricLabels,
 }: StudentResultsPanelProps) {
   const router = useRouter();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const [hoveredPeriodId, setHoveredPeriodId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(buildInitialFormState);
 
@@ -255,12 +263,18 @@ export function StudentResultsPanel({
     evolution.find(
       (period) => period.month === form.month && period.year === form.year,
     ) ?? null;
-  const isExistingPeriodLocked =
-    selectedExistingPeriod?.status === "SUBMITTED" ||
-    selectedExistingPeriod?.status === "CLOSED";
+  const isSentPeriod = !!selectedExistingPeriod && selectedExistingPeriod.status !== "DRAFT";
+  const editDeadline = selectedExistingPeriod?.editDeadline;
+  const isExistingPeriodLocked = isSentPeriod &&
+    (!editDeadline || now >= new Date(editDeadline).getTime());
+  const areFieldsReadOnly = isSentPeriod && (!isEditing || isExistingPeriodLocked);
+  const deadlineLabel = editDeadline
+    ? new Date(editDeadline).toLocaleString("es-AR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hour12: false })
+    : null;
 
   function updateField(field: keyof FormState, value: string) {
     if (field === "month" || field === "year") {
+      setIsEditing(false);
       setForm((current) => {
         const nextMonth = field === "month" ? Number(value) : current.month;
         const nextYear = field === "year" ? Number(value) : current.year;
@@ -283,47 +297,53 @@ export function StudentResultsPanel({
   async function persistPeriod(submitAfterSave: boolean) {
     if (isExistingPeriodLocked) {
       setError(
-        "Ese mes ya fue enviado o cerrado, y no se puede editar desde alumno.",
+        "El plazo de 15 días para editar este mes ya terminó.",
       );
       return;
     }
+    if (isSentPeriod && !isEditing) return;
     if (submitAfterSave) {
       setIsSubmitting(true);
     } else {
       setIsSaving(true);
     }
     setError(null);
+    setSuccess(null);
 
     try {
-      const createdPeriodResponse = await fetch(
-        "/api/student/metrics/periods",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            month: form.month,
-            year: form.year,
-          }),
-        },
-      );
-
-      const createdPeriodPayload = await createdPeriodResponse.json();
-      let periodId: string | null = createdPeriodPayload.id ?? null;
-
-      if (!createdPeriodResponse.ok) {
-        const existingPeriodResponse = await fetch(
-          `/api/student/metrics/periods?month=${form.month}&year=${form.year}`,
+      let periodId: string | null = selectedExistingPeriod?.id ?? null;
+      if (!periodId) {
+        const createdPeriodResponse = await fetch(
+          "/api/student/metrics/periods",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              month: form.month,
+              year: form.year,
+            }),
+          },
         );
-        const existingPeriods =
-          (await existingPeriodResponse.json()) as MetricPeriodResponse[];
 
-        if (!existingPeriodResponse.ok || existingPeriods.length === 0) {
-          throw new Error(
-            createdPeriodPayload.message ?? "No pudimos crear el periodo.",
+        const createdPeriodPayload = await createdPeriodResponse.json();
+        periodId = createdPeriodPayload.id ?? null;
+
+        if (!createdPeriodResponse.ok) {
+          const existingPeriodResponse = await fetch(
+            `/api/student/metrics/periods?month=${form.month}&year=${form.year}`,
           );
+          const existingPeriods =
+            (await existingPeriodResponse.json()) as MetricPeriodResponse[];
+
+          if (!existingPeriodResponse.ok || existingPeriods.length === 0) {
+            throw new Error(
+              createdPeriodPayload.message ?? "No pudimos crear el periodo.",
+            );
+          }
+
+          periodId = existingPeriods[0].id;
         }
 
-        periodId = existingPeriods[0].id;
       }
 
       const currencyId = localCurrency?.id ?? "";
@@ -400,7 +420,7 @@ export function StudentResultsPanel({
         );
       }
 
-      if (submitAfterSave) {
+      if (submitAfterSave && !isSentPeriod) {
         const submitResponse = await fetch(
           `/api/student/metrics/periods/${periodId}/submit`,
           {
@@ -414,6 +434,11 @@ export function StudentResultsPanel({
         }
       }
 
+      setSuccess(isSentPeriod
+        ? `Cambios guardados. Podés editar este mes hasta el ${deadlineLabel}. El plazo no se reinicia.`
+        : submitAfterSave
+          ? "Mes enviado. Tenés 15 días desde este envío para editarlo. Después quedará bloqueado."
+          : "Borrador guardado. Cuando envíes el mes, tendrás 15 días para editarlo.");
       setIsOpen(false);
       setForm(buildInitialFormState());
       router.refresh();
@@ -441,12 +466,14 @@ export function StudentResultsPanel({
   function openDraftPeriod(period: EvolutionPeriod) {
     setForm(buildFormStateForPeriod(period.month, period.year, period));
     setError(null);
+    setIsEditing(false);
     setIsOpen(true);
   }
 
   function openExistingPeriod(period: EvolutionPeriod) {
     setForm(buildFormStateForPeriod(period.month, period.year, period));
     setError(null);
+    setIsEditing(false);
     setIsOpen(true);
   }
 
@@ -524,6 +551,7 @@ export function StudentResultsPanel({
                   ),
                 );
                 setError(null);
+                setIsEditing(false);
                 setIsOpen(true);
               }}
             >
@@ -532,6 +560,7 @@ export function StudentResultsPanel({
           </div>
         </header>
 
+        {success ? <p role="status" className="student-results-form-success">{success}</p> : null}
         <div className="student-results-summary-grid">
           <article className="student-results-summary-card">
             <span>Total periodo</span>
@@ -842,11 +871,8 @@ export function StudentResultsPanel({
           >
             <div className="student-results-modal-head">
               <div>
-                <h3>Cargar mes</h3>
-                <p>
-                  Completá tu resumen mensual y se agregará al histórico de
-                  resultados.
-                </p>
+                <h3>{isSentPeriod ? (areFieldsReadOnly ? "Mes enviado" : "Editar mes enviado") : "Cargar mes"}</h3>
+                {!isSentPeriod ? <p>Completá tus resultados del mes.</p> : null}
               </div>
               <button type="button" onClick={() => setIsOpen(false)}>
                 Cerrar
@@ -885,18 +911,20 @@ export function StudentResultsPanel({
                     />
                   </label>
                 </div>
-                {selectedExistingPeriod ? (
-                  <p className="student-form-card-copy">
-                    Mes existente detectado: estado{" "}
-                    {selectedExistingPeriod.status}. Se cargaron sus valores
-                    actuales en el formulario.
+                <div className="student-period-edit-bar">
+                  <p className="student-period-edit-note">
+                    {isSentPeriod
+                      ? isExistingPeriodLocked
+                        ? "El plazo de edición finalizó. Podés consultar tus resultados."
+                        : `Podés editarlo hasta el ${deadlineLabel}.`
+                      : "Una vez enviado, tenés 15 días para editarlo."}
                   </p>
-                ) : null}
-                {isExistingPeriodLocked ? (
-                  <p className="student-results-form-error">
-                    Ese mes no se puede modificar porque ya no está en borrador.
-                  </p>
-                ) : null}
+                  {isSentPeriod && !isExistingPeriodLocked && !isEditing ? (
+                    <button type="button" className="primary-button" onClick={() => setIsEditing(true)}>
+                      Editar
+                    </button>
+                  ) : null}
+                </div>
               </article>
 
               <article className="student-form-card">
@@ -906,7 +934,7 @@ export function StudentResultsPanel({
                     <span>Ingresos totales del mes</span>
                     <div className="student-form-money-field">
                       <span>{currencySymbol}</span>
-                      <input
+                      <input readOnly={areFieldsReadOnly}
                         type="number"
                         min="0"
                         step="1"
@@ -920,7 +948,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Cantidad total de tatuajes</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -933,7 +961,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Comision del estudio %</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       max="100"
@@ -952,7 +980,7 @@ export function StudentResultsPanel({
                     <span>Gastos del mes</span>
                     <div className="student-form-money-field">
                       <span>{currencySymbol}</span>
-                      <input
+                      <input readOnly={areFieldsReadOnly}
                         type="number"
                         min="0"
                         step="1"
@@ -972,7 +1000,7 @@ export function StudentResultsPanel({
                 <div className="student-form-grid">
                   <label>
                     <span>Seguidores en IG</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -988,7 +1016,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Consultas mensuales</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -1001,7 +1029,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Conversaciones a nuevos</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -1014,7 +1042,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Cotizaciones</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -1036,7 +1064,7 @@ export function StudentResultsPanel({
                 <div className="student-form-grid">
                   <label>
                     <span>Total cierres del mes</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -1049,7 +1077,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Nuevos clientes</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -1062,7 +1090,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Por recomendacion</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -1078,7 +1106,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Clientes habituales</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -1091,7 +1119,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Cierres con seguidores nuevos</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -1107,7 +1135,7 @@ export function StudentResultsPanel({
                   </label>
                   <label>
                     <span>Personas en seguimiento</span>
-                    <input
+                    <input readOnly={areFieldsReadOnly}
                       type="number"
                       min="0"
                       step="1"
@@ -1126,7 +1154,7 @@ export function StudentResultsPanel({
               ) : null}
 
               <div className="student-results-form-actions">
-                {isExistingPeriodLocked ? (
+                {areFieldsReadOnly ? (
                   <button
                     type="button"
                     className="ghost-button"
@@ -1149,15 +1177,15 @@ export function StudentResultsPanel({
                       disabled={isSubmitting || isSaving}
                       onClick={handleSubmitMonth}
                     >
-                      {isSubmitting ? "Enviando..." : "Enviar mes"}
+                      {isSubmitting ? "Guardando..." : isSentPeriod ? "Guardar cambios" : "Enviar mes"}
                     </button>
-                    <button
+                    {!isSentPeriod ? <button
                       type="submit"
                       className="ghost-button"
                       disabled={isSaving || isSubmitting}
                     >
                       {isSaving ? "Guardando..." : "Guardar borrador"}
-                    </button>
+                    </button> : null}
                   </>
                 )}
               </div>

@@ -83,3 +83,36 @@ describe('MetricValuesService', () => {
     );
   });
 });
+
+
+describe('submitted period editing', () => {
+  const now = new Date('2026-09-25T12:00:00Z');
+  beforeEach(() => { jest.useFakeTimers(); jest.setSystemTime(now); });
+  afterEach(() => jest.useRealTimers());
+
+  it.each([
+    ['three days ago', '2026-09-22T12:00:00Z', true],
+    ['just before deadline', '2026-09-10T12:00:00.001Z', true],
+    ['exact deadline', '2026-09-10T12:00:00Z', false],
+    ['expired', '2026-09-01T12:00:00Z', false],
+  ])('%s', async (_label, sentAt, allowed) => {
+    const period = { id: 'p', studentId: 's', month: 8, year: 2026,
+      status: MonthlyMetricPeriodStatus.CLOSED,
+      submittedAt: new Date(sentAt), closedAt: new Date(sentAt) };
+    const prisma = { monthlyMetricPeriod: { update: jest.fn() }, metricValue: { upsert: jest.fn() } };
+    const periods = { findAccessiblePeriodByIdOrThrow: jest.fn().mockResolvedValue(period),
+      refreshPeriodProgress: jest.fn().mockResolvedValue(undefined) };
+    const service = new MetricValuesService(prisma as never, periods as never, {} as never, {} as never);
+    const result = service.upsertValues('p', { values: [] },
+      { sub: 'u', email: 's@example.com', role: UserRole.STUDENT });
+    if (allowed) {
+      await expect(result).resolves.toBe(period);
+      expect(prisma.monthlyMetricPeriod.update).toHaveBeenCalledWith({ where: { id: 'p' }, data: { updatedByUserId: 'u' } });
+      expect(periods.refreshPeriodProgress).toHaveBeenCalledWith(period);
+    } else {
+      await expect(result).rejects.toThrow('15');
+      expect(prisma.monthlyMetricPeriod.update).not.toHaveBeenCalled();
+      expect(periods.refreshPeriodProgress).not.toHaveBeenCalled();
+    }
+  });
+});

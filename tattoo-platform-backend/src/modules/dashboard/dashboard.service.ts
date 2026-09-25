@@ -1,3 +1,4 @@
+import { getPeriodEditDeadline } from '../metrics/metric-periods/period-edit-window';
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import {
   ChallengeStatus,
@@ -288,6 +289,7 @@ export class DashboardService {
           month: period.month,
           year: period.year,
           status: period.status,
+          editDeadline: getPeriodEditDeadline(period),
           metricsCount: period.values.length,
           balanceGeneral: this.getMetricOriginalNumericValue(
             period.values,
