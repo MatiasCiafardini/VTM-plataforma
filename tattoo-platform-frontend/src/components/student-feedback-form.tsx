@@ -21,9 +21,11 @@ const titles = [
 export function StudentFeedbackForm({
   userId,
   firstName,
+  preview = false,
 }: {
   userId: string;
   firstName: string;
+  preview?: boolean;
 }) {
   const storageKey = `vmt-feedback:${userId}`;
   const [draft, setDraft] = useState<Draft>({
@@ -51,7 +53,7 @@ export function StudentFeedbackForm({
         submissionId: crypto.randomUUID(),
       };
       try {
-        const saved = JSON.parse(
+        const saved = preview ? null : JSON.parse(
           sessionStorage.getItem(storageKey) || "null",
         ) as Partial<Draft> | null;
         if (
@@ -73,17 +75,17 @@ export function StudentFeedbackForm({
       setReady(true);
     });
     return () => cancelAnimationFrame(frame);
-  }, [storageKey]);
+  }, [storageKey, preview]);
 
   useEffect(() => {
-    if (ready && !sent) {
+    if (ready && !sent && !preview) {
       try {
         sessionStorage.setItem(storageKey, JSON.stringify(draft));
       } catch {
         /* Optional draft recovery. */
       }
     }
-  }, [draft, ready, sent, storageKey]);
+  }, [draft, ready, sent, storageKey, preview]);
 
   useEffect(() => {
     if (nextStep === null) return;
@@ -122,15 +124,17 @@ export function StudentFeedbackForm({
     setPending(true);
     setError("");
     try {
-      await feedbackRequest("/api/feedbacks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(draft),
-      });
-      try {
-        sessionStorage.removeItem(storageKey);
-      } catch {
-        /* Optional draft recovery. */
+      if (!preview) {
+        await feedbackRequest("/api/feedbacks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(draft),
+        });
+        try {
+          sessionStorage.removeItem(storageKey);
+        } catch {
+          /* Optional draft recovery. */
+        }
       }
       setSent(true);
     } catch (cause) {
@@ -151,16 +155,17 @@ export function StudentFeedbackForm({
         <div className={styles.successIcon} aria-hidden="true">
           ✓
         </div>
-        <p className={styles.eyebrow}>TU SEMANA CUENTA</p>
+        <p className={styles.eyebrow}>{preview ? "VISTA PREVIA" : "TU SEMANA CUENTA"}</p>
         <h1 ref={titleRef} tabIndex={-1}>
-          ¡Gracias por compartir tu semana!
+          {preview ? "Vista previa completada" : "¡Gracias por compartir tu semana!"}
         </h1>
         <p>
-          Tu experiencia nos ayuda a mejorar la mentoría y acompañarte mejor.
-          Cada avance cuenta.
+          {preview
+            ? "Así termina el recorrido para un alumno. Esta prueba no se guardó como respuesta."
+            : "Tu experiencia nos ayuda a mejorar la mentoría y acompañarte mejor. Cada avance cuenta."}
         </p>
-        <Link className="primary-button" href="/student">
-          Volver a mi panel
+        <Link className="primary-button" href={preview ? "/admin/feedbacks" : "/student"}>
+          {preview ? "Ir a Feedbacks" : "Volver a mi panel"}
         </Link>
       </section>
     );
@@ -168,9 +173,10 @@ export function StudentFeedbackForm({
   return (
     <form className={styles.wizard} onSubmit={submit} aria-busy={pending}>
       <div className={styles.wizardMeta}>
-        <span className={styles.eyebrow}>TU SEMANA EN VMT</span>
+        <span className={styles.eyebrow}>{preview ? "VISTA PREVIA · ADMIN" : "TU SEMANA EN VMT"}</span>
         <span>Paso {step + 1} de 3</span>
       </div>
+      {preview ? <p className={styles.previewNote}>Podés recorrer los tres pasos. Esta prueba no se guarda ni aparece en Feedbacks.</p> : null}
       <div className={styles.progress} aria-hidden="true">
         {[0, 1, 2].map((n) => (
           <span key={n} className={n <= step ? styles.progressActive : ""} />
@@ -219,7 +225,7 @@ export function StudentFeedbackForm({
               aria-describedby="feedback-help"
               maxLength={5000}
               required={step === 1}
-              rows={7}
+              rows={4}
               placeholder={
                 step === 1
                   ? "Esta semana, la mentoría me ayudó a…"
@@ -245,7 +251,7 @@ export function StudentFeedbackForm({
                 ← Atrás
               </button>
               <button className="primary-button" type="submit">
-                {pending ? "Enviando…" : step === 1 ? "Siguiente →" : "Enviar"}
+                {pending ? "Enviando…" : step === 1 ? "Siguiente →" : preview ? "Terminar vista previa" : "Enviar"}
               </button>
             </div>
           </>
@@ -260,7 +266,7 @@ export function StudentFeedbackForm({
         </p>
       ) : null}
       <p className={styles.privacy}>
-        Tu respuesta se comparte con el equipo de VMT.
+        {preview ? "Vista exclusiva para administración. No se guardan respuestas." : "Tu respuesta se comparte con el equipo de VMT."}
       </p>
       <noscript>Activá JavaScript para completar el formulario.</noscript>
     </form>

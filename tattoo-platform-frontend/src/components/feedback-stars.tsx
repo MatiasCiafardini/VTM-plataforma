@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import styles from "./feedback.module.css";
 
 export function FeedbackStars({
@@ -11,6 +12,7 @@ export function FeedbackStars({
   onChange?: (rating: number) => void;
   disabled?: boolean;
 }) {
+  const [hoveredRating, setHoveredRating] = useState(0);
   if (!onChange)
     return (
       <span className={styles.rating} aria-label={`${value} de 5 estrellas`}>
@@ -23,6 +25,7 @@ export function FeedbackStars({
       className={styles.stars}
       role="group"
       aria-label="Calificación de la mentoría"
+      onMouseLeave={() => setHoveredRating(0)}
     >
       {[1, 2, 3, 4, 5].map((rating) => (
         <button
@@ -31,7 +34,10 @@ export function FeedbackStars({
           disabled={disabled}
           aria-label={`${rating} ${rating === 1 ? "estrella" : "estrellas"}`}
           aria-pressed={value === rating}
-          className={rating <= value ? styles.starSelected : styles.star}
+          className={rating <= (hoveredRating || value) ? styles.starSelected : styles.star}
+          onMouseEnter={() => setHoveredRating(rating)}
+          onFocus={() => setHoveredRating(rating)}
+          onBlur={() => setHoveredRating(0)}
           onClick={() => onChange(rating)}
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
