@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, useTransition } from "react";
+import {
+  FormEvent,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+} from "react";
 import {
   countryPhonePrefixes,
   getPhonePrefixForCountry,
@@ -13,6 +20,8 @@ type RegisterPayload = {
   role: "ADMIN" | "MENTOR" | "STUDENT";
   nextPath?: string;
 };
+
+const subscribeToHydration = () => () => {};
 
 function EyeIcon({ crossed = false }: { crossed?: boolean }) {
   if (crossed) {
@@ -51,12 +60,24 @@ function EyeIcon({ crossed = false }: { crossed?: boolean }) {
 
 export function RegisterForm() {
   const router = useRouter();
+  const isHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false,
+  );
+  const errorRef = useRef<HTMLParagraphElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState("");
   const [phonePrefix, setPhonePrefix] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (error) {
+      errorRef.current?.focus();
+    }
+  }, [error]);
 
   function handleCountryChange(value: string) {
     setSelectedCountry(value);
@@ -65,6 +86,7 @@ export function RegisterForm() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isPending || !isHydrated) return;
     setError(null);
 
     const formData = new FormData(event.currentTarget);
@@ -86,53 +108,73 @@ export function RegisterForm() {
     }
 
     startTransition(async () => {
-      const response = await fetch("/api/session/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          password,
-          country,
-          instagramHandle: instagramHandle.replace(/^@/, ""),
-          phoneCountryCode,
-          phoneNumber,
-          accessCode,
-          birthDate: birthDate || undefined,
-        }),
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30_000);
+      try {
+        const response = await fetch("/api/session/register", {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName,
+            lastName,
+            email,
+            password,
+            country,
+            instagramHandle: instagramHandle.replace(/^@/, ""),
+            phoneCountryCode,
+            phoneNumber,
+            accessCode,
+            birthDate: birthDate || undefined,
+          }),
+        });
 
-      const payload = (await response.json()) as
-        | RegisterPayload
-        | { message?: string };
+        const payload: unknown = await response.json();
+        if (!payload || typeof payload !== "object") {
+          throw new Error("Invalid registration response");
+        }
 
-      if (!response.ok) {
-        const message =
-          "message" in payload
-            ? payload.message
-            : "No pudimos crear la cuenta.";
-        setError(message ?? "No pudimos crear la cuenta.");
-        return;
+        if (!response.ok) {
+          const message =
+            "message" in payload
+              ? payload.message
+              : "No pudimos crear la cuenta.";
+          setError(
+            typeof message === "string" && message
+              ? message
+              : "No pudimos crear la cuenta. Intenta nuevamente.",
+          );
+          return;
+        }
+
+        if (
+          !("role" in payload) ||
+          !["STUDENT", "ADMIN", "MENTOR"].includes(String(payload.role))
+        ) {
+          setError("La respuesta de autenticacion no fue valida.");
+          return;
+        }
+
+        const registration = payload as RegisterPayload;
+        router.replace(
+          registration.role === "STUDENT"
+            ? "/student/setup"
+            : registration.nextPath ??
+                (registration.role === "ADMIN"
+                  ? "/admin"
+                  : registration.role === "MENTOR"
+                    ? "/mentor"
+                    : "/student"),
+        );
+      } catch {
+        setError(
+          "No pudimos confirmar el registro. Revisa tu conexion e intenta nuevamente. Si ya se creo la cuenta, puedes iniciar sesion con tu email y contraseña.",
+        );
+      } finally {
+        clearTimeout(timeout);
       }
-
-      if (!("role" in payload)) {
-        setError("La respuesta de autenticacion no fue valida.");
-        return;
-      }
-
-      router.replace(
-        payload.role === "STUDENT"
-          ? "/student/setup"
-          : payload.nextPath ??
-              (payload.role === "ADMIN"
-                ? "/admin"
-                : payload.role === "MENTOR"
-                  ? "/mentor"
-                  : "/student"),
-      );
     });
   };
 
@@ -261,6 +303,7 @@ export function RegisterForm() {
             <input
               name="password"
               type={showPassword ? "text" : "password"}
+              minLength={8}
               placeholder="Minimo 8 caracteres"
               required
             />
@@ -298,10 +341,23 @@ export function RegisterForm() {
         </label>
       </div>
 
-      {error ? <p className="error-text">{error}</p> : null}
+      {error ? (
+        <p ref={errorRef} className="error-text" role="alert" tabIndex={-1}>
+          {error}
+        </p>
+      ) : null}
+      <noscript>Activa JavaScript y recarga la pagina para crear tu cuenta.</noscript>
 
-      <button className="primary-button" type="submit" disabled={isPending}>
-        {isPending ? "Creando cuenta..." : "Crear cuenta"}
+      <button
+        className="primary-button"
+        type="submit"
+        disabled={isPending || !isHydrated}
+      >
+        {!isHydrated
+          ? "Cargando formulario..."
+          : isPending
+            ? "Creando cuenta..."
+            : "Crear cuenta"}
       </button>
 
       <p className="login-footer-copy login-footer-copy-reference">
