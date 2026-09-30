@@ -43,7 +43,7 @@ function EyeIcon({ crossed = false }: { crossed?: boolean }) {
   );
 }
 
-export function LoginForm() {
+export function LoginForm({ returnToFeedback = false }: { returnToFeedback?: boolean }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -65,39 +65,43 @@ export function LoginForm() {
     const password = String(formData.get("password") ?? "");
 
     startTransition(async () => {
-      const response = await fetch("/api/session/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      try {
+        const response = await fetch("/api/session/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        });
 
-      const payload = (await response.json()) as
-        | LoginPayload
-        | { message?: string };
+        const payload = (await response.json()) as
+          | LoginPayload
+          | { message?: string };
 
-      if (!response.ok) {
-        const message =
-          "message" in payload ? payload.message : "No pudimos iniciar sesion.";
-        setError(message ?? "No pudimos iniciar sesion.");
-        return;
+        if (!response.ok) {
+          const message =
+            "message" in payload ? payload.message : "No pudimos iniciar sesion.";
+          setError(message ?? "No pudimos iniciar sesion.");
+          return;
+        }
+
+        if (!("role" in payload)) {
+          setError("La respuesta de autenticacion no fue valida.");
+          return;
+        }
+
+        const nextPath =
+          payload.role === "ADMIN"
+            ? "/admin"
+            : payload.role === "MENTOR"
+              ? "/mentor"
+              : "/student";
+
+        router.replace(returnToFeedback ? '/feedback' : nextPath);
+        router.refresh();
+      } catch {
+        setError('No pudimos iniciar sesión. Revisá tu conexión e intentá nuevamente.');
       }
-
-      if (!("role" in payload)) {
-        setError("La respuesta de autenticacion no fue valida.");
-        return;
-      }
-
-      const nextPath =
-        payload.role === "ADMIN"
-          ? "/admin"
-          : payload.role === "MENTOR"
-            ? "/mentor"
-            : "/student";
-
-      router.replace(nextPath);
-      router.refresh();
     });
   };
 

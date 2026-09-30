@@ -181,6 +181,30 @@ model StudentProfile {
   events            Event[]
   notifications     Notification[]
   onboardingStepStatuses OnboardingStepStatus[]
+  mentorshipFeedbacks MentorshipFeedback[]
+}
+
+model MentorshipFeedback {
+  id                  String   @id @default(cuid())
+  studentId           String
+  submissionId        String
+  weekStart           DateTime @db.Date
+  rating              Int
+  feedback            String   @db.Text
+  achievement         String   @db.Text
+  originalRating      Int
+  originalFeedback    String   @db.Text
+  originalAchievement String   @db.Text
+  version             Int      @default(1)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, submissionId])
+  @@index([studentId, createdAt])
+  @@index([createdAt, id])
+  @@index([weekStart])
 }
 
 model AdminSetting {

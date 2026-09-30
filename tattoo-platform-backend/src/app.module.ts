@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { FeedbacksModule } from './modules/feedbacks/feedbacks.module';
 import { AppConfigModule } from './config/app-config.module';
 import { CommonModule } from './common/common.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -30,6 +31,7 @@ import { PrismaModule } from './prisma/prisma.module';
 @Module({
   imports: [
     AppConfigModule,
+    FeedbacksModule,
     CommonModule,
     PrismaModule,
     AdminSettingsModule,

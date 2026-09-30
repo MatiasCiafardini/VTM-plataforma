@@ -93,6 +93,35 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 - Website - [https://nestjs.com](https://nestjs.com/)
 - Twitter - [@nestframework](https://twitter.com/nestframework)
 
+## Feedbacks de mentoría
+
+El enlace `/feedback` del frontend pide iniciar sesión y devuelve al alumno al
+formulario. `/admin/feedbacks` permite consultar y editar las respuestas finales;
+la sección **Respuestas originales** consulta los valores inmutables del envío.
+Los perfiles de alumnos reutilizan el panel filtrado por alumno, solo para admins.
+
+- `POST /api/feedbacks`: alumno autenticado, con `submissionId` UUID por envío.
+  Reintentar el mismo envío devuelve el mismo recibo sin duplicar ni sobrescribir.
+- `GET /api/feedbacks`: admin; filtros `studentId`, `q`, `rating`, `from`, `to`,
+  `page` y `originals=true`. Las fechas de envío se filtran en UTC.
+- `GET /api/feedbacks/:id` y `PATCH /api/feedbacks/:id`: admin. La edición requiere
+  la `version` consultada para evitar sobreescrituras concurrentes. Cada edición
+  guarda actor, valores anteriores y nuevos en `AuditLog`, en la misma transacción.
+- La semana corresponde al lunes en la zona horaria del alumno. No hay límite de
+  un envío semanal; el logro puede estar vacío.
+
+Antes de arrancar la versión nueva, aplicar la migración
+`20260930120000_mentorship_feedback` con `npx prisma migrate deploy` y generar el
+cliente con `npx prisma generate` antes del build. `scripts/prod-deploy.sh` ya
+incluye la ejecución de migraciones si no se usa `--skip-migrate`.
+
+Pruebas unitarias: `npm test -- --runInBand --testPathPatterns=feedbacks.service`.
+Las pruebas HTTP con persistencia usan una base **local descartable** llamada
+`vmt_feedback_test`, con las migraciones aplicadas. Configurar
+`FEEDBACK_TEST_DATABASE_URL=postgresql://…@127.0.0.1:PUERTO/vmt_feedback_test` y
+ejecutar `npm test -- --runInBand --testPathPatterns=feedbacks`. Nunca usar una
+base de producción para estas pruebas.
+
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

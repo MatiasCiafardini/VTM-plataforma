@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AppShell } from '@/components/app-shell';
+import { AdminFeedbacksPanel } from '@/components/admin-feedbacks-panel';
 import { ChallengeIcon } from '@/components/challenge-icons';
 import { safeBackendFetch } from '@/lib/server-fetch';
 import { requireAnyRole } from '@/lib/session';
@@ -816,6 +817,7 @@ export default async function StudentProfilePage({
 
         </div>
       </div>
+      {session.role === 'ADMIN' ? <AdminFeedbacksPanel studentId={studentId} /> : null}
     </AppShell>
   );
 }

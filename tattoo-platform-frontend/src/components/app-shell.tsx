@@ -29,6 +29,7 @@ type AppShellProps = {
     | 'followups'
     | 'profile'
     | 'settings'
+    | 'feedbacks'
     | 'onboarding';
   showSectionEyebrow?: boolean;
   notifications?: NotificationItem[];
@@ -78,6 +79,7 @@ export function AppShell({
               label: 'Logros',
               href: `${dashboardPath}?tab=challenges`,
             },
+            { key: 'feedbacks', label: 'Feedbacks', href: '/admin/feedbacks' },
             {
               key: 'onboarding',
               label: 'Onboarding',
