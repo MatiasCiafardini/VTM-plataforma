@@ -1,0 +1,10 @@
+[
+  "Mes enviado hace 3 días: permite corregir y envía el nuevo valor sin reenviar ni reiniciar el plazo.",
+  "Plazo vencido: muestra bloqueo y no ofrece guardar ni enviar.",
+  "Nuevo envío: aviso antes y después, creación + guardado + envío correctos.",
+  "Borrador: guarda sin enviar y avisa que el plazo comienza al enviar.",
+  "Servidor rechaza por vencimiento: muestra error, conserva formulario y no confirma éxito.",
+  "Al reabrir un mes enviado vuelve a consulta; Editar habilita los campos.",
+  "Pantalla móvil: sin desbordamiento horizontal.",
+  "Sin errores JavaScript durante los recorridos."
+]
