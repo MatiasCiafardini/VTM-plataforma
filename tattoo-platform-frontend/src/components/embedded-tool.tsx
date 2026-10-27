@@ -84,7 +84,7 @@ export const EXTERNAL_TOOLS: Record<
     promoDescription:
       "Accede a la plataforma de contenidos para ver las clases y materiales de la mentoria.",
     buttonLabel: "Ir a las clases",
-    href: "https://vendemastattoo.tiendup.com/login",
+    href: "https://www.skool.com/mentoria-vmt-7456",
   },
   "sales-simulator": {
     id: "sales-simulator",
