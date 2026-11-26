@@ -5197,7 +5197,8 @@ body {
 }
 
 .auth-shell-reference .auth-brand-logo-login {
-  width: min(100%, 348px);
+  width: min(100%, 412px);
+  padding-inline: 6px;
 }
 
 .auth-shell-reference .auth-brand-logo .brand-logo-wordmark {
