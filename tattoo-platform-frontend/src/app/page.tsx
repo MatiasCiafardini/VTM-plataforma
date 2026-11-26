@@ -17,7 +17,7 @@ export default async function Home() {
       <div className="auth-scene">
         <section className="auth-shell auth-shell-reference">
           <div className="auth-brand">
-            <BrandLogo priority chrome={false} className="auth-brand-logo auth-brand-logo-classic" />
+            <BrandLogo priority chrome={false} className="auth-brand-logo auth-brand-logo-login" />
             <p className="auth-subtitle auth-subtitle-reference">Ingresa a tu cuenta</p>
           </div>
 

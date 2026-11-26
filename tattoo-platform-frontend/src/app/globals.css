@@ -5196,6 +5196,10 @@ body {
   transform: none;
 }
 
+.auth-shell-reference .auth-brand-logo-login {
+  width: min(100%, 348px);
+}
+
 .auth-shell-reference .auth-brand-logo .brand-logo-wordmark {
   transform: none;
   margin-inline: auto;
