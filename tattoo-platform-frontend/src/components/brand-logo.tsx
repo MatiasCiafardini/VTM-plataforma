@@ -1,10 +1,13 @@
 import Image from 'next/image';
+import isotype from '../../public/brand-isotype.png';
+import wordmark from '../../public/brand-wordmark.png';
 
 type BrandLogoProps = {
   variant?: 'wordmark' | 'isotype';
   priority?: boolean;
   className?: string;
   chrome?: boolean;
+  decorative?: boolean;
 };
 
 export function BrandLogo({
@@ -12,6 +15,7 @@ export function BrandLogo({
   priority = false,
   className = '',
   chrome = true,
+  decorative = false,
 }: BrandLogoProps) {
   const isWordmark = variant === 'wordmark';
 
@@ -20,11 +24,9 @@ export function BrandLogo({
       className={`brand-logo-frame ${chrome ? 'brand-logo-frame-chrome' : 'brand-logo-frame-bare'} ${isWordmark ? 'brand-logo-frame-wordmark' : 'brand-logo-frame-isotype'} ${className}`.trim()}
     >
       <Image
-        src={isWordmark ? '/brand-wordmark.png' : '/brand-isotype.png'}
-        alt="Vende Mas Tattoo"
-        width={isWordmark ? 880 : 512}
-        height={isWordmark ? 332 : 512}
-        priority={priority}
+        src={isWordmark ? wordmark : isotype}
+        alt={decorative ? '' : 'Vende Más Tattoo'}
+        preload={priority}
         className={isWordmark ? 'brand-logo-wordmark' : 'brand-logo-isotype'}
       />
     </span>

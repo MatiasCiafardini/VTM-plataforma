@@ -1,9 +1,9 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import type { AppRole } from '@/lib/session';
+import { BrandLogo } from './brand-logo';
 import { LogoutButton } from './logout-button';
 import { NotificationBell } from './notification-bell';
 
@@ -123,11 +123,10 @@ export function AppShell({
     <div className="shell">
       <header className="topbar">
         <div className="topbar-brand">
-          <Image
-            src="/logo-04.png"
-            alt="Vende Mas Tattoo"
-            width={48}
-            height={48}
+          <BrandLogo
+            variant="isotype"
+            chrome={false}
+            decorative
             className="topbar-brand-logo"
             priority
           />

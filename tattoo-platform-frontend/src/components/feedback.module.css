@@ -104,7 +104,6 @@
   display: block;
   width: 100%;
   height: auto;
-  filter: invert(1);
 }
 .wizard h1 {
   font-family: var(--font-body), sans-serif;
